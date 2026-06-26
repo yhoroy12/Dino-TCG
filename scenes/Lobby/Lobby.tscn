@@ -1,0 +1,343 @@
+[gd_scene load_steps=7 format=3 uid="uid://chfyvqxrtch5t"]
+
+[ext_resource type="Script" uid="uid://c32x4g1xbf0hg" path="res://scenes/Lobby/lobby.gd" id="1_lqr06"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oumm8"]
+bg_color = Color(0.366595, 0.366595, 0.366594, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_v72lb"]
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oev3y"]
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lqr06"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lychb"]
+bg_color = Color(0.165656, 0.165656, 0.165656, 1)
+
+[node name="LobbyDuelo" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lqr06")
+
+[node name="Fundo" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="LayoutHorizontal" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="ColunaEsquerda" type="VBoxContainer" parent="MarginContainer/LayoutHorizontal"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+
+[node name="PerfilHeader" type="PanelContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_oumm8")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader"]
+layout_mode = 2
+
+[node name="Avatar" type="Panel" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader/HBoxContainer"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+
+[node name="TextosPerfil" type="VBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader/HBoxContainer"]
+layout_mode = 2
+
+[node name="Titulo" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader/HBoxContainer/TextosPerfil"]
+layout_mode = 2
+text = "Teste de texto de titulo"
+
+[node name="Nome" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader/HBoxContainer/TextosPerfil"]
+layout_mode = 2
+text = "Teste de nome de usuario"
+
+[node name="Rank" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/PerfilHeader/HBoxContainer/TextosPerfil"]
+layout_mode = 2
+text = "Bronze/Silver/Gold"
+
+[node name="EstatisticasBox" type="PanelContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_v72lb")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="StatusList" type="VBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer"]
+layout_mode = 2
+
+[node name="VitoriasBox" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList"]
+layout_mode = 2
+
+[node name="titulo" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/VitoriasBox"]
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Vitorias"
+
+[node name="valor" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/VitoriasBox"]
+layout_direction = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "5"
+
+[node name="DerrotaBox" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList"]
+layout_mode = 2
+
+[node name="titulo" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/DerrotaBox"]
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Derrotas"
+
+[node name="valor" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/DerrotaBox"]
+layout_direction = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "5"
+horizontal_alignment = 2
+
+[node name="Vitorias_Box" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList"]
+layout_mode = 2
+
+[node name="titulo" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/Vitorias_Box"]
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "Taxa de Vitorias"
+
+[node name="valor" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/Vitorias_Box"]
+layout_direction = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "5"
+
+[node name="ColecaoBox" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList"]
+layout_mode = 2
+
+[node name="titulo" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/ColecaoBox"]
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "Coleção"
+
+[node name="valor" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/EstatisticasBox/MarginContainer/StatusList/ColecaoBox"]
+layout_direction = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "0/160"
+
+[node name="DeckBox" type="PanelContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_oev3y")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/DeckBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ButtonDecks" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaEsquerda/DeckBox/MarginContainer"]
+layout_mode = 2
+text = "Meus Decks"
+
+[node name="ColunaDireta" type="PanelContainer" parent="MarginContainer/LayoutHorizontal"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_lqr06")
+
+[node name="ColunaDireita" type="VBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaDireta"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Titulosecao" type="Label" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 60
+text = "Selecione o modo de Jogo"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Modoslist" type="VBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ButtonHistoria" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita/Modoslist"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "Modo Historia"
+
+[node name="ButtonMultiplayer" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita/Modoslist"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "Modo Multiplayer"
+
+[node name="ButtonTreinamento" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita/Modoslist"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "Modo Treino"
+
+[node name="ButtonColecao" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita/Modoslist"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "Minha Coleção
+"
+
+[node name="spacer" type="Control" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita"]
+custom_minimum_size = Vector2(270, 420)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita"]
+layout_mode = 2
+alignment = 2
+
+[node name="ButtonVoltar" type="Button" parent="MarginContainer/LayoutHorizontal/ColunaDireta/ColunaDireita/HBoxContainer"]
+layout_mode = 2
+text = "Voltar ao menu
+"
+
+[node name="Multiplayer" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Multiplayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.243137, 0.243137, 0.243137, 0.870588)
+
+[node name="CenterContainer" type="CenterContainer" parent="Multiplayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PainelConexao" type="PanelContainer" parent="Multiplayer/CenterContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_lychb")
+
+[node name="Margin" type="MarginContainer" parent="Multiplayer/CenterContainer/PainelConexao"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Vbox" type="VBoxContainer" parent="Multiplayer/CenterContainer/PainelConexao/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="ButtonFechar" type="Button" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox/Header"]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Fechar"
+
+[node name="Label" type="Label" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "MULTIPLAYER LAN / VPN"
+
+[node name="ButtonHost" type="Button" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+layout_mode = 2
+text = "HOSPEDAR JOGO"
+
+[node name="HSeparator" type="HSeparator" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+layout_mode = 2
+text = "ENTRAR EM UMA PARTIDA"
+
+[node name="IPInput" type="LineEdit" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+layout_mode = 2
+text = "192.168.1.1"
+placeholder_text = "Insira o IP aqui."
+
+[node name="ButtonJoin" type="Button" parent="Multiplayer/CenterContainer/PainelConexao/Margin/Vbox"]
+layout_mode = 2
+text = "CONECTAR"

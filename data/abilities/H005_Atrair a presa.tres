@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_qui7b"]
+
+[resource]
+script = ExtResource("1_qui7b")
+id = "H005"
+name = "Atrair a presa"
+text_ui = "Enquanto este dinossauro estiver no campo ativo, você pode mover um dinossauro bebê do banco do oponente para o campo ativo dele."
+mec_trigger = "uma_vez_turno"
+mec_condition = "sempre"
+mec_action = "mover_carta"
+mec_resource = "posicao"
+mec_target_player = "adversario"
+mec_target_zone = "banco"
+mec_quantity = 1
+mec_custom_json = "{\"filtro_estagio\": \"bebe\", \"zona_destino\": \"ativo\"}"

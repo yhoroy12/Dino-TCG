@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_c1tn6"]
+
+[resource]
+script = ExtResource("1_c1tn6")
+id = "H010"
+name = "Cuidadora"
+text_ui = "Enquanto este dinossauro estiver em campo, os seus dinossauros filhotes/bebês no banco não sofrem dano de ataques."
+mec_trigger = "passivamente"
+mec_condition = "sempre"
+mec_action = "proteger_dano"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "banco"
+mec_quantity = 0
+mec_custom_json = "{\"filtro_estagio\": \"bebe\"}"

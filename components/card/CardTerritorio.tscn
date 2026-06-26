@@ -1,0 +1,56 @@
+[gd_scene load_steps=4 format=3 uid="uid://bk3bqkt5cwiu2"]
+
+[ext_resource type="Script" uid="uid://diwawaxd2hd5d" path="res://components/card/CardTerritorio.gd" id="1_4nk2x"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="1_xy4fq"]
+[ext_resource type="Texture2D" uid="uid://dot8mfp17xpm3" path="res://assest/textures/cards/TCG Card Territorio Fartura e Pobreza.png" id="2_4nk2x"]
+
+[node name="CardTerritorio" type="Control"]
+custom_minimum_size = Vector2(150, 233)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 450.0
+offset_bottom = 750.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_4nk2x")
+
+[node name="placeholder" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 68.0
+offset_top = 113.0
+offset_right = 381.0
+offset_bottom = 507.0
+texture = ExtResource("1_xy4fq")
+expand_mode = 1
+
+[node name="borda" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 450.0
+offset_bottom = 700.0
+texture = ExtResource("2_4nk2x")
+expand_mode = 1
+stretch_mode = 4
+
+[node name="nome" type="Label" parent="."]
+layout_mode = 0
+offset_left = 128.0
+offset_top = 65.0
+offset_right = 311.0
+offset_bottom = 93.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+text = "Nome do territorio"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="efeito" type="Label" parent="."]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 528.0
+offset_right = 343.0
+offset_bottom = 599.0
+theme_override_colors/font_color = Color(2.04556e-07, 0, 0.233624, 1)
+theme_override_font_sizes/font_size = 12
+text = "efeito do campo
+"
+autowrap_mode = 3

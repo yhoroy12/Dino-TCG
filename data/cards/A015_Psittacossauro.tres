@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_0gi0f"]
+
+[resource]
+script = ExtResource("1_0gi0f")
+id = "A015"
+name = "Psittacossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "amarelo"
+stage = "Filhote"
+hp = 50
+food_points = 5
+weakness = "marrom"
+resistance = "amarelo"
+cost_retreat = 0
+ability_name = ""
+attack_name = "Convocar familiar"
+attack_cost = "🟡"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "Coloque 2 dinos filhote na sua reserva"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = ""
+mec_target_player = "dono"
+mec_target_zone = "deck"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "(\"estagio\":\"filhote\")"

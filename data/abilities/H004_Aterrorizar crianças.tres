@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_svnxx"]
+
+[resource]
+script = ExtResource("1_svnxx")
+id = "H004"
+name = "Aterrorizar crianças"
+text_ui = "Enquanto este dinossauro estiver no campo ativo, o oponente não pode evoluir/crescer o dinossauro ativo dele."
+mec_trigger = "passivamente"
+mec_condition = "sempre"
+mec_action = "bloquear_acao"
+mec_resource = "crescer"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_custom_json = ""

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://mhyd1pqnfj1w"]
+
+[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_otn58"]
+
+[resource]
+script = ExtResource("1_otn58")
+id = "A007"
+name = "Homacefalossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "amarelo"
+stage = "Adulto"
+hp = 80
+food_points = 8
+weakness = "marrom"
+resistance = "amarelo"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Cabeça atordoante"
+attack_cost = "⚪⚪"
+damage_base = 40
+damage_type = "fixo"
+text_ui = "Jogue uma moeda. Se cair cara discarte uma carta da mão do seu oponente."
+mec_trigger = "ao_atacar"
+mec_condition = "moeda"
+mec_action = "descartar"
+mec_resource = ""
+mec_target_player = "adversario"
+mec_target_zone = "mao"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

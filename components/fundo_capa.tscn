@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3 uid="uid://djdgg15o566l1"]
+
+[ext_resource type="Script" uid="uid://bybs5ahku8an3" path="res://components/fundo_capa.gd" id="1_caotr"]
+
+[node name="Fundo Capa" type="PanelContainer"]
+custom_minimum_size = Vector2(220, 300)
+script = ExtResource("1_caotr")
+
+[node name="CapaArt" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="CapaArt"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Label" type="Label" parent="CapaArt/Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -49.0
+offset_top = -11.5
+offset_right = 49.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "Arte da capa"
+
+[node name="InfoPadding" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Text" type="VBoxContainer" parent="InfoPadding"]
+layout_mode = 2
+
+[node name="Nome" type="Label" parent="InfoPadding/Text"]
+layout_mode = 2
+text = "Nome do deck"
+
+[node name="Quantidade" type="Label" parent="InfoPadding/Text"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "0/60"
+
+[node name="ActionsOverlay" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+
+[node name="ButtonContainer" type="VBoxContainer" parent="ActionsOverlay"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="ButtonAtivo" type="Button" parent="ActionsOverlay/ButtonContainer"]
+custom_minimum_size = Vector2(160, 35)
+layout_mode = 2
+text = "Ativo"
+
+[node name="ButtonEditar" type="Button" parent="ActionsOverlay/ButtonContainer"]
+custom_minimum_size = Vector2(160, 35)
+layout_mode = 2
+text = "Editar"

@@ -1,0 +1,192 @@
+[gd_scene load_steps=5 format=3 uid="uid://yor5wrnesbir"]
+
+[ext_resource type="Script" uid="uid://q4gpx1gs7jfs" path="res://components/card/card.gd" id="1_qf083"]
+[ext_resource type="FontFile" uid="uid://cp8ww3bo1jg1l" path="res://assest/fonts/Anton-Regular.ttf" id="2_4dx8l"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="2_o72a7"]
+[ext_resource type="Texture2D" uid="uid://0vd0v7uwock2" path="res://assest/textures/cards/TCG Card vermelho.png" id="3_ak506"]
+
+[node name="Card" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 450.0
+offset_bottom = 700.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_qf083")
+
+[node name="fundonome" type="TextureRect" parent="."]
+layout_mode = 2
+offset_left = 73.0
+offset_top = 55.0
+offset_right = 400.0
+offset_bottom = 100.0
+texture = ExtResource("2_o72a7")
+expand_mode = 1
+
+[node name="animailimagem" type="TextureRect" parent="."]
+layout_mode = 2
+offset_left = 62.0
+offset_top = 129.0
+offset_right = 392.0
+offset_bottom = 464.0
+texture = ExtResource("2_o72a7")
+expand_mode = 1
+
+[node name="CardImage" type="TextureRect" parent="."]
+layout_mode = 2
+offset_right = 450.0
+offset_bottom = 700.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_ak506")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="animal" type="Label" parent="CardImage"]
+layout_mode = 1
+offset_left = 79.0
+offset_top = 54.0
+offset_right = 353.0
+offset_bottom = 97.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 26
+text = "Tiranossauro"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="estagio" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 52.0
+offset_top = 53.0
+offset_right = 66.0
+offset_bottom = 96.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 26
+text = "A"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="hp" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 351.0
+offset_top = 56.0
+offset_right = 388.0
+offset_bottom = 99.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 28
+text = "120"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="comida" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 376.0
+offset_top = 434.0
+offset_right = 399.0
+offset_bottom = 477.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 28
+text = "12"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="habilidade" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 457.0
+offset_right = 353.0
+offset_bottom = 500.0
+theme_override_colors/font_color = Color(0.0142752, 0.0142752, 0.0142752, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 24
+text = "Armadura de espinhos"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="habilidade2" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 59.0
+offset_top = 488.0
+offset_right = 391.0
+offset_bottom = 549.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/line_spacing = -9
+theme_override_font_sizes/font_size = 15
+text = "Uma vez durante seu turno antes de atacar você pode procurar uma carta no seu deck e colocar em sua mão em seguida embaralhe seu deck."
+autowrap_mode = 3
+justification_flags = 171
+
+[node name="ataque" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 543.0
+offset_right = 219.0
+offset_bottom = 573.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 19
+text = "Apanhar fruta fresca"
+vertical_alignment = 1
+
+[node name="custo" type="Label" parent="CardImage"]
+layout_mode = 1
+offset_left = 244.0
+offset_top = 547.0
+offset_right = 354.0
+offset_bottom = 575.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 17
+text = "🔴🔴🔴🔴"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="dano" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 359.0
+offset_top = 544.0
+offset_right = 379.0
+offset_bottom = 575.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_4dx8l")
+theme_override_font_sizes/font_size = 20
+text = "50"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="efeito" type="Label" parent="CardImage"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 566.0
+offset_right = 380.0
+offset_bottom = 609.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/line_spacing = -3
+theme_override_font_sizes/font_size = 16
+text = "Jogue uma moeda se sair cara, cause sangramento ao inimigo"
+autowrap_mode = 3
+
+[node name="recuo" type="Label" parent="CardImage"]
+layout_mode = 1
+offset_left = 306.0
+offset_top = 624.0
+offset_right = 347.0
+offset_bottom = 641.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Recuar"
+vertical_alignment = 1
+
+[node name="dietaicon1" type="Sprite2D" parent="CardImage"]
+position = Vector2(404, 500)
+scale = Vector2(0.4, 0.4)
+
+[node name="dietaicon3" type="Sprite2D" parent="CardImage"]
+position = Vector2(403, 543)
+scale = Vector2(0.4, 0.4)
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]

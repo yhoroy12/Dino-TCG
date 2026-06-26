@@ -1,0 +1,47 @@
+[
+  {
+	"id": "A155",
+	"categoria": "energia",
+	"subtipo": "primordial",
+	"nome": "Força Primordial Azul",
+	"cor": "azul",
+	"efeito": "Fornece 1 energia Azul.",
+	"limite_copias": 99
+  },
+  {
+	"id": "A156",
+	"categoria": "energia",
+	"subtipo": "primordial",
+	"nome": "Força Primordial Vermelha",
+	"cor": "vermelho",
+	"efeito": "Fornece 1 energia Vermelha.",
+	"limite_copias": 99
+  },
+  {
+	"id": "A157",
+	"categoria": "energia",
+	"subtipo": "primordial",
+	"nome": "Força Primordial Verde",
+	"cor": "verde",
+	"efeito": "Fornece 1 energia Verde.",
+	"limite_copias": 99
+  },
+  {
+	"id": "A158",
+	"categoria": "energia",
+	"subtipo": "primordial",
+	"nome": "Força Primordial Marrom",
+	"cor": "marrom",
+	"efeito": "Fornece 1 energia Marrom.",
+	"limite_copias": 99
+  },
+  {
+	"id": "A159",
+	"categoria": "energia",
+	"subtipo": "primordial",
+	"nome": "Força Primordial Amarela",
+	"cor": "amarelo",
+	"efeito": "Fornece 1 energia Amarela.",
+	"limite_copias": 99
+  }
+]

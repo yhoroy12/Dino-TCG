@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_q7i8w"]
+
+[resource]
+script = ExtResource("1_q7i8w")
+id = "A092"
+name = "Alossauro"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "vermelho"
+stage = "Filhote"
+hp = 80
+food_points = 8
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Arranhão"
+attack_cost = "🔴"
+damage_base = 20
+damage_type = "fixo"
+text_ui = ""
+mec_trigger = ""
+mec_condition = "sempre"
+mec_action = ""
+mec_resource = ""
+mec_target_player = ""
+mec_target_zone = ""
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

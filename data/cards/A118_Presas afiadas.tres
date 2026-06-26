@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_evuhm"]
+
+[resource]
+script = ExtResource("1_evuhm")
+id = "A118"
+name = "Presas afiadas"
+super_type = "cataclismo"
+sub_type = ""
+color = ""
+stage = ""
+hp = 0
+food_points = 0
+weakness = ""
+resistance = ""
+cost_retreat = 0
+ability_name = ""
+attack_name = ""
+attack_cost = ""
+damage_base = 0
+damage_type = ""
+text_ui = "Todo dinossauro vermelho ganha +30 de dano até o fim do turno."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "modificar_dano_causado"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "todos_campo"
+mec_quantity = 30
+mec_status_name = ""
+mec_filter_color = "vermelho"
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 1
+mec_custom_json = ""

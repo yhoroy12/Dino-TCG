@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_d4ls4"]
+
+[resource]
+script = ExtResource("1_d4ls4")
+id = "A089"
+name = "Triceratops"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Adulto"
+hp = 160
+food_points = 16
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 3
+ability_name = "Proteção"
+attack_name = "Empalar e recuperar"
+attack_cost = "🟢🟢🟢⚪"
+damage_base = 100
+damage_type = "fixo"
+text_ui = "cure 30 de dano desse dinossauro"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "curar"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 30
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

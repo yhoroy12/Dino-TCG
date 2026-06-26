@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_td3mg"]
+
+[resource]
+script = ExtResource("1_td3mg")
+id = "H002"
+name = "Ataque surpresa"
+text_ui = "Uma vez durante o seu turno, cause 20 de dano a um dinossauro inimigo (ignora fraqueza e resistência)."
+mec_trigger = "uma_vez_turno"
+mec_condition = "sempre"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "escolha_campo"
+mec_quantity = 20
+mec_custom_json = "{\"ignorar_fraqueza_resistencia\": true}"

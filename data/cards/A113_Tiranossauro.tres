@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_1ig8t"]
+
+[resource]
+script = ExtResource("1_1ig8t")
+id = "A113"
+name = "Tiranossauro"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "vermelho"
+stage = "Adulto"
+hp = 150
+food_points = 15
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 2
+ability_name = "Terror"
+attack_name = "Mordida dilascerante"
+attack_cost = "🔴🔴🔴⚪"
+damage_base = 150
+damage_type = "fixo"
+text_ui = "Discarte duas energias desse dino"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "descartar"
+mec_resource = "energia"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 2
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

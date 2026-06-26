@@ -1,0 +1,70 @@
+[
+  {
+	"id": "A150",
+	"categoria": "territorio",
+	"nome": "Terra Abrasada",
+	"efeito": "Uma vez durante o turno de cada jogador, ele pode descartar uma energia vermelha ou marrom e comprar 2 cartas.",
+	"mecanica": {
+	  "efeito_tipo": "descarte_compra",
+	  "custo_descarte_cor": ["vermelho", "marrom"],
+	  "quantidade_descarte": 1,
+	  "quantidade_compra": 2,
+	  "por_turno": "uma_vez_por_jogador"
+	}
+  },
+  {
+	"id": "A151",
+	"categoria": "territorio",
+	"nome": "Mares Bravos",
+	"efeito": "Uma vez durante o turno de cada jogador, ele pode curar 30 pontos de dano de seus dinossauros azuis.",
+	"mecanica": {
+	  "efeito_tipo": "cura",
+	  "valor_cura": 30,
+	  "restricoes_cor": ["azul"],
+	  "alvo": "todos_dinossauros_cor",
+	  "por_turno": "uma_vez_por_jogador"
+	}
+  },
+  {
+	"id": "A152",
+	"categoria": "territorio",
+	"nome": "Floresta Gigante",
+	"efeito": "O custo de evoluir os dinossauros verdes é de -3 de comida.",
+	"mecanica": {
+	  "efeito_tipo": "reducao_custo_evolucao",
+	  "valor_reducao": 3,
+	  "restricoes_cor": ["verde"],
+	  "alvo": "evolucao"
+	}
+  },
+  {
+	"id": "A153",
+	"categoria": "territorio",
+	"nome": "Planícies Douradas",
+	"efeito": "Os dinossauros amarelos não têm custo de recuo.",
+	"mecanica": {
+	  "efeito_tipo": "modificador_recuo",
+	  "valor_recuo_definido": 0,
+	  "restricoes_cor": ["amarelo"],
+	  "alvo": "custo_recuo"
+	}
+  },
+  {
+	"id": "A154",
+	"categoria": "territorio",
+	"nome": "Fartura e Pobreza",
+	"efeito": "Lado de cima (Fartura): Os dinossauros ganham um bônus de +1 de comida por turno. Lado de baixo (Pobreza): Os dinossauros perdem -1 pontos de comida por turno.",
+	"mecanica": {
+	  "efeito_tipo": "estado_duplo_rotativo",
+	  "lados": {
+		"fartura": {
+		  "modificador_comida_turno": 1
+		},
+		"pobreza": {
+		  "modificador_comida_turno": -1
+		}
+	  },
+	  "alvo": "todos_dinossauros"
+	}
+  }
+]

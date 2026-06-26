@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_14oox"]
+
+[resource]
+script = ExtResource("1_14oox")
+id = "H018"
+name = "Sacrifício altruísta"
+text_ui = "Quantas vezes desejar durante o seu turno, você pode mover 1 marcador de dano (10 de dano) de um dos seus outros dinossauros para este dinossauro."
+mec_trigger = "livre"
+mec_condition = "sempre"
+mec_action = "mover_dano"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "todos_campo"
+mec_quantity = 10
+mec_custom_json = "{\"destino\": \"auto\"}"

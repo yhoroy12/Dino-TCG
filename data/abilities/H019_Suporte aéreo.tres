@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_x5j7j"]
+
+[resource]
+script = ExtResource("1_x5j7j")
+id = "H019"
+name = "Suporte aéreo"
+text_ui = "Enquanto este dinossauro estiver no banco, o seu dinossauro ativo tem o custo de recuo zerado."
+mec_trigger = "passivamente"
+mec_condition = "no_banco"
+mec_action = "zerar_custo"
+mec_resource = "recuo"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_custom_json = ""

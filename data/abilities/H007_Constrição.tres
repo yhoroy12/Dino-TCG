@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_f8aa6"]
+
+[resource]
+script = ExtResource("1_f8aa6")
+id = "H007"
+name = "Constrição"
+text_ui = "O dinossauro ativo do oponente não pode recuar."
+mec_trigger = "passivamente"
+mec_condition = "sempre"
+mec_action = "bloquear_acao"
+mec_resource = "recuar"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_custom_json = ""

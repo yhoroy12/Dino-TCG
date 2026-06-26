@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_olnwl"]
+
+[resource]
+script = ExtResource("1_olnwl")
+id = "H013"
+name = "Mandíbula dilacerante"
+text_ui = "Os ataques deste dinossauro não são afetados por resistências ou efeitos protetores no dinossauro inimigo."
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "ignorar_defesa"
+mec_resource = "efeitos"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_custom_json = ""

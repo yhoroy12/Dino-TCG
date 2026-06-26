@@ -1,0 +1,236 @@
+{
+  "Armadura de espinhos": {
+	"descricao": "Se o dinossauro sofrer danos do dinossauro ativo, cause 20 de dano a esse dinossauro.",
+	"mecanica": {
+	  "gatilho": "ao_receber_dano",
+	  "condicao_execucao": "sempre",
+	  "acao": "causar_dano",
+	  "recurso": "hp",
+	  "local": "ativo",
+	  "jogador": "adversario",
+	  "quantidade": 20
+	}
+  },
+  "Ataque surpresa": {
+	"descricao": "Uma vez durante o seu turno, cause 20 de dano a um dinossauro inimigo (não aplicar resistência e fraquezas).",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "sempre",
+	  "acao": "causar_dano_perfurante",
+	  "recurso": "hp",
+	  "local": "escolha_campo",
+	  "jogador": "adversario",
+	  "quantidade": 20
+	}
+  },
+  "Ataque venenoso": {
+	"descricao": "Uma vez durante seu turno, jogue uma moeda, se cair cara, aplique o estado envenenado ao dinossauro ativo do inimigo.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "moeda",
+	  "sucesso": "cara",
+	  "acao": "aplicar_status",
+	  "recurso": "status",
+	  "status_nome": "envenenado",
+	  "local": "ativo",
+	  "jogador": "adversario"
+	}
+  },
+  "Aterrorizar crianças": {
+	"descricao": "Se esse dino estiver no campo ativo, seu oponente não pode crescer o dinossauro ativo.",
+	"mecanica": {
+	  "gatilho": "enquanto_ativo",
+	  "acao": "bloquear_efeito",
+	  "recurso": "evolucao",
+	  "local": "ativo",
+	  "jogador": "adversario"
+	}
+  },
+  "Atrair a presa": {
+	"descricao": "Se esse dino estiver no campo ativo, ele pode mover um dinossauro bebê para o campo ativo.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "sempre",
+	  "acao": "forcar_recuo",
+	  "recurso": "carta",
+	  "local": "banco",
+	  "jogador": "adversario",
+	  "filtro": {
+		"estagio": "filhote"
+	  }
+	}
+  },
+  "Canção revigorante": {
+	"descricao": "Uma vez durante o seu turno, cure 20 de dano dos seus dinossauros.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "sempre",
+	  "acao": "curar",
+	  "recurso": "hp",
+	  "local": "todos_campo",
+	  "jogador": "dono",
+	  "quantidade": 20
+	}
+  },
+  "Constrição": {
+	"descricao": "O dinossauro inimigo não pode recuar.",
+	"mecanica": {
+	  "gatilho": "enquanto_ativo",
+	  "acao": "bloquear_acao",
+	  "recurso": "recuo",
+	  "local": "ativo",
+	  "jogador": "adversario"
+	}
+  },
+  "Couraça": {
+	"descricao": "Recebe -10 de dano vindos de ataques.",
+	"mecanica": {
+	  "gatilho": "ao_receber_dano",
+	  "condicao_execucao": "sempre",
+	  "acao": "modificar_dano_recebido",
+	  "recurso": "hp",
+	  "quantidade": -10
+	}
+  },
+  "Couraça de aço": {
+	"descricao": "Recebe -20 de dano vindos de ataques.",
+	"mecanica": {
+	  "gatilho": "ao_receber_dano",
+	  "condicao_execucao": "sempre",
+	  "acao": "modificar_dano_recebido",
+	  "recurso": "hp",
+	  "quantidade": -20
+	}
+  },
+  "Cuidadora": {
+	"descricao": "Se esse dino estiver em campo, os dinos bebês não sofrem dano fora do campo ativo.",
+	"mecanica": {
+	  "gatilho": "enquanto_em_campo",
+	  "acao": "bloquear_dano",
+	  "recurso": "hp",
+	  "local": "banco",
+	  "jogador": "dono",
+	  "filtro": {
+		"estagio": "filhote"
+	  }
+	}
+  },
+  "Fome desesperada": {
+	"descricao": "Se você descartar uma carta, compre uma carta.",
+	"mecanica": {
+	  "gatilho": "ao_descartar_carta",
+	  "condicao_execucao": "sempre",
+	  "acao": "comprar",
+	  "recurso": "carta",
+	  "local": "deck",
+	  "jogador": "dono",
+	  "quantidade": 1
+	}
+  },
+  "Lider alfa": {
+	"descricao": "Os dinossauros da mesma cor causam +20 de dano.",
+	"mecanica": {
+	  "gatilho": "enquanto_em_campo",
+	  "acao": "modificar_dano_causado",
+	  "recurso": "hp",
+	  "local": "todos_campo",
+	  "jogador": "dono",
+	  "quantidade": 20,
+	  "filtro": {
+		"cor": "mesma_cor"
+	  }
+	}
+  },
+  "Mandibula dilacerante": {
+	"descricao": "Os ataques desse dinossauro não são afetados por resistências ou efeitos nos dinossauros.",
+	"mecanica": {
+	  "gatilho": "ao_atacar",
+	  "acao": "perfurar_efeitos",
+	  "recurso": "modificadores",
+	  "ignorar": ["resistencia", "efeitos_defensivos"]
+	}
+  },
+  "Mergulhar e buscar": {
+	"descricao": "Uma vez durante seu turno antes de atacar você pode procurar uma carta no seu deck e colocar em sua mão em seguida embaralhe seu deck.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "sempre",
+	  "acao": "puxar_com_busca",
+	  "recurso": "carta",
+	  "local": "deck",
+	  "destino_local": "mao",
+	  "jogador": "dono",
+	  "quantidade": 1,
+	  "filtro": {
+		"categoria": "qualquer"
+	  },
+	  "efeito_secundario": "embaralhar_deck"
+	}
+  },
+  "Olhar afiado": {
+	"descricao": "Olhe a carta de cima do baralho seu ou do seu oponente.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "sempre",
+	  "acao": "revelar_topo",
+	  "recurso": "carta",
+	  "local": "deck",
+	  "jogador": "escolha_jogador",
+	  "quantidade": 1
+	}
+  },
+  "Pernas rapidas": {
+	"descricao": "Se esse dinossauro tiver energia associada a ele, não terá nenhum custo de recuo.",
+	"mecanica": {
+	  "gatilho": "enquanto_em_campo",
+	  "acao": "zerar_custo",
+	  "recurso": "recuo",
+	  "condicao_validacao": "possui_energia"
+	}
+  },
+  "Proteção": {
+	"descricao": "Se esse dinossauro sofrer dano, jogue uma moeda, se sair cara ele leva -100 de dano.",
+	"mecanica": {
+	  "gatilho": "ao_receber_dano",
+	  "condicao_execucao": "moeda",
+	  "sucesso": "cara",
+	  "acao": "modificar_dano_recebido",
+	  "recurso": "hp",
+	  "quantidade": -100
+	}
+  },
+  "Sacrificio autruista": {
+	"descricao": "Quantas vezes desejar, mova o dano de um dos seus dinossauros para esse dinossauro.",
+	"mecanica": {
+	  "gatilho": "acao_voluntaria",
+	  "condicao_execucao": "sempre",
+	  "acao": "mover_dano",
+	  "recurso": "hp",
+	  "local": "banco",
+	  "jogador": "dono",
+	  "destino_local": "proprio"
+	}
+  },
+  "Suporte aereo": {
+	"descricao": "Se esse dinossauro não estiver no campo ativo, o dinossauro ativo tem custo de recuo zerado.",
+	"mecanica": {
+	  "gatilho": "enquanto_no_banco",
+	  "acao": "zerar_custo",
+	  "recurso": "recuo",
+	  "local": "ativo",
+	  "jogador": "dono"
+	}
+  },
+  "Terror": {
+	"descricao": "Uma vez durante o seu turno. Jogue uma moeda, se cair cara o recue o dinossauro ativo do oponente.",
+	"mecanica": {
+	  "gatilho": "uma_vez_por_turno",
+	  "condicao_execucao": "moeda",
+	  "sucesso": "cara",
+	  "acao": "forcar_recuo",
+	  "recurso": "carta",
+	  "local": "ativo",
+	  "jogador": "adversario"
+	}
+  }
+}

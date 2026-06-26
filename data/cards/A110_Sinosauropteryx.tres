@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_3lwd6"]
+
+[resource]
+script = ExtResource("1_3lwd6")
+id = "A110"
+name = "Sinosauropteryx"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "vermelho"
+stage = "Adulto"
+hp = 80
+food_points = 8
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 3
+ability_name = "Olhar Afiado"
+attack_name = "Penas coloridas"
+attack_cost = "⚪⚪⚪"
+damage_base = 0
+damage_type = "efeito"
+text_ui = "Cure 20 pontos dos seus dinos para cada energia vermelha que ele possua"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "curar"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "todos_campo"
+mec_quantity = 20
+mec_status_name = ""
+mec_filter_color = "vermelha"
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"multiplicador\": \"por_energia_propria\"}"

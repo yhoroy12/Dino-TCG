@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_glym2"]
+
+[resource]
+script = ExtResource("1_glym2")
+id = "A081"
+name = "Parassauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Filhote"
+hp = 70
+food_points = 7
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Chamar amigos"
+attack_cost = "🟢"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "adicione um dino verde ao seu banco"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = ""
+mec_target_player = "dono"
+mec_target_zone = "banco"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = "verde"
+mec_filter_stage = ""
+mec_origin_zone = "deck"
+mec_duration = 0
+mec_custom_json = ""

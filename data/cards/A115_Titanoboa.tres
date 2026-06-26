@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_cmc71"]
+
+[resource]
+script = ExtResource("1_cmc71")
+id = "A115"
+name = "Titanoboa"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "vermelho"
+stage = "Adulto"
+hp = 100
+food_points = 10
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 2
+ability_name = "Constrição."
+attack_name = "Constrição"
+attack_cost = "🔴🔴"
+damage_base = 50
+damage_type = "fixo"
+text_ui = "Se o dino do adiversario entrou no campo ativo nesse turno cause +80 de dano."
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "modificar_dano_causado"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 80
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"gatilho_entrada_turno_atual\": \"alvo_ativo\"}"

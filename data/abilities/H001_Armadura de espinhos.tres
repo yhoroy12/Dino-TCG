@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_jv12c"]
+
+[resource]
+script = ExtResource("1_jv12c")
+id = "H001"
+name = "Armadura de espinhos"
+text_ui = "Se este dinossauro sofrer dano de um ataque inimigo, cause 20 de dano ao dinossauro atacante."
+mec_trigger = "ao_sofrer_dano"
+mec_condition = "sempre"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 20
+mec_custom_json = ""

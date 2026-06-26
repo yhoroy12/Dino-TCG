@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://dl8gc8uytd5hq"]
+
+[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_57u8n"]
+
+[resource]
+script = ExtResource("1_57u8n")
+id = "A001"
+name = "Dryossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "amarelo"
+stage = "Filhote"
+hp = 50
+food_points = 5
+weakness = "marrom"
+resistance = "amarelo"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Rolagem"
+attack_cost = "⚪"
+damage_base = 20
+damage_type = "fixo"
+text_ui = ""
+mec_trigger = ""
+mec_condition = "sempre"
+mec_action = ""
+mec_resource = ""
+mec_target_player = ""
+mec_target_zone = ""
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

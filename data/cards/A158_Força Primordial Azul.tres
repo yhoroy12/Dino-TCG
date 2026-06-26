@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_518go"]
+
+[resource]
+script = ExtResource("1_518go")
+id = "A158"
+name = "Força Primordial Azul"
+super_type = "energia"
+sub_type = ""
+color = ""
+stage = ""
+hp = 0
+food_points = 0
+weakness = ""
+resistance = ""
+cost_retreat = 0
+ability_name = ""
+attack_name = ""
+attack_cost = ""
+damage_base = 0
+damage_type = ""
+text_ui = "Fornece 1 energia Azul."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "modificar_recurso"
+mec_resource = "energia"
+mec_target_player = "dono"
+mec_target_zone = "escolha_campo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = "azul"
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_ykxqv"]
+
+[resource]
+script = ExtResource("1_ykxqv")
+id = "A108"
+name = "Mosassauro"
+super_type = "animal"
+sub_type = "Psivoro"
+color = "vermelho"
+stage = "Adulto"
+hp = 150
+food_points = 15
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 2
+ability_name = ""
+attack_name = "Submergir a presa"
+attack_cost = "🔴🔴⚪"
+damage_base = 140
+damage_type = "fixo"
+text_ui = "esse ataque causa 20 de dano a esse dino"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

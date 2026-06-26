@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_iujhm"]
+
+[resource]
+script = ExtResource("1_iujhm")
+id = "A102"
+name = "Elasmossauro"
+super_type = "animal"
+sub_type = "Psivoro"
+color = "vermelho"
+stage = "Adulto"
+hp = 130
+food_points = 13
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 3
+ability_name = ""
+attack_name = "Explosão aquatica"
+attack_cost = "🔴⚪⚪⚪"
+damage_base = 140
+damage_type = "fixo"
+text_ui = "Descarte uma energia vermelha deste dino"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "descartar"
+mec_resource = "energia"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = "vermelha"
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

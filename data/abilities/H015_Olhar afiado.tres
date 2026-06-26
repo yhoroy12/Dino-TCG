@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_bxjvs"]
+
+[resource]
+script = ExtResource("1_bxjvs")
+id = "H015"
+name = "Olhar afiado"
+text_ui = "Uma vez durante o seu turno, olhe a carta do topo do deck (seu ou do oponente)."
+mec_trigger = "uma_vez_turno"
+mec_condition = "sempre"
+mec_action = "olhar_carta"
+mec_resource = "carta"
+mec_target_player = "escolha_jogador"
+mec_target_zone = "deck"
+mec_quantity = 1
+mec_custom_json = "{\"posicao\": \"topo\"}"

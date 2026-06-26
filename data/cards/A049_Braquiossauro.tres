@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_b52nb"]
+
+[resource]
+script = ExtResource("1_b52nb")
+id = "A049"
+name = "Braquiossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "marrom"
+stage = "Adulto"
+hp = 180
+food_points = 18
+weakness = "amarelo"
+resistance = "marrom"
+cost_retreat = 4
+ability_name = "Fome Desenfreada"
+attack_name = "Esmagar"
+attack_cost = "🟤🟤🟤"
+damage_base = 100
+damage_type = "fixo"
+text_ui = ""
+mec_trigger = ""
+mec_condition = "sempre"
+mec_action = ""
+mec_resource = ""
+mec_target_player = ""
+mec_target_zone = ""
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_1c42t"]
+
+[resource]
+script = ExtResource("1_1c42t")
+id = "A046"
+name = "Apatassauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "marrom"
+stage = "Adulto"
+hp = 180
+food_points = 18
+weakness = "amarelo"
+resistance = "marrom"
+cost_retreat = 4
+ability_name = ""
+attack_name = "Esmagar com os pés"
+attack_cost = "🟤🟤🟤🟤"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "Jogue 3 moedas, se cair duas cara cause 160 de dano, se não esse ataque não fará nada."
+mec_trigger = "ao_atacar"
+mec_condition = "moeda"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 160
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"quantidade_moedas\": 3, \"caras_necessarias\": 2, \"tipo_teste\": \"exato_ou_mais\"}"

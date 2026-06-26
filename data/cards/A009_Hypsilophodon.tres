@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_ygnxm"]
+
+[resource]
+script = ExtResource("1_ygnxm")
+id = "A009"
+name = "Hypsilophodon"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "amarelo"
+stage = "Adulto"
+hp = 80
+food_points = 8
+weakness = "marrom"
+resistance = "amarelo"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Ataque em grupo"
+attack_cost = "⚪⚪"
+damage_base = 30
+damage_type = "fixo"
+text_ui = "Esse ataque causa 30 de dano para cada dino no seu banco"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 30
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"multiplicador\": \"por_dino_banco_dono\"}"

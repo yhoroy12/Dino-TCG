@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_4e60r"]
+
+[resource]
+script = ExtResource("1_4e60r")
+id = "A074"
+name = "Maiassauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Adulto"
+hp = 120
+food_points = 12
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 1
+ability_name = "Cuidadora"
+attack_name = "Proteger a familia"
+attack_cost = "🟢🟢"
+damage_base = 40
+damage_type = "multiplicador"
+text_ui = "Cause 40 de dano vezes o números de dino Filhotes no seu banco"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "causar_dano"
+mec_resource = "hp"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 40
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = "filhote"
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"multiplicador\": \"por_dino_banco_dono\"}"

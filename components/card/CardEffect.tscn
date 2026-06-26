@@ -1,0 +1,131 @@
+[gd_scene load_steps=6 format=3 uid="uid://41oept1sefba"]
+
+[ext_resource type="Script" uid="uid://dy2ravucaqijv" path="res://components/card/card_effecct.gd" id="1_trmg8"]
+[ext_resource type="FontFile" uid="uid://cp8ww3bo1jg1l" path="res://assest/fonts/Anton-Regular.ttf" id="2_0b4ut"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="3_s3hhr"]
+[ext_resource type="Texture2D" uid="uid://cmmtq0gauqrsh" path="res://assest/textures/cards/TCG Card Vestigio.png" id="4_g3abx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tt5f0"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[node name="Card" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_trmg8")
+
+[node name="ContainerDaArte" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="ContainerDaArte"]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 95.0
+offset_right = 398.0
+offset_bottom = 495.0
+texture = ExtResource("3_s3hhr")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="moldura" type="TextureRect" parent="."]
+layout_mode = 1
+offset_right = 450.0
+offset_bottom = 700.0
+texture = ExtResource("4_g3abx")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+modulate = Color(1, 1, 1, 0)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 55
+
+[node name="header" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/header"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 95
+
+[node name="nome" type="Label" parent="VBoxContainer/header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_0b4ut")
+theme_override_font_sizes/font_size = 20
+text = "Nome da carta"
+vertical_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/header"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 35
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="art" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/art"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 46
+
+[node name="ajuste de tamanho" type="PanelContainer" parent="VBoxContainer/art"]
+custom_minimum_size = Vector2(350, 350)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_tt5f0")
+
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/art"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 43
+
+[node name="info" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/info"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 55
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 55
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/info/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="efeito" type="Label" parent="VBoxContainer/info/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 130)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "aqui vai a descrição do efeito da carta"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="HSeparator3" type="HSeparator" parent="VBoxContainer"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/separation = 50
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]

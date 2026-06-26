@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_jlu8x"]
+
+[resource]
+script = ExtResource("1_jlu8x")
+id = "H008"
+name = "Couraça"
+text_ui = "Este dinossauro recebe 10 a menos de dano vindos de ataques do adversário."
+mec_trigger = "ao_sofrer_dano"
+mec_condition = "sempre"
+mec_action = "modificar_dano_recebido"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = -10
+mec_custom_json = ""

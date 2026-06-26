@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_p32fj"]
+
+[resource]
+script = ExtResource("1_p32fj")
+id = "H017"
+name = "Proteção"
+text_ui = "Se este dinossauro sofrer dano, jogue uma moeda. Se cair cara, previna 100 de dano recebido."
+mec_trigger = "ao_sofrer_dano"
+mec_condition = "moeda"
+mec_action = "modificar_dano_recebido"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = -100
+mec_custom_json = ""

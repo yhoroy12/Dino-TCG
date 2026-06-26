@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3 uid="uid://dyddor66bta6k"]
+
+[ext_resource type="Script" uid="uid://vj8y4ikhmjcl" path="res://scenes/MainMenu/main_menu.gd" id="1_yqorp"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_yqorp")
+
+[node name="fundo" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.212844, 0.232114, 0.26102, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuFlow" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+
+[node name="Titulo" type="RichTextLabel" parent="CenterContainer/MenuFlow"]
+layout_mode = 2
+theme_override_font_sizes/bold_italics_font_size = 48
+theme_override_font_sizes/italics_font_size = 48
+theme_override_font_sizes/mono_font_size = 48
+theme_override_font_sizes/normal_font_size = 48
+theme_override_font_sizes/bold_font_size = 48
+bbcode_enabled = true
+text = "PreHistoric TCG"
+
+[node name="BotoesContainer" type="VBoxContainer" parent="CenterContainer/MenuFlow"]
+layout_mode = 2
+
+[node name="ButtonJogar" type="Button" parent="CenterContainer/MenuFlow/BotoesContainer"]
+layout_mode = 2
+text = "Duelar / Jogar"
+
+[node name="ButtonDeck" type="Button" parent="CenterContainer/MenuFlow/BotoesContainer"]
+layout_mode = 2
+text = "Montador de Decks"
+
+[node name="ButtonLoja" type="Button" parent="CenterContainer/MenuFlow/BotoesContainer"]
+layout_mode = 2
+text = "Loja de Pacotes"
+
+[node name="ButtonOpcoes" type="Button" parent="CenterContainer/MenuFlow/BotoesContainer"]
+layout_mode = 2
+text = "Configurações"
+
+[node name="ButtonSair" type="Button" parent="CenterContainer/MenuFlow/BotoesContainer"]
+layout_mode = 2
+text = "Sair"
+
+[node name="version" type="Label" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 169.0
+offset_bottom = 33.0
+text = "v0.1.0 - Alpha"

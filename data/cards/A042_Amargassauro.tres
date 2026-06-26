@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_l1e7p"]
+
+[resource]
+script = ExtResource("1_l1e7p")
+id = "A042"
+name = "Amargassauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "marrom"
+stage = "Jovem"
+hp = 130
+food_points = 13
+weakness = "amarelo"
+resistance = "marrom"
+cost_retreat = 3
+ability_name = ""
+attack_name = "Chicotear"
+attack_cost = "🟤🟤⚪"
+damage_base = 70
+damage_type = "fixo"
+text_ui = ""
+mec_trigger = ""
+mec_condition = "sempre"
+mec_action = ""
+mec_resource = ""
+mec_target_player = ""
+mec_target_zone = ""
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

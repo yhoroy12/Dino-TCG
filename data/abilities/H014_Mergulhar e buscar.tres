@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_ydw5g"]
+
+[resource]
+script = ExtResource("1_ydw5g")
+id = "H014"
+name = "Mergulhar e buscar"
+text_ui = "Uma vez durante o seu turno, antes de atacar, você pode procurar uma carta qualquer no seu deck, colocá-la em sua mão e embaralhar o deck."
+mec_trigger = "uma_vez_turno"
+mec_condition = "sempre"
+mec_action = "buscar"
+mec_resource = "carta"
+mec_target_player = "dono"
+mec_target_zone = "deck"
+mec_quantity = 1
+mec_custom_json = "{\"zona_destino\": \"mao\", \"embaralhar\": true}"

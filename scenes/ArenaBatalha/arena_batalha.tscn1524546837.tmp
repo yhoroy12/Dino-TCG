@@ -1,0 +1,142 @@
+[gd_scene load_steps=3 format=3 uid="uid://byvqvxwqwpkut"]
+
+[ext_resource type="Script" uid="uid://e58bckx5w8r5" path="res://scenes/arena_batalha/game_manager.gd" id="1_qbsmt"]
+[ext_resource type="Texture2D" uid="uid://fbrklnuoabf" path="res://assest/textures/board/baord.jpg" id="2_m44fu"]
+
+[node name="Game" type="Node"]
+script = ExtResource("1_qbsmt")
+
+[node name="tabuleiro" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_m44fu")
+expand_mode = 1
+stretch_mode = 3
+
+[node name="InterfaceDoJogo" type="CanvasLayer" parent="."]
+
+[node name="banco_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 328.0
+offset_top = 734.0
+offset_right = 939.0
+offset_bottom = 909.0
+theme_override_constants/separation = 5
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="mao_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 190.0
+offset_top = 862.0
+offset_right = 1070.0
+offset_bottom = 1095.0
+theme_override_constants/separation = -40
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="ativo_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 568.0
+offset_top = 505.0
+offset_right = 718.0
+offset_bottom = 738.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="deck_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = -29.0
+offset_top = 661.0
+offset_right = 121.0
+offset_bottom = 894.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="gravery_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 130.0
+offset_top = 665.0
+offset_right = 280.0
+offset_bottom = 898.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="campo_jogador" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 564.0
+offset_top = 229.0
+offset_right = 714.0
+offset_bottom = 462.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="comida_jogador" type="Label" parent="InterfaceDoJogo"]
+offset_left = 839.0
+offset_top = 559.0
+offset_right = 959.0
+offset_bottom = 679.0
+text = "Comida: 0"
+
+[node name="Banco_jogador2" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 324.0
+offset_top = 129.0
+offset_right = 935.0
+offset_bottom = 304.0
+theme_override_constants/separation = 5
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="mao_jogador2" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 206.0
+offset_top = -83.0
+offset_right = 1086.0
+offset_bottom = 150.0
+theme_override_constants/separation = -40
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="ativo_jogador2" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 571.0
+offset_top = 245.0
+offset_right = 721.0
+offset_bottom = 478.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="deck_jogador2" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 976.0
+offset_top = 134.0
+offset_right = 1126.0
+offset_bottom = 367.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="gravery_jogador2" type="HBoxContainer" parent="InterfaceDoJogo"]
+offset_left = 1122.0
+offset_top = 109.0
+offset_right = 1272.0
+offset_bottom = 342.0
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="comida_jogador2" type="Label" parent="InterfaceDoJogo"]
+offset_left = 837.0
+offset_top = 330.0
+offset_right = 957.0
+offset_bottom = 450.0
+text = "Comida: 0"
+
+[node name="passarturno" type="Button" parent="InterfaceDoJogo"]
+offset_left = 1132.0
+offset_top = 532.0
+offset_right = 1210.0
+offset_bottom = 563.0
+text = "End Turn"
+
+[node name="start" type="Button" parent="InterfaceDoJogo"]
+offset_left = 174.0
+offset_top = 486.0
+offset_right = 268.0
+offset_bottom = 517.0
+text = "Iniciar Jogo"
+
+[connection signal="pressed" from="InterfaceDoJogo/passarturno" to="." method="_on_passarturno_pressed"]
+[connection signal="pressed" from="InterfaceDoJogo/start" to="." method="_on_start_pressed"]

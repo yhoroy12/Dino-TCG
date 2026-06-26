@@ -1,0 +1,177 @@
+[gd_scene load_steps=5 format=3 uid="uid://dcku5uodvbcdp"]
+
+[ext_resource type="Script" uid="uid://drw52qwvwb1hp" path="res://scenes/ArenaBatalha/modo_treino.gd" id="1_yctop"]
+[ext_resource type="Texture2D" uid="uid://brc6ayifhw3xb" path="res://assest/textures/enemies/rex/tyrannosaurus-rex.jpg" id="2_nc2np"]
+[ext_resource type="Texture2D" uid="uid://dw5gxwfncjf5n" path="res://assest/textures/enemies/trike/Trike-treino.webp" id="3_dph0b"]
+[ext_resource type="Texture2D" uid="uid://bm82aymsqildx" path="res://assest/textures/enemies/raptor/Raptor.jpg" id="4_8s0yn"]
+
+[node name="ModoTreino" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_yctop")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.364706, 0.364706, 0.364706, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="ButtonVoltar" type="Button" parent="MarginContainer/VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 20
+text = "Voltar"
+
+[node name="Title" type="Label" parent="MarginContainer/VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Selecione o seu Adversário"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="Rex" type="PanelContainer" parent="MarginContainer/VBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBox/GridContainer/Rex"]
+layout_mode = 2
+texture = ExtResource("2_nc2np")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="actionoverlay" type="PanelContainer" parent="MarginContainer/VBox/GridContainer/Rex"]
+visible = false
+layout_mode = 2
+mouse_force_pass_scroll_events = false
+
+[node name="Vboxbutton" type="VBoxContainer" parent="MarginContainer/VBox/GridContainer/Rex/actionoverlay"]
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="ButtonF" type="Button" parent="MarginContainer/VBox/GridContainer/Rex/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Facil"
+
+[node name="ButtonM" type="Button" parent="MarginContainer/VBox/GridContainer/Rex/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Medio"
+
+[node name="ButtonD" type="Button" parent="MarginContainer/VBox/GridContainer/Rex/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Dificil"
+
+[node name="Trike" type="PanelContainer" parent="MarginContainer/VBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBox/GridContainer/Trike"]
+layout_mode = 2
+texture = ExtResource("3_dph0b")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="actionoverlay" type="PanelContainer" parent="MarginContainer/VBox/GridContainer/Trike"]
+visible = false
+layout_mode = 2
+
+[node name="Vboxbutton" type="VBoxContainer" parent="MarginContainer/VBox/GridContainer/Trike/actionoverlay"]
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="ButtonF" type="Button" parent="MarginContainer/VBox/GridContainer/Trike/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Facil"
+
+[node name="ButtonM" type="Button" parent="MarginContainer/VBox/GridContainer/Trike/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Medio"
+
+[node name="ButtonD" type="Button" parent="MarginContainer/VBox/GridContainer/Trike/actionoverlay/Vboxbutton"]
+layout_mode = 2
+text = "Dificil"
+
+[node name="Raptor" type="PanelContainer" parent="MarginContainer/VBox/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBox/GridContainer/Raptor"]
+layout_mode = 2
+texture = ExtResource("4_8s0yn")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="actionoverlay" type="PanelContainer" parent="MarginContainer/VBox/GridContainer/Raptor"]
+visible = false
+layout_mode = 2
+
+[node name="Vboxbutton" type="VBoxContainer" parent="MarginContainer/VBox/GridContainer/Raptor/actionoverlay"]
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="ButtonF" type="Button" parent="MarginContainer/VBox/GridContainer/Raptor/actionoverlay/Vboxbutton"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Facil"
+
+[node name="ButtonM" type="Button" parent="MarginContainer/VBox/GridContainer/Raptor/actionoverlay/Vboxbutton"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Medio"
+
+[node name="ButtonD" type="Button" parent="MarginContainer/VBox/GridContainer/Raptor/actionoverlay/Vboxbutton"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Dificil"
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
+visible = false
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 150
+theme_override_constants/margin_top = 150
+theme_override_constants/margin_right = 150
+theme_override_constants/margin_bottom = 150
+
+[node name="ButtonStart" type="Button" parent="MarginContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+text = "Start
+"

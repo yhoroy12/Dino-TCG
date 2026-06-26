@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_vnfah"]
+
+[resource]
+script = ExtResource("1_vnfah")
+id = "A053"
+name = "Anquilossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Adulto"
+hp = 120
+food_points = 12
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 3
+ability_name = "Armadura de espinho"
+attack_name = "Clava Pesada"
+attack_cost = "🟢🟢🟢⚪"
+damage_base = 150
+damage_type = "fixo"
+text_ui = "Esse dino não pode atacar no próximo turno"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "bloquear_acao"
+mec_resource = "atacar"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 1
+mec_custom_json = "{\"tipo_duracao\": \"proximo_turno_dono\"}"

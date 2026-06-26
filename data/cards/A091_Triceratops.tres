@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_cm45w"]
+
+[resource]
+script = ExtResource("1_cm45w")
+id = "A091"
+name = "Triceratops"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Jovem"
+hp = 110
+food_points = 11
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 2
+ability_name = ""
+attack_name = "Defesa absoluta"
+attack_cost = "🟢🟢"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "previna todo o dano causado pelo oponente no próximo turno. Esse dino não poderá atacar no seu próximo turno"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "bloquear_acao"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"imunidade_dano_turno_seguinte\": true, \"auto_bloqueio_ataque_turno_seguinte\": true}"

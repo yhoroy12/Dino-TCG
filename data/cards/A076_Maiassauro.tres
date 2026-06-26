@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_q1n3l"]
+
+[resource]
+script = ExtResource("1_q1n3l")
+id = "A076"
+name = "Maiassauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Jovem"
+hp = 90
+food_points = 9
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 2
+ability_name = ""
+attack_name = "Cuidado maternal"
+attack_cost = "🟢🟢🟢"
+damage_base = 0
+damage_type = "efeito"
+text_ui = "cure todo o dano dos dinos filhotes no banco"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "curar"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "banco"
+mec_quantity = 0
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = "filhote"
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"limpar_todo_dano\": true}"

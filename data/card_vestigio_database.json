@@ -1,0 +1,224 @@
+[
+  {
+	"id": "A131",
+	"categoria": "vestigio",
+	"nome": "Cicatrização Acelerada",
+	"efeito": "Cure 20 de dano de um dinossauro.",
+	"mecanica": {
+	  "efeito_tipo": "cura",
+	  "valor_cura": 20,
+	  "alvo": "um_dinossauro_aliado"
+	}
+  },
+  {
+	"id": "A132",
+	"categoria": "vestigio",
+	"nome": "Metabolizar",
+	"efeito": "Cure 40 de dano e perca 2 pontos de comida.",
+	"mecanica": {
+	  "efeito_tipo": "cura_com_custo",
+	  "valor_cura": 40,
+	  "modificador_comida": -2,
+	  "alvo": "um_dinossauro_aliado"
+	}
+  },
+  {
+	"id": "A133",
+	"categoria": "vestigio",
+	"nome": "Movimento Veloz",
+	"efeito": "Diminui o custo de recuo em 1.",
+	"mecanica": {
+	  "efeito_tipo": "modificador_recuo",
+	  "valor_alteracao": -1,
+	  "alvo": "um_dinossauro_aliado"
+	}
+  },
+  {
+	"id": "A134",
+	"categoria": "vestigio",
+	"nome": "Olhar Afiado",
+	"efeito": "Seu oponente revela a própria mão.",
+	"mecanica": {
+	  "efeito_tipo": "revelar_mao",
+	  "alvo": "oponente"
+	}
+  },
+  {
+	"id": "A135",
+	"categoria": "vestigio",
+	"nome": "Escavar",
+	"efeito": "Olhe as 5 primeiras cartas do seu baralho e coloque na ordem que desejar.",
+	"mecanica": {
+	  "efeito_tipo": "reordenar_topo",
+	  "quantidade_cartas": 5,
+	  "alvo": "proprio_deck"
+	}
+  },
+  {
+	"id": "A136",
+	"categoria": "vestigio",
+	"nome": "Chocar Ovos",
+	"efeito": "Escolha um dinossauro bebê em seu baralho e coloque em sua mão, em seguida embaralhe seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_deck",
+	  "filtro_busca": {
+		"estagio": "filhote"
+	  },
+	  "quantidade": 1,
+	  "destino": "mao",
+	  "embaralhar": true
+	}
+  },
+  {
+	"id": "A137",
+	"categoria": "vestigio",
+	"nome": "Olhar Amedrontador",
+	"efeito": "Jogue uma moeda. Se sair cara, seu oponente recua o dinossauro dele.",
+	"mecanica": {
+	  "efeito_tipo": "chance_moeda",
+	  "condicao_sucesso": "cara",
+	  "efeito_sucesso": {
+		"efeito_tipo": "recuo_forcado",
+		"alvo": "dinossauro_ativo_oponente"
+	  }
+	}
+  },
+  {
+	"id": "A138",
+	"categoria": "vestigio",
+	"nome": "Mãos Pequenas",
+	"efeito": "Seu oponente embaralha a mão dele e compra 4 cartas.",
+	"mecanica": {
+	  "efeito_tipo": "resetar_mao_oponente",
+	  "quantidade_compra": 4,
+	  "alvo": "oponente"
+	}
+  },
+  {
+	"id": "A139",
+	"categoria": "vestigio",
+	"nome": "Chamar Filhotes",
+	"efeito": "Pegue um dinossauro bebê no cemitério do seu oponente e coloque na linha de reserva dele.",
+	"mecanica": {
+	  "efeito_tipo": "roubo_cemiterio",
+	  "filtro_busca": {
+		"estagio": "filhote"
+	  },
+	  "destino": "reserva_oponente"
+	}
+  },
+  {
+	"id": "A140",
+	"categoria": "vestigio",
+	"nome": "Ninho Verde",
+	"efeito": "Olhe a primeira carta do seu baralho. Se for um dinossauro verde coloque em sua mão, se não coloque embaixo do baralho.",
+	"mecanica": {
+	  "efeito_tipo": "revelar_topo_condicional",
+	  "condicao": {
+		"cor": "verde",
+		"categoria": "animal"
+	  },
+	  "sucesso": "mover_para_mao",
+	  "falha": "mover_para_fundo_deck"
+	}
+  },
+  {
+	"id": "A141",
+	"categoria": "vestigio",
+	"nome": "Buscar na Manada",
+	"efeito": "Descarte um dinossauro da sua mão e busque um dinossauro no seu deck da mesma cor.",
+	"mecanica": {
+	  "efeito_tipo": "troca_por_cor_igual",
+	  "custo_descarte": {
+		"categoria": "animal"
+	  },
+	  "buscar_deck": {
+		"categoria": "animal",
+		"propriedade_espelho": "cor"
+	  }
+	}
+  },
+  {
+	"id": "A142",
+	"categoria": "vestigio",
+	"nome": "Comida Fresca",
+	"efeito": "Acrescente 2 pontos de comida em um dinossauro seu.",
+	"mecanica": {
+	  "efeito_tipo": "modificador_comida",
+	  "valor_alteracao": 2,
+	  "alvo": "um_dinossauro_aliado"
+	}
+  },
+  {
+	"id": "A143",
+	"categoria": "vestigio",
+	"nome": "Comida Podre",
+	"efeito": "Diminua 1 ponto de comida do dinossauro do inimigo. Seu turno acaba quando usar esta carta.",
+	"mecanica": {
+	  "efeito_tipo": "debuff_comida_penalidade",
+	  "valor_alteracao": -1,
+	  "alvo": "dinossauro_ativo_oponente",
+	  "fim_do_turno_obrigatorio": true
+	}
+  },
+  {
+	"id": "A144",
+	"categoria": "vestigio",
+	"nome": "Grandes Lagos",
+	"efeito": "Busque duas energias azul em seu baralho e adicione à sua mão, em seguida embaralhe o seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_energia_deck",
+	  "cor_energia": "azul",
+	  "quantidade": 2,
+	  "embaralhar": true
+	}
+  },
+  {
+	"id": "A145",
+	"categoria": "vestigio",
+	"nome": "Sede de Sangue",
+	"efeito": "Busque duas energias vermelhas no seu baralho e adicione à sua mão, em seguida embaralhe o seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_energia_deck",
+	  "cor_energia": "vermelho",
+	  "quantidade": 2,
+	  "embaralhar": true
+	}
+  },
+  {
+	"id": "A146",
+	"categoria": "vestigio",
+	"nome": "Relva Verde",
+	"efeito": "Busque duas energias verdes no seu baralho e adicione à sua mão, em seguida embaralhe o seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_energia_deck",
+	  "cor_energia": "verde",
+	  "quantidade": 2,
+	  "embaralhar": true
+	}
+  },
+  {
+	"id": "A147",
+	"categoria": "vestigio",
+	"nome": "Grandes Planícies",
+	"efeito": "Busque duas energias amarelas no seu baralho e adicione à sua mão, em seguida embaralhe o seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_energia_deck",
+	  "cor_energia": "amarelo",
+	  "quantidade": 2,
+	  "embaralhar": true
+	}
+  },
+  {
+	"id": "A148",
+	"categoria": "vestigio",
+	"nome": "Pântanos Enlameados",
+	"efeito": "Busque duas energias marrom no seu baralho e adicione à sua mão, em seguida embaralhe o seu deck.",
+	"mecanica": {
+	  "efeito_tipo": "buscar_energia_deck",
+	  "cor_energia": "marrom",
+	  "quantidade": 2,
+	  "embaralhar": true
+	}
+  }
+]

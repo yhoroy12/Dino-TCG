@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_o03d5"]
+
+[resource]
+script = ExtResource("1_o03d5")
+id = "H011"
+name = "Fome desesperada"
+text_ui = "Uma vez durante o seu turno, você pode descartar uma carta da sua mão para comprar uma carta do seu deck."
+mec_trigger = "uma_vez_turno"
+mec_condition = "sempre"
+mec_action = "descartar"
+mec_resource = "carta"
+mec_target_player = "dono"
+mec_target_zone = "mao"
+mec_quantity = 1
+mec_custom_json = "{\"efeito_secundario\": \"comprar\", \"quantidade_secundaria\": 1}"

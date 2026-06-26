@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://bxbu8i6n0vik"]
+
+[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_3g2hn"]
+
+[resource]
+script = ExtResource("1_3g2hn")
+id = "A006"
+name = "Homacefalossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "amarelo"
+stage = "Filhote"
+hp = 50
+food_points = 5
+weakness = "marrom"
+resistance = "amarelo"
+cost_retreat = 0
+ability_name = ""
+attack_name = "Beliscada"
+attack_cost = "⚪"
+damage_base = 10
+damage_type = "fixo"
+text_ui = "compre uma carta"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "comprar"
+mec_resource = ""
+mec_target_player = "dono"
+mec_target_zone = "deck"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

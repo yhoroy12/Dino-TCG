@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_yqhla"]
+
+[resource]
+script = ExtResource("1_yqhla")
+id = "A154"
+name = "Fartura e Pobreza"
+super_type = "territorio"
+sub_type = ""
+color = ""
+stage = ""
+hp = 0
+food_points = 0
+weakness = ""
+resistance = ""
+cost_retreat = 0
+ability_name = ""
+attack_name = ""
+attack_cost = ""
+damage_base = 0
+damage_type = ""
+text_ui = "Lado de cima(Fartura) Os dinossauros ganham um bonus de +1 de comida por turno Lado de baixo(Pobreza) Os dinossauros perdem -1 pontos de comida por turno."
+mec_trigger = "inicio_turno"
+mec_condition = "sempre"
+mec_action = "modificar_recurso"
+mec_resource = "comida"
+mec_target_player = "todos_jogadores"
+mec_target_zone = "todos_campo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"mecanica_alternada\": true, \"valores\": {\"fartura\": 1, \"pobreza\": -1}}"

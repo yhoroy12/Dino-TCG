@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_wtakb"]
+
+[resource]
+script = ExtResource("1_wtakb")
+id = "H003"
+name = "Ataque venenoso"
+text_ui = "Uma vez durante o seu turno, jogue uma moeda. Se cair cara, aplique o status Envenenado ao dinossauro ativo do oponente."
+mec_trigger = "uma_vez_turno"
+mec_condition = "moeda"
+mec_action = "aplicar_status"
+mec_resource = "status"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 1
+mec_custom_json = "{\"status_name\": \"envenenado\"}"

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_plk47"]
+
+[resource]
+script = ExtResource("1_plk47")
+id = "A057"
+name = "Coritossauro"
+super_type = "animal"
+sub_type = "Herbivoro"
+color = "verde"
+stage = "Filhote"
+hp = 70
+food_points = 7
+weakness = "vermelho"
+resistance = "azul"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Beliscada"
+attack_cost = "🟢"
+damage_base = 10
+damage_type = "fixo"
+text_ui = "cure 10 de dano deste dino"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "curar"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 10
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

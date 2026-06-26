@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_t6mrg"]
+
+[resource]
+script = ExtResource("1_t6mrg")
+id = "A103"
+name = "Megalossauro"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "vermelho"
+stage = "Filhote"
+hp = 80
+food_points = 8
+weakness = "azul"
+resistance = "verde"
+cost_retreat = 2
+ability_name = ""
+attack_name = "Armazenar"
+attack_cost = "🔴"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "pegue uma energia vermelha e ligue a esse dino"
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = "energia"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = "vermelha"
+mec_filter_stage = ""
+mec_origin_zone = "deck"
+mec_duration = 0
+mec_custom_json = ""

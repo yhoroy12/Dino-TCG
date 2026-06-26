@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_srh1o"]
+
+[resource]
+script = ExtResource("1_srh1o")
+id = "H012"
+name = "Líder alfa"
+text_ui = "Os seus dinossauros da mesma cor que este causam +20 de dano."
+mec_trigger = "passivamente"
+mec_condition = "sempre"
+mec_action = "modificar_dano_causado"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "todos_campo"
+mec_quantity = 20
+mec_custom_json = "{\"filtrar_mesma_cor\": true}"

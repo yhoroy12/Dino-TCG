@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_p7jmm"]
+
+[resource]
+script = ExtResource("1_p7jmm")
+id = "A036"
+name = "Troodon"
+super_type = "animal"
+sub_type = "Carnivoro"
+color = "azul"
+stage = "Filhote"
+hp = 50
+food_points = 5
+weakness = "verde"
+resistance = "vermelho"
+cost_retreat = 1
+ability_name = ""
+attack_name = "Chamar familia"
+attack_cost = "🔵"
+damage_base = 0
+damage_type = "suporte"
+text_ui = "Coloque dois dinos filhotes no seu banco."
+mec_trigger = "ao_atacar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = ""
+mec_target_player = "dono"
+mec_target_zone = "banco"
+mec_quantity = 2
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = "filhote"
+mec_origin_zone = "deck"
+mec_duration = 0
+mec_custom_json = ""
