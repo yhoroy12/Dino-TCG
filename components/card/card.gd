@@ -135,19 +135,13 @@ func _renderizar_frente() -> void:
 		
 		# Habilidade do Dinossauro (se houver)
 		if recurso_carta.ability_name != "":
+			print("Buscando habilidade: ", recurso_carta.ability_name)
 			_set_label_text("habilidade", recurso_carta.ability_name)
-			# Tenta carregar a descrição diretamente do banco de habilidades nativo que criamos!
-			var safe_ability_name = recurso_carta.ability_name.validate_filename()
-			var ability_path = "res://data/abilities/" + recurso_carta.id + "_" + safe_ability_name + ".tres"
+			var descricao = CardDatabase.obter_descricao_habilidade(recurso_carta.ability_name)
 			
-			# Se achar o recurso da habilidade, lê o texto descritivo profissional dela
-			if ResourceLoader.exists(ability_path):
-				var ab_res = load(ability_path) as AbilityResource
-				if ab_res: 
-					_set_label_text("habilidade2", ab_res.text_ui)
-			else:
-				# Fallback de segurança
-				_set_label_text("habilidade2", "")
+			_set_label_text("habilidade2", descricao)
+		else:
+			_set_label_text("habilidade2", "")
 		
 		# Ataque e Custos
 		_set_label_text("ataque", recurso_carta.attack_name)

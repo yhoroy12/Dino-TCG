@@ -41,7 +41,7 @@ func _carregar_habilidades_resources() -> void:
 			var ab_res := load(caminho_completo) as AbilityResource
 			if ab_res:
 				# Indexa pelo ID ou por uma chave combinada ID_Nome para busca exata
-				var chave_habilidade = ab_res.id + "_" + ab_res.name.validate_filename()
+				var chave_habilidade = ab_res.name.validate_filename()
 				habilidades[chave_habilidade] = ab_res
 				
 		nome_arquivo = dir.get_next()
@@ -97,11 +97,20 @@ func obter_catalogo_completo() -> Dictionary:
 	return cartas
 
 
-## Puxa o texto de UI corrigido da habilidade baseado no ID da carta e nome da habilidade
-func obter_descricao_habilidade(id_carta: String, nome_habilidade: String) -> String:
-	var chave = id_carta + "_" + nome_habilidade.validate_filename()
-	if habilidades.has(chave):
-		return habilidades[chave].text_ui
+## Puxa o texto de UI corrigido da habilidade baseado no nome da habilidade e nome da habilidade
+func obter_descricao_habilidade(nome_habilidade: String) -> String:
+	print("Buscando:", nome_habilidade)
+	print("Chaves:", habilidades.keys())
+	
+	var chave_normalizada = normalizar(nome_habilidade)
+	
+	for chave in habilidades.keys():
+		if normalizar(chave) == chave_normalizada:
+			var habilidade = habilidades[chave]
+			print("Encontrada:", habilidade)
+			print("Text UI:", habilidade.text_ui)
+			return habilidade.text_ui
+	
 	return "Descrição de habilidade não encontrada."
 
 
@@ -115,3 +124,14 @@ func get_por_cor(cor: String) -> Array:
 
 func get_por_estagio(estagio: String) -> Array:
 	return cartas_por_estagio.get(estagio.to_lower(), [])
+
+func normalizar(texto: String) -> String:
+	return texto.strip_edges()         \
+			   .to_lower()             \
+			   .rstrip(".")            \
+			   .replace("á", "a").replace("à", "a").replace("â", "a").replace("ã", "a") \
+			   .replace("é", "e").replace("ê", "e") \
+			   .replace("í", "i") \
+			   .replace("ó", "o").replace("õ", "o").replace("ô", "o") \
+			   .replace("ú", "u") \
+			   .replace("ç", "c")

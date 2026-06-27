@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3 uid="uid://b3i2sk7yaxk4u"]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_5r68a"]
+[ext_resource type="Script" uid="uid://d4mbhyjig8bhh" path="res://data/AbilityResource.gd" id="1_5r68a"]
 
 [resource]
 script = ExtResource("1_5r68a")
 id = "H016"
-name = "Pernas rápidas"
+name = "Pernas Rápidas"
 text_ui = "Se este dinossauro tiver qualquer energia associada a ele, seu custo de recuo será zerado."
 mec_trigger = "passivamente"
 mec_condition = "condicao_energia"
