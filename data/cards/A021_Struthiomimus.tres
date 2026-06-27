@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Adulto"
+grow_from = "A020"
 hp = 90
 food_points = 9
 weakness = "marrom"

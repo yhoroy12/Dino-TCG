@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Carnivoro, Psivoro"
 color = "azul"
 stage = "Adulto"
+grow_from = "A034"
 hp = 110
 food_points = 11
 weakness = "verde"

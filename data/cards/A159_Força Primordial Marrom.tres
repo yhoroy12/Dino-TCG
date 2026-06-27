@@ -10,6 +10,7 @@ super_type = "energia"
 sub_type = ""
 color = ""
 stage = ""
+grow_from = ""
 hp = 0
 food_points = 0
 weakness = ""

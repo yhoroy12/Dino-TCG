@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://bmsvr52y7tdhn"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_u00re"]
+[ext_resource type="Script" path="res://data/CardResource.gd" id="1_u00re"]
 
 [resource]
 script = ExtResource("1_u00re")
@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Jovem"
+grow_from = "A003"
 hp = 80
 food_points = 8
 weakness = "marrom"

@@ -17,6 +17,8 @@ signal empate()
 signal alimentacao_distribuida(jogador_id: int)
 signal moeda_lancada(acao: String, resultado: bool)
 signal animal_nocauteado_por_fome(jogador_id: int)
+signal animal_evoluido(jogador_id: int, instancia: AnimalInstance)
+signal energia_anexada(jogador_id: int, instancia: AnimalInstance, energia: CardResource)
 
 # -----------------------------------------------------------------------------
 # CONSTANTES E ENUMS DE REGRAS (Rulebook v3)
@@ -48,6 +50,7 @@ var partida_ativa: bool = false
 var turno_atual: int    = TURNO_INICIAL
 var jogador_ativo: int  = 0 # 0 = Jogador Humano, 1 = Oponente/IA
 var fase_atual: Fase    = Fase.COMPRAR
+var energia_anexada_neste_turno: bool = false
 
 # Dicionário de Estado dos Jogadores - Correção dos casts de Array e do valor Null
 var jogadores: Dictionary = {
@@ -146,11 +149,16 @@ func alternar_turno() -> void:
 	# Alterna o ponteiro do jogador
 	jogador_ativo = 1 if jogador_ativo == 0 else 0
 	fase_atual = Fase.COMPRAR
-	
+	energia_anexada_neste_turno = false
 	if jogador_ativo == 0:
 		turno_atual += 1
+	
 		
 	print("GameState: Novo Turno iniciado! Turno: %d, Jogador Ativo: %d" % [turno_atual, jogador_ativo])
+	var novo_ativo: AnimalInstance = jogadores[jogador_ativo]["zona_ativo"]
+	if novo_ativo != null:
+		novo_ativo.entrou_este_turno = false
+		novo_ativo.evoluiu_este_turno = false
 	
 	_processar_fase_comprar()
 
@@ -235,7 +243,35 @@ func _atualizar_contadores_de_condicao() -> void:
 func _remover_condicao(jogador_id: int) -> void:
 	jogadores[jogador_id]["condicao"] = Condicao.NENHUMA
 	jogadores[jogador_id]["turnos_na_condicao"] = 0
+	
+func _validar_evolucao(instancia: AnimalInstance, carta_evolucao: CardResource) -> bool:
+	if instancia.entrou_este_turno: return false
+	if instancia.evoluiu_este_turno: return false
 
+	# Valida grow_from contra o ID da carta atual
+	if carta_evolucao.grow_from != instancia.card.id: return false
+
+	# Valida cadeia de estágios permitidos
+	var progressao_valida := {
+		"filhote": ["jovem","adulto"],
+		"jovem": ["adulto"],
+	}
+	var estagios_permitidos = progressao_valida.get(instancia.card.stage, [])
+	if carta_evolucao.stage not in estagios_permitidos: return false
+
+	# Valida comida mínima (metade do máximo, arredondando para cima)
+	var minimo := ceili(instancia.card.food_points / 2.0)
+	if instancia.current_food < minimo: return false
+
+	return true
+
+func _validar_anexar_energia(jogador_id: int, indice_na_mao: int) -> CardResource:
+	if energia_anexada_neste_turno: return null
+	var j = jogadores[jogador_id]
+	if indice_na_mao < 0 or indice_na_mao >= j["mao"].size(): return null
+	var carta: CardResource = j["mao"][indice_na_mao]
+	if carta.super_type != "energia": return null
+	return carta
 # -----------------------------------------------------------------------------
 # INTERFACE PÚBLICA DE AÇÕES DE JOGO (Chamado pela Mesa/Cartas Visuais)
 # -----------------------------------------------------------------------------
@@ -269,7 +305,58 @@ func jogar_animal_para_banco(jogador_id: int, indice_na_mao: int) -> bool:
 	print("GameState: Jogador %d colocou %s na Reserva do Banco." % [jogador_id, carta.name])
 	return true
 
+func evoluir_animal_ativo(jogador_id: int, indice_na_mao: int) -> bool:
+	var j = jogadores[jogador_id]
+	var ativo: AnimalInstance = j["zona_ativo"]
+	if ativo == null: return false
 
+	if indice_na_mao < 0 or indice_na_mao >= j["mao"].size(): return false
+	var carta_evolucao: CardResource = j["mao"][indice_na_mao]
+	if carta_evolucao.super_type != "animal": return false
+
+	if not _validar_evolucao(ativo, carta_evolucao): return false
+
+	# Aplica a evolução mantendo o estado
+	j["mao"].remove_at(indice_na_mao)
+	j["pilha_descarte"].append(ativo.card)  # carta base vai pro descarte
+
+	ativo.card = carta_evolucao
+	var dano_acumulado := ativo.card.hp - ativo.current_hp
+	ativo.current_hp = carta_evolucao.hp - dano_acumulado   
+	ativo.evoluiu_este_turno = true
+	# current_food, attached_energies e conditions são preservados
+
+	print("GameState: Jogador %d evoluiu para %s!" % [jogador_id, carta_evolucao.name])
+	emit_signal("animal_evoluido", jogador_id, ativo)
+	return true
+
+func anexar_energia_no_ativo(jogador_id: int, indice_na_mao: int) -> bool:
+	var j = jogadores[jogador_id]
+	var ativo: AnimalInstance = j["zona_ativo"]
+	if ativo == null: return false
+	var carta := _validar_anexar_energia(jogador_id, indice_na_mao)
+	if carta == null: return false
+	j["mao"].remove_at(indice_na_mao)
+	ativo.attached_energies.append(carta)
+	energia_anexada_neste_turno = true
+	print("GameState: Jogador %d anexou %s em %s." % [jogador_id, carta.mec_filter_color, ativo.card.name])
+	emit_signal("energia_anexada", jogador_id, ativo, carta)
+	return true
+
+
+func anexar_energia_no_banco(jogador_id: int, indice_na_mao: int, indice_no_banco: int) -> bool:
+	var j = jogadores[jogador_id]
+	if indice_no_banco < 0 or indice_no_banco >= j["banco"].size(): return false
+	var alvo: AnimalInstance = j["banco"][indice_no_banco]
+	var carta := _validar_anexar_energia(jogador_id, indice_na_mao)
+	if carta == null: return false
+	j["mao"].remove_at(indice_na_mao)
+	alvo.attached_energies.append(carta)
+	energia_anexada_neste_turno = true
+	print("GameState: Jogador %d anexou %s em %s (banco)." % [jogador_id, carta.mec_filter_color, alvo.card.name])
+	emit_signal("energia_anexada", jogador_id, alvo, carta)
+	return true
+	
 func aplicar_dano_ativo(jogador_id: int, quantidade: int) -> void:
 	var ativo = jogadores[jogador_id]["zona_ativo"]
 	if ativo == null: return
@@ -290,6 +377,11 @@ func _processar_nocaute_ativo(jogador_id: int) -> void:
 	jogadores[jogador_id]["zona_ativo"] = null
 	jogadores[jogador_id]["pilha_descarte"].append(ativo_inst.card)
 	
+	# Descarta todas as energias anexadas
+	for energia in ativo_inst.attached_energies:
+		jogadores[jogador_id]["pilha_descarte"].append(energia)
+	ativo_inst.attached_energies.clear()
+
 	# Ponto de nocaute dado ao adversário
 	var oponente_id = 1 if jogador_id == 0 else 0
 	jogadores[oponente_id]["animais_nocauteados"] += 1
@@ -315,7 +407,7 @@ func usar_pontos_comida(jogador_id: int, quantidade: int) -> bool:
 	if ativo == null: return false
 	if ativo.current_food >= ativo.card.food_points: return false #já e o maximo
 	j["pontos_comida"] -= quantidade
-	ativo.current_food += min(ativo.current_food + quantidade, ativo.card.food_points) # não ultrapassa o máximo
+	ativo.current_food = min(ativo.current_food + quantidade, ativo.card.food_points) # não ultrapassa o máximo
 	print("GameState: Jogador %d alimentou %s com %d. Comida do dino: %d" % [jogador_id, ativo.card.name, quantidade, ativo.current_food])
 	return true
 

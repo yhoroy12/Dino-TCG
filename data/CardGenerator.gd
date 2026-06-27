@@ -5,7 +5,7 @@ const OUTPUT_DIR = "res://data/cards/"
 
 func _pressed() -> void:
 	# Este método roda automaticamente na Godot quando o botão é clicado
-	var caminho_animais = "C:/GameDevanimais_profissional.csv"
+	var caminho_animais = "C:/GameDev/animais_profissional.csv"
 	#var caminho_efeitos = "B:/GameDev/DINO TCG GAME/efeitos_profissional.csv"
 	
 	print("--- INICIANDO GERAÇÃO DE RESOURCES ---")

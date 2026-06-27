@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Herbivoro"
 color = "verde"
 stage = "Adulto"
+grow_from = "A064"
 hp = 130
 food_points = 13
 weakness = "vermelho"

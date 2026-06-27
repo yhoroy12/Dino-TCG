@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://cwucwqhci4lfo"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://bspumiuvkq77h"]
 
 [ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_qc1t0"]
 
@@ -10,12 +10,13 @@ super_type = "animal"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Adulto"
+grow_from = "A004"
 hp = 100
 food_points = 10
 weakness = "marrom"
 resistance = "amarelo"
 cost_retreat = 1
-ability_name = "Pernas Rapidas"
+ability_name = "Pernas Rápidas"
 attack_name = "Chute alto"
 attack_cost = "🟡⚪"
 damage_base = 80

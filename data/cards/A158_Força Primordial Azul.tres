@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://bjpue76wf8sd4"]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_518go"]
+[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_518go"]
 
 [resource]
 script = ExtResource("1_518go")
@@ -10,6 +10,7 @@ super_type = "energia"
 sub_type = ""
 color = ""
 stage = ""
+grow_from = ""
 hp = 0
 food_points = 0
 weakness = ""

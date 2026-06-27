@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Herbivoro"
 color = "marrom"
 stage = "Filhote"
+grow_from = ""
 hp = 110
 food_points = 11
 weakness = "amarelo"

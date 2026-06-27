@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Herbivoro"
 color = "marrom"
 stage = "Jovem"
+grow_from = "A050"
 hp = 140
 food_points = 14
 weakness = "amarelo"

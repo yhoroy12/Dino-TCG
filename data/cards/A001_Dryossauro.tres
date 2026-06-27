@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://dl8gc8uytd5hq"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://mssyp0lj45s4"]
 
 [ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_57u8n"]
 
@@ -10,6 +10,7 @@ super_type = "animal"
 sub_type = "Herbivoro"
 color = "amarelo"
 stage = "Filhote"
+grow_from = ""
 hp = 50
 food_points = 5
 weakness = "marrom"
