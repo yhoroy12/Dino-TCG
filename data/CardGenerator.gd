@@ -5,12 +5,12 @@ const OUTPUT_DIR = "res://data/cards/"
 
 func _pressed() -> void:
 	# Este método roda automaticamente na Godot quando o botão é clicado
-	var caminho_animais = "B:/GameDev/DINO TCG GAME/animais_profissional.csv"
-	var caminho_efeitos = "B:/GameDev/DINO TCG GAME/efeitos_profissional.csv"
+	var caminho_animais = "C:/GameDevanimais_profissional.csv"
+	#var caminho_efeitos = "B:/GameDev/DINO TCG GAME/efeitos_profissional.csv"
 	
 	print("--- INICIANDO GERAÇÃO DE RESOURCES ---")
 	_generate_from_csv(caminho_animais, true)
-	_generate_from_csv(caminho_efeitos, false)
+	#_generate_from_csv(caminho_efeitos, false)
 	print("--- PROCESSO CONCLUÍDO! VERIFIQUE A PASTA RES://DATA/CARDS/ ---")
 
 func _generate_from_csv(absolute_path: String, is_animal: bool) -> void:
