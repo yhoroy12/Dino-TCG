@@ -535,7 +535,10 @@ func _processar_nocaute_ativo(jogador_id: int) -> void:
 	
 	print("GameState: %s foi Nocauteado!" % ativo_inst.card.name)
 	emit_signal("animal_nocauteado", jogador_id, ativo_inst)
-	_verificar_vitoria()
+	if jogadores[jogador_id]["banco"].is_empty():
+		_declarar_vitoria(1 if jogador_id == 0 else 0)
+	else:
+		_verificar_vitoria()
 
 
 func aplicar_condicao_ativo(jogador_id: int, nova_condicao: Condicao) -> void:

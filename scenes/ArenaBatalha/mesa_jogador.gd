@@ -18,6 +18,7 @@ const DURACAO_ANIMACAO_CARTA: float = 0.3
 const DURACAO_ANIMACAO_MOEDA: float = 1.5
 const DISTANCIA_SNAP_ZONAS: float = 50.0  # Pixels
 const VELOCIDADE_CARTA_HAND: float = 8.0  # Unidades por frame
+const CENA_CARTA := preload("res://components/card/Card.tscn")
 
 # ==============================================================================
 # REFERÊNCIAS DE NÓS (@onready)
@@ -129,6 +130,17 @@ func _conectar_sinais_gamestate() -> void:
 	if not GameState:
 		push_error("❌ GameState (Autoload) não está disponível!")
 		return
+	#Mulligan
+	GameState.solicitar_mulligan.connect(_ao_solicitar_mulligan)
+	
+	#Escolher Animal Ativo
+	GameState.solicitar_escolha_ativo.connect(_ao_solicitar_escolha_ativo)
+	
+	#Morreu de fome
+	GameState.animal_nocauteado_por_fome.connect(_ao_animal_nocauteado_por_fome)
+	
+	#Setup 
+	GameState.setup_concluido.connect(_ao_setup_concluido)
 	
 	# Turnos e Fases
 	GameState.turno_iniciado.connect(_ao_turno_iniciado)
@@ -167,6 +179,28 @@ func _configurar_interface_inicial() -> void:
 # CALLBACKS DO GAMESTATE — TURNOS
 # ==============================================================================
 
+func _ao_solicitar_mulligan(jogador_id: int) -> void:
+	# Por enquanto apenas confirma automaticamente
+	# Futuramente exibe um painel de confirmação para o jogador
+	print("🔀 Mulligan necessário para Jogador %d" % jogador_id)
+	GameState.confirmar_mulligan(jogador_id)
+
+func _ao_solicitar_escolha_ativo(jogador_id: int) -> void:
+	# Habilita o modo de seleção de ativo inicial
+	# A carta clicada na mão vai chamar confirmar_ativo()
+	print("🦖 Jogador %d deve escolher o animal ativo inicial." % jogador_id)
+	# Futuramente exibe um painel orientando o jogador
+
+func _ao_animal_nocauteado_por_fome(jogador_id: int) -> void:
+	print("💀 Animal do Jogador %d morreu de fome. Escolha um substituto do banco." % jogador_id)
+	# Futuramente abre painel de seleção do banco
+	# Por enquanto a mesa aguarda o jogador clicar em um animal do banco
+
+func _ao_setup_concluido() -> void:
+	print("✅ Setup concluído. Partida iniciada!")
+	organizar_cartas_nas_zonas(0)
+	organizar_cartas_nas_zonas(1)
+	
 func _ao_turno_iniciado(jogador_id: int) -> void:
 	"""Chamado quando um novo turno inicia"""
 	jogador_ativo_id = jogador_id
@@ -189,7 +223,6 @@ func _ao_turno_iniciado(jogador_id: int) -> void:
 		"turno_numero": GameState.turno_atual
 	})
 
-
 func _ao_turno_encerrado(jogador_id: int) -> void:
 	"""Chamado quando um turno encerra"""
 	turno_em_progresso = false
@@ -197,7 +230,6 @@ func _ao_turno_encerrado(jogador_id: int) -> void:
 	botao_passar_turno.disabled = true
 	
 	print("🔴 Turno encerrado! Jogador: %d" % jogador_id)
-
 
 func _atualizar_contador_turno(delta: float) -> void:
 	"""Atualiza o progresso do timer do turno"""
@@ -210,12 +242,10 @@ func _atualizar_contador_turno(delta: float) -> void:
 	if fmod(tempo_restante_turno, 10.0) < delta:
 		print("⏱️ Tempo restante: %.1fs" % tempo_restante_turno)
 
-
 func _ao_timer_turno_expirado() -> void:
 	"""Chamado quando o tempo do turno expira automaticamente"""
 	print("⚠️ Tempo do turno expirado! Forçando avanço automático...")
 	_ao_botao_passar_turno_pressionado()
-
 
 func _ao_botao_passar_turno_pressionado() -> void:
 	"""Chamado quando o jogador clica em 'Passar Turno'"""
@@ -231,9 +261,9 @@ func _ao_botao_passar_turno_pressionado() -> void:
 # CALLBACKS DO GAMESTATE — CARTAS E CONDIÇÕES
 # ==============================================================================
 
-func _ao_animal_nocauteado(jogador_id: int, carta: CardResource) -> void:
+func _ao_animal_nocauteado(jogador_id: int, instancia: AnimalInstance) -> void:
 	"""Chamado quando um animal é nocauteado"""
-	print("💥 Animal Nocauteado: %s (Jogador %d)" % [carta.name, jogador_id])
+	print("💥 Animal Nocauteado: %s (Jogador %d)" % [instancia.card.name, jogador_id])
 	
 	# Anima a carta saindo da zona ativa
 	var campo_origem: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
@@ -242,7 +272,6 @@ func _ao_animal_nocauteado(jogador_id: int, carta: CardResource) -> void:
 	if _has_child_of_type(campo_origem, Control):
 		var carta_visual: Control = _get_first_child_of_type(campo_origem, Control)
 		_animar_carta_para_zona(carta_visual, zona_descarte)
-
 
 func _ao_condicao_aplicada(jogador_id: int, condicao: int) -> void:
 	"""Chamado quando uma condição especial é aplicada"""
@@ -254,12 +283,13 @@ func _ao_condicao_aplicada(jogador_id: int, condicao: int) -> void:
 
 
 func _ao_alimentacao_distribuida(jogador_id: int) -> void:
-	"""Chamado quando pontos de comida são distribuídos"""
-	var pontos: int = GameState.jogadores[jogador_id]["pontos_comida"]
-	print("🍖 Alimentação Distribuída! Pontos: %d (Jogador %d)" % [pontos, jogador_id])
-	
-	# Atualiza visual do contador de comida
-	_atualizar_visual_contador_comida(jogador_id, pontos)
+	var j = GameState.jogadores[jogador_id]
+	var deposito: int = j["pontos_comida"]
+	var comida_dino: int = 0
+	if j["zona_ativo"] != null:
+		comida_dino = j["zona_ativo"].current_food
+	print("🍖 Depósito: %d | Comida do Dino: %d (Jogador %d)" % [deposito, comida_dino, jogador_id])
+	_atualizar_visual_contador_comida(jogador_id, deposito)
 
 
 func _ao_moeda_lancada(acao: String, resultado: bool) -> void:
@@ -341,12 +371,12 @@ func organizar_cartas_nas_zonas(jogador_id: int) -> void:
 		_adicionar_carta_na_zona(jogador_id, "mao", carta)
 	
 	# Adiciona banco
-	for carta in dados_jogador["banco"]:
-		_adicionar_carta_na_zona(jogador_id, "banco", carta)
+	for instancia in dados_jogador["banco"]:
+		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card)
 	
 	# Adiciona ativo
 	if dados_jogador["zona_ativo"] != null:
-		_adicionar_carta_na_zona(jogador_id, "ativo", dados_jogador["zona_ativo"])
+		_adicionar_carta_na_zona(jogador_id, "ativo", dados_jogador["zona_ativo"].card)
 
 
 func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardResource) -> void:
@@ -577,13 +607,13 @@ func _validar_acao_permitida(acao: String, carta: CardResource) -> bool:
 			return dados_jogador["zona_ativo"] != null and dados_jogador["pontos_comida"] >= 1
 		
 		"_acao_atacar":
-			return dados_jogador["zona_ativo"] != null and GameState.fase_atual == GameState.Fase.ATAQUE
+			return GameState.fase_atual == GameState.Fase.ATAQUE and GameState.pode_atacar(0)
 		
 		"_acao_usar_habilidade":
 			return dados_jogador["zona_ativo"] != null and carta.text_ui != ""
 		
 		"_acao_recuar":
-			return not dados_jogador["banco"].is_empty()
+			return GameState.pode_recuar(0)
 	
 	return false
 
@@ -813,22 +843,10 @@ func _exibir_tela_empate() -> void:
 # ==============================================================================
 
 func _criar_carta_ui(carta: CardResource) -> Control:
-	"""
-	Cria uma instância visual de carta.
-	NOTA: Implemente sua própria classe CardUI aqui!
-	Para este exemplo, retorna um TextureRect placeholder.
-	"""
-	var carta_ui: Control = Control.new()
-	carta_ui.custom_minimum_size = Vector2(100, 140)
-	carta_ui.modulate = Color.CYAN
+	var instancia = CENA_CARTA.instantiate()
+	instancia.inicializar(carta)
+	return instancia
 	
-	# Aqui você deve instanciar sua classe CardUI real:
-	# var carta_ui: CardUI = CardUI.new()
-	# carta_ui.set_carta_resource(carta)
-	
-	return carta_ui
-
-
 func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 	"""Remove todas as cartas visuais de uma zona"""
 	var container: Control = null

@@ -98,6 +98,14 @@ func obter_lista_de_decks_salvos() -> Array[String]:
 			nome_arquivo = dir.get_next()
 	return lista
 
+# verifica qual é o deck ativo selecionado
+func obter_deck_ativo() -> String:
+	var lista := obter_lista_de_decks_salvos()
+	for nome in lista:
+		var dados := carregar_deck_completo(nome)
+		if dados.get("ativo", false) == true:
+			return nome
+	return ""
 
 ## Lê o arquivo .json inteiro e retorna em formato de Dicionário para a UI extrair as informações
 func carregar_deck_completo(nome_deck: String) -> Dictionary:

@@ -6,8 +6,7 @@ extends Control
 # ==============================================================================
 
 const CENA_LOBBY   := "res://scenes/Lobby/Lobby.tscn"
-# TODO: substituir pelo caminho real quando a cena de batalha estiver pronta
-# const CENA_BATALHA := "res://scenes/batalha/arena_batalha.tscn"
+const CENA_BATALHA := "res://scenes/ArenaBatalha/Mesajogador.tscn"
 
 # -----------------------------------------------------------------------------
 # REFERÊNCIAS ESTÁTICAS
@@ -81,14 +80,23 @@ func _on_voltar_pressed() -> void:
 
 
 func _on_start_pressed() -> void:
-	print("[ModoTreino] Iniciando treino — adversário: %s | dificuldade: %s" % [
-	_adversario_selecionado.name as String if _adversario_selecionado else "?",
-	_dificuldade
-])
-	# TODO: passar adversário e dificuldade para o GameState antes de trocar de cena
-	# GameState.configurar_treino(_adversario_selecionado.name, _dificuldade)
-	# get_tree().change_scene_to_file(CENA_BATALHA)
+	if _adversario_selecionado == null or _dificuldade == "":
+		print("[ModoTreino] ❌ Adversário ou dificuldade não selecionados.")
+		return
 
+	var deck_ativo := DeckManager.obter_deck_ativo()
+	if deck_ativo == "":
+		print("[ModoTreino] ❌ Nenhum deck ativo encontrado. Defina um deck ativo no gerenciador.")
+		return
+
+	print("[ModoTreino] Iniciando treino — adversário: %s | dificuldade: %s | deck: %s" % [
+		_adversario_selecionado.name,
+		_dificuldade,
+		deck_ativo
+	])
+
+	GameState.inicializar_setup(deck_ativo, deck_ativo)
+	get_tree().change_scene_to_file(CENA_BATALHA)
 
 # -----------------------------------------------------------------------------
 # SELEÇÃO DE ADVERSÁRIO
