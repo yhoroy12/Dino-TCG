@@ -93,11 +93,11 @@
 
 | Sistema                      | Status             |
 | ---------------------------- | ------------------ |
-| Recurso Global de Comida     | ⚠️ Parcial         |
-| Distribuição de Comida       | ❓ Não Validado     |
-| Comida Individual por Animal | ❌ Não Implementado |
-| Consumo Automático           | ❌ Não Implementado |
-| Nocaute por Fome             | ❌ Não Implementado |
+| Recurso Global de Comida     | ✅ Implementado     |
+| Distribuição de Comida       | ✅ Implementado     |
+| Comida Individual por Animal | ✅ Implementado |
+| Consumo Automático           | ✅ Implementado |
+| Nocaute por Fome             | ✅ Implementado |
 
 ---
 
@@ -105,10 +105,10 @@
 
 | Sistema                     | Status         |
 | --------------------------- | -------------- |
-| Evolução Bebê → Jovem       | ❓ Não Validado |
-| Evolução Jovem → Adulto     | ❓ Não Validado |
-| Evoluções Diretas Especiais | ⚠️ Parcial     |
-| Validação por Comida        | ❌ Não Validado |
+| Evolução Filhote → Jovem    | ✅ Implementado |
+| Evolução Jovem → Adulto     | ✅ Implementado |
+| Evoluções Diretas Especiais | ✅ Implementado |
+| Validação por Comida        | ✅ Implementado |
 
 ---
 
@@ -116,10 +116,10 @@
 
 | Sistema                      | Status           |
 | ---------------------------- | ---------------- |
-| Cartas de Energia            | ✅ Implementado   |
-| Energias Anexadas            | ❌ Não Confirmado |
-| Controle de Energias Ligadas | ❌ Não Confirmado |
-| Pagamento de Custos          | ❌ Não Confirmado |
+| Cartas de Energia            | ✅ Implementado |
+| Energias Anexadas            | ✅ Implementado |
+| Controle de Energias Ligadas | ✅ Implementado |
+| Pagamento de Custos          | ✅ Implementado |
 
 ---
 
@@ -127,13 +127,13 @@
 
 | Sistema                  | Status     |
 | ------------------------ | ---------- |
-| Declaração de Ataque     | ⚠️ Parcial |
-| Cálculo de Dano Base     | ⚠️ Parcial |
-| Aplicação de Dano        | ⚠️ Parcial |
+| Declaração de Ataque     | ✅ Implementado |
+| Cálculo de Dano Base     | ✅ Implementado |
+| Aplicação de Dano        | ✅ Implementado |
 | Fraqueza                 | ⚠️ Parcial |
 | Resistência              | ⚠️ Parcial |
 | Interpretação de Efeitos | ⚠️ Parcial |
-| Nocaute por Dano         | ⚠️ Parcial |
+| Nocaute por Dano         | ✅ Implementado |
 
 ---
 
@@ -141,10 +141,10 @@
 
 | Sistema                  | Status         |
 | ------------------------ | -------------- |
-| Troca do Animal Ativo    | ❌ Não Validado |
-| Pagamento de Energia     | ❌ Não Validado |
-| Pagamento por Comida     | ❌ Não Validado |
-| Sistema Híbrido de Recuo | ⚠️ Parcial     |
+| Troca do Animal Ativo    | ✅ Implementado |
+| Pagamento de Energia     | ✅ Implementado |
+| Pagamento por Comida     | ✅ Implementado |
+| Sistema Híbrido de Recuo | ✅ Implementado |
 
 ---
 
@@ -187,10 +187,10 @@
 
 | Sistema                 | Status             |
 | ----------------------- | ------------------ |
-| Vitória por 4 Nocautes  | ❌ Não Validado     |
-| Vitória por Campo Vazio | ❌ Não Validado     |
-| Vitória por Deck Out    | ❌ Não Validado     |
-| Empate                  | ❌ Não Implementado |
+| Vitória por 4 Nocautes  | ❌ Não Validado    |
+| Vitória por Campo Vazio | ❌ Não Validado    |
+| Vitória por Deck Out    | ❌ Não Validado    |
+| Empate                  | ❌ Não Implementado|
 
 ---
 

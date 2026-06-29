@@ -24,3 +24,29 @@ func _init(card_resource : CardResource):
 	current_hp = card.hp
 
 	current_food = 0
+	
+	attached_energies = []
+	
+func contar_energias_por_cor() -> Dictionary:
+	var contagem := {}
+	for energia in attached_energies:
+		var cor: String = energia.mec_filter_color
+		contagem[cor] = contagem.get(cor, 0) + 1
+	return contagem
+
+func tem_energias_suficientes(custo: Dictionary) -> bool:
+	var disponivel := contar_energias_por_cor()
+	var total_disponivel := attached_energies.size()
+	var incolores_necessarios := custo.get("incolor", 0) as int
+
+	# Valida cores obrigatórias primeiro
+	for cor in custo:
+		if cor == "incolor": continue
+		var necessario: int = custo[cor]
+		var tem: int = disponivel.get(cor, 0)
+		if tem < necessario: return false
+		total_disponivel -= necessario
+
+	# Valida incolores com o que sobrou
+	if total_disponivel < incolores_necessarios: return false
+	return true

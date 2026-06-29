@@ -19,6 +19,13 @@ signal moeda_lancada(acao: String, resultado: bool)
 signal animal_nocauteado_por_fome(jogador_id: int)
 signal animal_evoluido(jogador_id: int, instancia: AnimalInstance)
 signal energia_anexada(jogador_id: int, instancia: AnimalInstance, energia: CardResource)
+signal ataque_declarado(jogador_id: int, dano: int)
+signal recuo_executado(jogador_id: int)
+signal solicitar_lancamento_moeda()
+signal solicitar_mulligan(jogador_id: int)
+signal cartas_extras_mulligan_entregues(jogador_id: int, quantidade: int)
+signal solicitar_escolha_ativo(jogador_id: int)
+signal setup_concluido()
 
 # -----------------------------------------------------------------------------
 # CONSTANTES E ENUMS DE REGRAS (Rulebook v3)
@@ -41,10 +48,23 @@ const ANIMAIS_PARA_VENCER     := 4
 const MAX_BANCO_RESERVA       := 5
 const TURNO_INICIAL           := 1
 
+const EMOJI_COR := {
+	"🔵": "azul",
+	"🟡": "amarelo",
+	"🟢": "verde",
+	"🟤": "marrom",
+	"🔴": "vermelho",
+	"⚪": "incolor"
+}
+
 # -----------------------------------------------------------------------------
 # ESTADO CÉLULA DA PARTIDA ATIVA
 # -----------------------------------------------------------------------------
 enum Fase { COMPRAR, ALIMENTACAO, PRINCIPAL, ATAQUE, FIM }
+
+
+var _mulligans_jogador: Array = [0, 0]  # contagem por jogador
+var _ativo_confirmado: Array = [false, false]  # controle de confirmação
 
 var partida_ativa: bool = false
 var turno_atual: int    = TURNO_INICIAL
@@ -81,49 +101,6 @@ var jogadores: Dictionary = {
 # -----------------------------------------------------------------------------
 # FLUXO PRINCIPAL: INICIALIZAÇÃO E CONTROLE DE TURNOS
 # -----------------------------------------------------------------------------
-
-func inicializar_partida(nome_deck_j0: String, nome_deck_j1: String) -> void:
-	partida_ativa = true
-	turno_atual = TURNO_INICIAL
-	fase_atual = Fase.COMPRAR
-	jogador_ativo = 0
-	
-	# Reinicia estruturas básicas - Correção dos inicializadores de Array e Null
-	jogadores = {
-		0: {
-			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j0),
-			"mao": [] as Array[CardResource],
-			"banco": [],   # Array[AnimalInstance]
-			"zona_ativo": null, # Removido o cast inválido de null
-			"pilha_descarte": [] as Array[CardResource],
-			"pontos_comida": 0,
-			"animais_nocauteados": 0,
-			"condicao": Condicao.NENHUMA,
-			"turnos_na_condicao": 0
-		},
-		1: {
-			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j1),
-			"mao": [] as Array[CardResource],
-			"banco": [],   # Array[AnimalInstance]
-			"zona_ativo": null,  # AnimalInstance ou null
-			"pilha_descarte": [] as Array[CardResource],
-			"pontos_comida": 0,
-			"animais_nocauteados": 0,
-			"condicao": Condicao.NENHUMA,
-			"turnos_na_condicao": 0
-		}
-	}
-	
-	jogadores[0]["deck"].shuffle()
-	jogadores[1]["deck"].shuffle()
-	
-	# Compra a mão inicial clássica de 7 cartas
-	for i in range(7):
-		_comprar_carta_silencioso(0)
-		_comprar_carta_silencioso(1)
-		
-	emit_signal("turno_iniciado", jogador_ativo)
-
 
 func avancar_fase() -> void:
 	if not partida_ativa: return
@@ -208,7 +185,56 @@ func _processar_fase_fim() -> void:
 # -----------------------------------------------------------------------------
 # SUB-ROTINAS DE SUPORTE E MANIPULAÇÃO DE RECURSOS
 # -----------------------------------------------------------------------------
+func _executar_compra_inicial() -> void:
+	for i in range(7):
+		_comprar_carta_silencioso(0)
+		_comprar_carta_silencioso(1)
+	_verificar_mulligan(0)
+func _verificar_mulligan(jogador_id: int) -> void:
+	var tem_filhote := false
+	for carta in jogadores[jogador_id]["mao"]:
+		if carta.super_type == "animal" and carta.stage == "Filhote":
+			tem_filhote = true
+			break
 
+	if tem_filhote:
+		# Passa para o próximo jogador ou para escolha do ativo
+		if jogador_id == 0:
+			_verificar_mulligan(1)
+		else:
+			_entregar_cartas_extras_mulligan()
+	else:
+		emit_signal("solicitar_mulligan", jogador_id)
+			
+func confirmar_mulligan(jogador_id: int) -> void:
+	_mulligans_jogador[jogador_id] += 1
+	print("GameState: Jogador %d fez mulligan #%d." % [jogador_id, _mulligans_jogador[jogador_id]])
+
+	# Devolve a mão ao deck e reembaralha
+	for carta in jogadores[jogador_id]["mao"]:
+		jogadores[jogador_id]["deck"].append(carta)
+	jogadores[jogador_id]["mao"].clear()
+	jogadores[jogador_id]["deck"].shuffle()
+
+	# Compra nova mão
+	for i in range(7):
+		_comprar_carta_silencioso(jogador_id)
+
+	_verificar_mulligan(jogador_id)
+
+func _entregar_cartas_extras_mulligan() -> void:
+	for jogador_id in [0, 1]:
+		var quantidade = _mulligans_jogador[jogador_id]
+		if quantidade > 0:
+			var adversario_id := 1 if jogador_id == 0 else 0
+			for i in range(quantidade):
+				_comprar_carta_silencioso(adversario_id)
+			print("GameState: Jogador %d recebeu %d carta(s) extra(s) por mulligan do adversário." % [adversario_id, quantidade])
+			emit_signal("cartas_extras_entregues", adversario_id, quantidade)
+
+	# Solicita escolha do ativo para o jogador que vai jogar primeiro
+	emit_signal("solicitar_escolha_ativo", jogador_ativo)
+	
 func _comprar_carta_silencioso(jogador_id: int) -> CardResource:
 	var j = jogadores[jogador_id]
 	if j["deck"].is_empty(): return null
@@ -275,6 +301,65 @@ func _validar_anexar_energia(jogador_id: int, indice_na_mao: int) -> CardResourc
 # -----------------------------------------------------------------------------
 # INTERFACE PÚBLICA DE AÇÕES DE JOGO (Chamado pela Mesa/Cartas Visuais)
 # -----------------------------------------------------------------------------
+func inicializar_setup(nome_deck_j0: String, nome_deck_j1: String) -> void:
+	# Inicializa estruturas sem iniciar o turno
+	partida_ativa = false
+	turno_atual = TURNO_INICIAL
+	fase_atual = Fase.COMPRAR
+	_mulligans_jogador = [0, 0]
+	_ativo_confirmado = [false, false]
+
+	jogadores = {
+		0: {
+			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j0),
+			"mao": [] as Array[CardResource],
+			"banco": [],
+			"zona_ativo": null,
+			"pilha_descarte": [] as Array[CardResource],
+			"pontos_comida": 0,
+			"animais_nocauteados": 0,
+			"condicao": Condicao.NENHUMA,
+			"turnos_na_condicao": 0
+		},
+		1: {
+			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j1),
+			"mao": [] as Array[CardResource],
+			"banco": [],
+			"zona_ativo": null,
+			"pilha_descarte": [] as Array[CardResource],
+			"pontos_comida": 0,
+			"animais_nocauteados": 0,
+			"condicao": Condicao.NENHUMA,
+			"turnos_na_condicao": 0
+		}
+	}
+
+	jogadores[0]["deck"].shuffle()
+	jogadores[1]["deck"].shuffle()
+
+	emit_signal("solicitar_lancamento_moeda")
+
+
+func confirmar_ativo(jogador_id: int, indice_na_mao: int) -> bool:
+	var resultado := jogar_animal_para_ativo(jogador_id, indice_na_mao)
+	if not resultado: return false
+
+	_ativo_confirmado[jogador_id] = true
+	print("GameState: Jogador %d confirmou o ativo inicial." % jogador_id)
+
+	# Verifica se o outro jogador ainda não confirmou
+	var outro_id := 1 if jogador_id == 0 else 0
+	if not _ativo_confirmado[outro_id]:
+		emit_signal("solicitar_escolha_ativo", outro_id)
+	else:
+		_iniciar_primeiro_turno()
+	return true
+
+func _iniciar_primeiro_turno() -> void:
+	partida_ativa = true
+	emit_signal("setup_concluido")
+	print("GameState: Setup concluído. Primeiro turno do Jogador %d." % jogador_ativo)
+	_processar_fase_comprar()
 
 func jogar_animal_para_ativo(jogador_id: int, indice_na_mao: int) -> bool:
 	var j = jogadores[jogador_id]
@@ -357,6 +442,68 @@ func anexar_energia_no_banco(jogador_id: int, indice_na_mao: int, indice_no_banc
 	emit_signal("energia_anexada", jogador_id, alvo, carta)
 	return true
 	
+func pode_atacar(jogador_id: int) -> bool:
+	var ativo: AnimalInstance = jogadores[jogador_id]["zona_ativo"]
+	if ativo == null: return false
+	if ativo.card.attack_cost == "": return true  # sem custo
+	var custo := _parsear_custo(ativo.card.attack_cost)
+	return ativo.tem_energias_suficientes(custo)
+
+func declarar_ataque(jogador_id: int, dano: int) -> bool:
+	if not pode_atacar(jogador_id): return false
+	var oponente_id := 1 if jogador_id == 0 else 0
+	aplicar_dano_ativo(oponente_id, dano)
+	print("GameState: Jogador %d atacou por %d de dano!" % [jogador_id, dano])
+	emit_signal("ataque_declarado", jogador_id, dano)
+	return true
+	
+func pode_recuar(jogador_id: int) -> bool:
+	var j = jogadores[jogador_id]
+	var ativo: AnimalInstance = j["zona_ativo"]
+	if ativo == null: return false
+	if j["banco"].is_empty(): return false  # sem animal para trocar
+	if ativo.card.cost_retreat == 0: return true  # recuo gratuito
+	var total_disponivel := ativo.attached_energies.size() + ativo.current_food
+	return total_disponivel >= ativo.card.cost_retreat
+
+func executar_recuo(jogador_id: int, indice_do_banco: int, indices_energias: Array, quantidade_comida: int) -> bool:
+	var j = jogadores[jogador_id]
+	var ativo: AnimalInstance = j["zona_ativo"]
+	if ativo == null: return false
+	if j["banco"].is_empty(): return false
+	if indice_do_banco < 0 or indice_do_banco >= j["banco"].size(): return false
+
+	# Recuo gratuito — troca direta
+	if ativo.card.cost_retreat == 0:
+		_trocar_ativo_com_banco(jogador_id, indice_do_banco)
+		emit_signal("recuo_executado", jogador_id)
+		return true
+
+	# Valida se a combinação escolhida atinge exatamente o custo
+	var total_pago := indices_energias.size() + quantidade_comida
+	if total_pago != ativo.card.cost_retreat: return false
+
+	# Valida índices de energia
+	for idx in indices_energias:
+		if idx < 0 or idx >= ativo.attached_energies.size(): return false
+
+	# Valida comida disponível
+	if ativo.current_food < quantidade_comida: return false
+
+	# Paga energias em ordem reversa para não deslocar índices
+	indices_energias.sort()
+	indices_energias.reverse()
+	for idx in indices_energias:
+		j["pilha_descarte"].append(ativo.attached_energies[idx])
+		ativo.attached_energies.remove_at(idx)
+
+	# Paga comida
+	ativo.current_food -= quantidade_comida
+
+	_trocar_ativo_com_banco(jogador_id, indice_do_banco)
+	emit_signal("recuo_executado", jogador_id)
+	return true
+	
 func aplicar_dano_ativo(jogador_id: int, quantidade: int) -> void:
 	var ativo = jogadores[jogador_id]["zona_ativo"]
 	if ativo == null: return
@@ -417,6 +564,25 @@ func lancar_moeda(motivo_acao: String) -> bool:
 	emit_signal("moeda_lancada", motivo_acao, resultado)
 	print("GameState: Lançamento de Moeda (%s) -> Resultado: %s" % [motivo_acao, "CARA" if resultado else "COROA"])
 	return resultado
+
+func _trocar_ativo_com_banco(jogador_id: int, indice_do_banco: int) -> void:
+	var j = jogadores[jogador_id]
+	var saindo: AnimalInstance = j["zona_ativo"]
+	var entrando: AnimalInstance = j["banco"][indice_do_banco]
+
+	# Troca as posições
+	j["banco"][indice_do_banco] = saindo
+	j["zona_ativo"] = entrando
+
+	# Animal que entrou no ativo NÃO recebe entrou_este_turno = true (regra do recuo)
+	print("GameState: Jogador %d trocou %s por %s via recuo." % [jogador_id, saindo.card.name, entrando.card.name])
+
+func confirmar_lancamento_moeda() -> void:
+	var resultado := lancar_moeda("Sorteio do Primeiro Jogador")
+	jogador_ativo = 0 if resultado else 1
+	print("GameState: Jogador %d vai jogar primeiro." % jogador_ativo)
+	_executar_compra_inicial()
+
 
 # -----------------------------------------------------------------------------
 # VERIFICADORES DE VITÓRIA E GETTERS DE CONSULTA
@@ -479,3 +645,19 @@ func consumir_deck_em_edicao() -> Dictionary:
 	var dados = _deck_temporario_edicao.duplicate(true)
 	_deck_temporario_edicao.clear() # Limpa para não prender dados na memória
 	return dados
+# =============================================================================
+# PARSEADORES E NORMALIZADORES
+# =============================================================================
+
+func _parsear_custo(custo_string: String) -> Dictionary:
+	var resultado := {}
+	# Itera por caractere unicode (emojis ocupam múltiplos bytes)
+	for emoji in EMOJI_COR.keys():
+		var count := 0
+		var temp := custo_string
+		while emoji in temp:
+			count += 1
+			temp = temp.substr(temp.find(emoji) + emoji.length())
+		if count > 0:
+			resultado[EMOJI_COR[emoji]] = count
+	return resultado

@@ -4,25 +4,25 @@
 
 ### Sistema de Comida
 
-* [ ] Comida individual por animal
-* [ ] Consumo automático no fim do turno
-* [ ] Nocaute por fome
+* [x ] Comida individual por animal
+* [x ] Consumo automático no fim do turno
+* [x ] Nocaute por fome
 
 ### Sistema de Evolução
 
-* [ ] Bebê → Jovem
-* [ ] Jovem → Adulto
-* [ ] Evoluções especiais
+* [x ] Filhote → Jovem
+* [x ] Jovem → Adulto
+* [x ] Evoluções especiais
 
 ### Sistema de Energia
 
-* [ ] Energias anexadas
-* [ ] Pagamento de custos
+* [x ] Energias anexadas
+* [x ] Pagamento de custos
 
 ### Sistema de Recuo
 
-* [ ] Troca de animal ativo
-* [ ] Pagamento de custo
+* [x] Troca de animal ativo
+* [x] Pagamento de custo
 
 ---
 
