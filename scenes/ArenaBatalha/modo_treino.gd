@@ -95,7 +95,9 @@ func _on_start_pressed() -> void:
 		deck_ativo
 	])
 
-	GameState.inicializar_setup(deck_ativo, deck_ativo)
+	GameState.deck_pendente_j0 = deck_ativo
+	GameState.deck_pendente_j1 = deck_ativo
+	
 	get_tree().change_scene_to_file(CENA_BATALHA)
 
 # -----------------------------------------------------------------------------

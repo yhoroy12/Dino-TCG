@@ -5,7 +5,7 @@ extends Node
 # Responsável pela persistência de IDs e conversão para objetos CardResource.
 # ==============================================================================
 
-const DIRETORIO_DECKS    := "B:/GameDev/DINO TCG GAME/Dinogame/UsuariosTeste/"
+const DIRETORIO_DECKS    := "C:/GameDev/decksalves/"
 const TAMANHO_DECK_VALIDO := 60
 
 func _ready() -> void:
@@ -19,7 +19,7 @@ func _criar_diretorio_se_nao_existir() -> void:
 
 func salvar_deck(nome_deck: String, lista_ids: Array[String]) -> bool:
 	if nome_deck.strip_edges() == "": return false
-
+	print("iniciando procvesso de salvar deck")
 	var caminho_arquivo := DIRETORIO_DECKS + nome_deck + ".json"
 	var arquivo := FileAccess.open(caminho_arquivo, FileAccess.WRITE)
 	if arquivo == null: return false

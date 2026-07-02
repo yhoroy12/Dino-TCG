@@ -81,7 +81,7 @@ func _ready() -> void:
 	_configurar_interface_inicial()
 	
 	print("✓ MesaDoTabuleiro inicializada com sucesso")
-
+	GameState.inicializar_setup(GameState.deck_pendente_j0, GameState.deck_pendente_j1)
 
 func _process(delta: float) -> void:
 	"""Atualiza UI em tempo real (timer de turno, arrasto de cartas)"""
@@ -200,7 +200,7 @@ func _ao_setup_concluido() -> void:
 	print("✅ Setup concluído. Partida iniciada!")
 	organizar_cartas_nas_zonas(0)
 	organizar_cartas_nas_zonas(1)
-	
+	print("Mesa: setup_concluido recebido!")
 func _ao_turno_iniciado(jogador_id: int) -> void:
 	"""Chamado quando um novo turno inicia"""
 	jogador_ativo_id = jogador_id

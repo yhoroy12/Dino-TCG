@@ -71,6 +71,9 @@ var turno_atual: int    = TURNO_INICIAL
 var jogador_ativo: int  = 0 # 0 = Jogador Humano, 1 = Oponente/IA
 var fase_atual: Fase    = Fase.COMPRAR
 var energia_anexada_neste_turno: bool = false
+var deck_pendente_j0: String = ""
+var deck_pendente_j1: String = ""
+
 
 # Dicionário de Estado dos Jogadores - Correção dos casts de Array e do valor Null
 var jogadores: Dictionary = {
@@ -336,7 +339,7 @@ func inicializar_setup(nome_deck_j0: String, nome_deck_j1: String) -> void:
 
 	jogadores[0]["deck"].shuffle()
 	jogadores[1]["deck"].shuffle()
-
+	print("GameState: inicializar_setup chamado. Jogadores prontos.")
 	emit_signal("solicitar_lancamento_moeda")
 
 
