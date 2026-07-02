@@ -35,27 +35,50 @@ func salvar_deck(nome_deck: String, lista_ids: Array[String]) -> bool:
 
 
 func carregar_lista_ids(nome_deck: String) -> Array:
+
 	var caminho_arquivo := DIRETORIO_DECKS + nome_deck + ".json"
-	if not FileAccess.file_exists(caminho_arquivo): return []
+
+	if not FileAccess.file_exists(caminho_arquivo):
+		return []
 
 	var arquivo := FileAccess.open(caminho_arquivo, FileAccess.READ)
 	var texto := arquivo.get_as_text()
 	arquivo.close()
 
 	var json := JSON.new()
-	if json.parse(texto) != OK: return []
+
+	if json.parse(texto) != OK:
+		return []
 
 	var dados = json.get_data()
-	if typeof(dados) == TYPE_DICTIONARY and dados.has("cartas_ids"):
-		return dados["cartas_ids"]
-	return []
+
+	var lista_ids: Array = []
+
+	if typeof(dados) == TYPE_DICTIONARY and dados.has("colecao"):
+
+		for entrada in dados["colecao"]:
+
+			var id = entrada.get("id", "")
+			var quantidade = entrada.get("quantidade", 0)
+
+			for i in range(quantidade):
+				lista_ids.append(id)
+	
+	print("Deck:", nome_deck)
+	print("IDs carregados:", lista_ids.size())
+	return lista_ids
 
 # ------------------------------------------------------------------------------
 # NOVA FUNÇÃO DE CONVERSÃO PARA A ERA DOS RESOURCES
 # ------------------------------------------------------------------------------
 ## Carrega o arquivo JSON do deck, pega os IDs salvos e devolve uma Array real cheia de CardResources tipados.
 func carregar_deck_para_partida(nome_deck: String) -> Array[CardResource]:
+	print("========== CARREGAR DECK ==========")
+	print("Nome do deck: ", nome_deck)
+	
 	var lista_ids = carregar_lista_ids(nome_deck)
+	print("IDs encontrados: ", lista_ids.size())
+	
 	var deck_de_resources: Array[CardResource] = []
 	
 	for id in lista_ids:
@@ -65,7 +88,8 @@ func carregar_deck_para_partida(nome_deck: String) -> Array[CardResource]:
 			deck_de_resources.append(recurso_carta)
 		else:
 			push_error("DeckManager: Falha crítica ao carregar carta ID: " + id + " para o deck da partida.")
-			
+	
+	print("Cartas carregadas para partida: ", deck_de_resources.size())		
 	return deck_de_resources
 
 

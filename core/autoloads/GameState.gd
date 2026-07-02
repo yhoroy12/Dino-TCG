@@ -189,17 +189,41 @@ func _processar_fase_fim() -> void:
 # SUB-ROTINAS DE SUPORTE E MANIPULAÇÃO DE RECURSOS
 # -----------------------------------------------------------------------------
 func _executar_compra_inicial() -> void:
+	print("\n========== COMPRA INICIAL ==========")
 	for i in range(7):
+		print("Rodada de compra: ", i + 1)
 		_comprar_carta_silencioso(0)
 		_comprar_carta_silencioso(1)
+	print("Mão Jogador 0: ", jogadores[0]["mao"].size())
+	print("Mão Jogador 1: ", jogadores[1]["mao"].size())	
+	
+	print("Iniciando verificação de mulligan...")
 	_verificar_mulligan(0)
 func _verificar_mulligan(jogador_id: int) -> void:
+	print("\n========== VERIFICAR MULLIGAN ==========")
+	print("Jogador: ", jogador_id)
+	print("Cartas na mão: ", jogadores[jogador_id]["mao"].size())
 	var tem_filhote := false
 	for carta in jogadores[jogador_id]["mao"]:
+		if carta == null:
+			print("Carta NULL encontrada")
+			continue
+
+		print(
+			"Carta: ",
+			carta.name,
+			" | Tipo: ",
+			carta.super_type,
+			" | Stage: ",
+			carta.stage
+		)
+		
 		if carta.super_type == "animal" and carta.stage == "Filhote":
+			print("FILHOTE ENCONTRADO!")
 			tem_filhote = true
 			break
-
+	print("Resultado Mulligan: ", tem_filhote)
+	
 	if tem_filhote:
 		# Passa para o próximo jogador ou para escolha do ativo
 		if jogador_id == 0:
@@ -207,21 +231,31 @@ func _verificar_mulligan(jogador_id: int) -> void:
 		else:
 			_entregar_cartas_extras_mulligan()
 	else:
+		print("Solicitando mulligan...")
 		emit_signal("solicitar_mulligan", jogador_id)
 			
 func confirmar_mulligan(jogador_id: int) -> void:
-	_mulligans_jogador[jogador_id] += 1
-	print("GameState: Jogador %d fez mulligan #%d." % [jogador_id, _mulligans_jogador[jogador_id]])
+	print("\n========== MULLIGAN ==========")
+	print("Jogador: ", jogador_id)
+	print("Mulligan #: ", _mulligans_jogador[jogador_id] + 1)
 
+	print("Cartas devolvidas ao deck: ",jogadores[jogador_id]["mao"].size())
+	
+	_mulligans_jogador[jogador_id] += 1
 	# Devolve a mão ao deck e reembaralha
 	for carta in jogadores[jogador_id]["mao"]:
 		jogadores[jogador_id]["deck"].append(carta)
+	
 	jogadores[jogador_id]["mao"].clear()
+	print("Deck após devolver cartas: ",jogadores[jogador_id]["deck"].size())
+	
 	jogadores[jogador_id]["deck"].shuffle()
 
 	# Compra nova mão
 	for i in range(7):
 		_comprar_carta_silencioso(jogador_id)
+	print("Nova mão: ",
+		jogadores[jogador_id]["mao"].size())
 
 	_verificar_mulligan(jogador_id)
 
@@ -239,14 +273,35 @@ func _entregar_cartas_extras_mulligan() -> void:
 	emit_signal("solicitar_escolha_ativo", jogador_ativo)
 	
 func _comprar_carta_silencioso(jogador_id: int) -> CardResource:
-	var j = jogadores[jogador_id]
-	if j["deck"].is_empty(): return null
-	
-	# Remove do topo do deck e puxa a instância limpa e duplicada para a partida
-	var carta: CardResource = j["deck"].pop_front()
-	j["mao"].append(carta)
-	return carta
 
+	print("\n--- COMPRA JOGADOR ", jogador_id, " ---")
+
+	var j = jogadores[jogador_id]
+
+	print("Deck antes: ", j["deck"].size())
+	print("Mão antes: ", j["mao"].size())
+
+	if j["deck"].is_empty():
+		print("ERRO: Deck vazio!")
+		return null
+
+	# Remove do topo do deck
+	var carta: CardResource = j["deck"].pop_front()
+
+	if carta == null:
+		print("ERRO: Carta NULL retirada do deck!")
+		return null
+
+	print("Carta comprada: ", carta.name)
+	print("Super Type: ", carta.super_type)
+	print("Stage: ", carta.stage)
+
+	j["mao"].append(carta)
+
+	print("Mão depois: ", j["mao"].size())
+	print("Deck depois: ", j["deck"].size())
+
+	return carta
 
 func _aplicar_danos_de_condicao() -> void:
 	var j = jogadores[jogador_ativo]

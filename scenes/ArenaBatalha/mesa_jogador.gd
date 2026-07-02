@@ -102,6 +102,105 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_cancelar_arrasto()
 		get_tree().root.set_input_as_handled()
+# ==================================================
+# FLUXO DE SETUP DA PARTIDA
+# ==================================================
+
+# Func: _iniciar_setup_visual
+# Responsável por iniciar toda a sequência visual de preparação da partida.
+# Deve ser chamada assim que a cena MesaJogador estiver pronta.
+# Não executa regras do jogo, apenas inicia a primeira etapa do setup.
+# Próximo passo esperado: _mostrar_escolha_moeda()
+#
+# Return:
+# void
+func _iniciar_setup_visual() -> void:
+	pass
+
+
+# Func: _mostrar_escolha_moeda
+# Exibe a interface para o jogador escolher Cara ou Coroa.
+# Deve habilitar os controles de seleção e aguardar interação do jogador.
+# Nenhuma regra do GameState é executada nesta etapa.
+#
+# Return:
+# void
+func _mostrar_escolha_moeda() -> void:
+	pass
+
+
+# Func: _ao_escolher_moeda
+# Callback disparado quando o jogador escolhe Cara ou Coroa.
+# Armazena a escolha localmente e solicita ao GameState a execução do sorteio.
+# Também pode iniciar a animação da moeda.
+#
+# Parâmetros:
+# escolha: String ("cara" ou "coroa")
+#
+# Return:
+# void
+func _ao_escolher_moeda(escolha: String) -> void:
+	pass
+
+
+# Func: _ao_resultado_moeda
+# Recebe o resultado oficial do sorteio vindo do GameState.
+# Atualiza a interface mostrando o resultado da moeda.
+# Informa ao jogador se ele será o primeiro ou o segundo a jogar.
+# Ao finalizar a animação ou confirmação visual, deve avançar para a compra inicial.
+#
+# Return:
+# void
+func _ao_resultado_moeda() -> void:
+	pass
+
+
+# Func: _mostrar_mao_inicial
+# Solicita ao sistema visual a renderização da mão inicial, deck,
+# descarte e demais elementos básicos da mesa.
+# Deve ser executada antes da etapa de Mulligan para que o jogador
+# possa visualizar as cartas recebidas.
+#
+# Return:
+# void
+func _mostrar_mao_inicial() -> void:
+	pass
+
+
+# Func: _iniciar_mulligan
+# Inicia a fase de Mulligan.
+# Verifica junto ao GameState se o jogador possui uma mão válida.
+# Caso necessário, apresenta os controles para confirmar o Mulligan.
+# Caso não seja necessário, encaminha diretamente para a próxima etapa.
+#
+# Return:
+# void
+func _iniciar_mulligan() -> void:
+	pass
+
+
+# Func: _finalizar_mulligan
+# Executada após todos os Mulligans terem sido resolvidos.
+# Atualiza visualmente a mão do jogador, entrega cartas extras quando necessário
+# e garante que a mesa reflita o estado final do setup.
+# Ao concluir esta etapa, deve emitir ou solicitar a conclusão oficial do setup.
+#
+# Return:
+# void
+func _finalizar_mulligan() -> void:
+	pass
+
+
+# Func: _iniciar_escolha_ativo
+# Inicia a etapa de seleção do Animal Ativo inicial.
+# Destaca os Filhotes elegíveis na mão do jogador.
+# Aguarda a escolha e envia a seleção ao GameState para validação.
+# Esta é a última etapa do setup antes do início da partida.
+#
+# Return:
+# void
+func _iniciar_escolha_ativo() -> void:
+	pass
 
 # ==============================================================================
 # VALIDAÇÃO E CONEXÃO DE SINAIS
@@ -130,6 +229,9 @@ func _conectar_sinais_gamestate() -> void:
 	if not GameState:
 		push_error("❌ GameState (Autoload) não está disponível!")
 		return
+	#solicitar o lançamento da moeda para jogador inicial
+	GameState.solicitar_lancamento_moeda.connect(_ao_solicitar_lancamento_moeda)
+	
 	#Mulligan
 	GameState.solicitar_mulligan.connect(_ao_solicitar_mulligan)
 	
@@ -178,6 +280,10 @@ func _configurar_interface_inicial() -> void:
 # ==============================================================================
 # CALLBACKS DO GAMESTATE — TURNOS
 # ==============================================================================
+func _ao_solicitar_lancamento_moeda() -> void:
+	print("🪙 Sorteando primeiro jogador...")
+
+	GameState.confirmar_lancamento_moeda()
 
 func _ao_solicitar_mulligan(jogador_id: int) -> void:
 	# Por enquanto apenas confirma automaticamente
