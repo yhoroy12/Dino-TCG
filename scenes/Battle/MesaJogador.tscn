@@ -1,6 +1,5 @@
-[gd_scene load_steps=9 format=3 uid="uid://ny6i18slc4m1"]
+[gd_scene load_steps=8 format=3 uid="uid://ny6i18slc4m1"]
 
-[ext_resource type="Texture2D" path="res://assest/textures/board/baord.jpg" id="1_2odcw"]
 [ext_resource type="Script" uid="uid://86ujk6b3n2gl" path="res://Scenes/Battle/mesa_jogador.gd" id="1_brl4g"]
 
 [sub_resource type="Gradient" id="Gradient_brl4g"]
@@ -51,17 +50,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.202491, 0.224678, 0.261652, 1)
-
-[node name="Fundo" type="TextureRect" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = ExtResource("1_2odcw")
-expand_mode = 1
 
 [node name="MesaContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
