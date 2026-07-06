@@ -17,22 +17,25 @@ extends RefCounted
 
 var card : CardResource
 #Variaveis de estado das cartas
+
 var current_hp : int # hp atual
 var current_food : int # comida atual
-var attached_energies : Array = [] #energias anexadas
+var attached_energies : Array = [] # futuramente var attached_energies : Array[EnergyResource] = [] energias anexadas
 var conditions : Array = [] #Estatus de condiçao especial
-var entrou_este_turno : bool = true #verifica se foi colocado nesse turno ou nao.
-var evoluiu_este_turno : bool = false# verifica se ele evoluiu nesse turno ou nao.
+var entrou_este_turno := true #verifica se foi colocado nesse turno ou nao.
+var evoluiu_este_turno := false# verifica se ele evoluiu nesse turno ou nao.
+var temporary_effects : Array = []
 
 func _init(card_resource : CardResource):
 
 	card = card_resource
 
 	current_hp = card.hp
-
 	current_food = 0
-	
-	attached_energies = []
+
+	attached_energies.clear()
+	conditions.clear()
+	temporary_effects.clear()
 	
 func contar_energias_por_cor() -> Dictionary:
 	var contagem := {}

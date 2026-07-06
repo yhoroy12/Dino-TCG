@@ -1,9 +1,3 @@
-# ==================================================
-# Nome: CardResource
-# Categoria: Data
-# Responsável por definir a estrutura de dados de uma carta.
-# ==================================================
-
 class_name CardResource
 extends Resource
 
@@ -16,6 +10,7 @@ extends Resource
 @export_group("Atributos Visuais e Stats")
 @export var color: String = ""
 @export var stage: String = ""
+@export var grow_from: String = ""
 @export var hp: int = 0
 @export var food_points: int = 0
 @export var weakness: String = ""

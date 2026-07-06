@@ -233,7 +233,6 @@ func _verificar_mulligan(jogador_id: int) -> void:
 	else:
 		print("Solicitando mulligan...")
 		emit_signal("solicitar_mulligan", jogador_id)
-			
 func confirmar_mulligan(jogador_id: int) -> void:
 	print("\n========== MULLIGAN ==========")
 	print("Jogador: ", jogador_id)
@@ -258,7 +257,6 @@ func confirmar_mulligan(jogador_id: int) -> void:
 		jogadores[jogador_id]["mao"].size())
 
 	_verificar_mulligan(jogador_id)
-
 func _entregar_cartas_extras_mulligan() -> void:
 	for jogador_id in [0, 1]:
 		var quantidade = _mulligans_jogador[jogador_id]
@@ -271,7 +269,6 @@ func _entregar_cartas_extras_mulligan() -> void:
 
 	# Solicita escolha do ativo para o jogador que vai jogar primeiro
 	emit_signal("solicitar_escolha_ativo", jogador_ativo)
-	
 func _comprar_carta_silencioso(jogador_id: int) -> CardResource:
 
 	print("\n--- COMPRA JOGADOR ", jogador_id, " ---")
