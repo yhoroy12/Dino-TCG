@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://cnnx6j0eiboje"]
 
-[ext_resource type="Script" uid="uid://cwv4hnw6rk5yi" path="res://scenes/DeckBuilder/deck_builder.gd" id="1_v6p87"]
+[ext_resource type="Script" uid="uid://cxqnbg8ikrn0s" path="res://Scenes/Menus/deck_builder.gd" id="1_v6p87"]
 
 [sub_resource type="StyleBoxLine" id="StyleBoxLine_v6p87"]
 content_margin_left = 5.0

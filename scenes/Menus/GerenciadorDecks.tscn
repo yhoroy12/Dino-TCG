@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bfc4eph8tu4i8"]
 
-[ext_resource type="Script" uid="uid://ba3s3srg35ty" path="res://scenes/DeckBuilder/gerenciador_decks.gd" id="1_7nyi7"]
+[ext_resource type="Script" uid="uid://c0soo7lwmw64p" path="res://Scenes/Menus/gerenciador_decks.gd" id="1_7nyi7"]
 
 [node name="GerenciadorDecks" type="Control"]
 layout_mode = 3

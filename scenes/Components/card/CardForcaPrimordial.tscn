@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://dwb482cmme7cj"]
 
-[ext_resource type="Script" uid="uid://dj0crii4n1p0u" path="res://components/card/CardForcaPrimordial.gd" id="1_g2yap"]
-[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="1_g6gvi"]
-[ext_resource type="Texture2D" uid="uid://covtsgpy37hdr" path="res://assest/textures/cards/TCG Card Primordial vermelho.png" id="2_g2yap"]
+[ext_resource type="Script" uid="uid://dj0crii4n1p0u" path="res://Scenes/Components/card/CardForcaPrimordial.gd" id="1_g2yap"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://Assets/placeholder.png" id="1_g6gvi"]
+[ext_resource type="Texture2D" uid="uid://covtsgpy37hdr" path="res://Assets/Cards/Energies/TCG Card Primordial vermelho.png" id="2_g2yap"]
 
 [node name="CardForcaPrimordial" type="Control"]
 custom_minimum_size = Vector2(150, 233)

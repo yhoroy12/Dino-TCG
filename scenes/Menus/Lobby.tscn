@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://chfyvqxrtch5t"]
 
-[ext_resource type="Script" uid="uid://c32x4g1xbf0hg" path="res://scenes/Lobby/lobby.gd" id="1_lqr06"]
+[ext_resource type="Script" uid="uid://dou8t0mryruwx" path="res://Scenes/Menus/lobby.gd" id="1_lqr06"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oumm8"]
 bg_color = Color(0.366595, 0.366595, 0.366594, 1)

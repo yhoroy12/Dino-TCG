@@ -5,8 +5,8 @@ extends Control
 # Gerencia seleção de adversário, expansão visual e seleção de dificuldade.
 # ==============================================================================
 
-const CENA_LOBBY   := "res://scenes/Lobby/Lobby.tscn"
-const CENA_BATALHA := "res://scenes/ArenaBatalha/Mesajogador.tscn"
+const CENA_LOBBY   := "res://Scenes/Menus/Lobby.tscn"
+const CENA_BATALHA := "res://Scenes/Battle/MesaJogador.tscn"
 
 # -----------------------------------------------------------------------------
 # REFERÊNCIAS ESTÁTICAS

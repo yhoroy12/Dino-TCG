@@ -100,6 +100,13 @@ func confirmar_animal_ativo(jogador_id: int, indice_na_mao: int) -> bool:
 	jogador.mao.remove_at(indice_na_mao)
 	jogador.ativo = AnimalInstance.new(carta)
 
+	# O Animal Ativo inicial NÃO conta como "recém-entrado" para a
+	# restrição de ataque (RuleValidator.validate_attack) — a única
+	# restrição de turno inicial é "não se pode atacar no turno 1
+	# do jogo", que já é checada via GameState.turno_atual. Sem este
+	# ajuste, o jogador 2 nunca conseguiria atacar nem no turno 2.
+	jogador.ativo.entrou_este_turno = false
+
 	_ativo_confirmado[jogador_id] = true
 
 	var adversario_id := 1 if jogador_id == 0 else 0

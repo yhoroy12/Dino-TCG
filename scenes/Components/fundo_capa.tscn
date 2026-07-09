@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://djdgg15o566l1"]
 
-[ext_resource type="Script" uid="uid://bybs5ahku8an3" path="res://components/fundo_capa.gd" id="1_caotr"]
+[ext_resource type="Script" uid="uid://bybs5ahku8an3" path="res://Scenes/Components/fundo_capa.gd" id="1_caotr"]
 
 [node name="Fundo Capa" type="PanelContainer"]
 custom_minimum_size = Vector2(220, 300)

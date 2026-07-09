@@ -127,6 +127,12 @@ func _processar_fim_de_turno_dos_animais() -> void:
 		ConditionSystem.processar_fim_de_turno(animal)
 		EffectSystem.processar_fim_de_turno(animal, true)
 
+		# A partir daqui o animal deixa de ser "recém-entrado": ele
+		# sobreviveu a uma troca de turno completa do próprio dono.
+		# RuleValidator.validate_attack depende disso para liberar o
+		# ataque em turnos seguintes.
+		animal.entrou_este_turno = false
+
 	for animal in jogador_adversario.animais_em_campo():
 		ConditionSystem.processar_fim_de_turno(animal)
 		EffectSystem.processar_fim_de_turno(animal, false)

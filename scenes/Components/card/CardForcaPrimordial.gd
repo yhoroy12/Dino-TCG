@@ -59,7 +59,7 @@ func inicializar(recurso: CardResource) -> void:
 		if ResourceLoader.exists(caminho_arte):
 			placeholder_img.texture = load(caminho_arte)
 		else:
-			placeholder_img.texture = preload("res://assest/textures/cards/placeholder.png")
+			placeholder_img.texture = preload("res://Assets/placeholder.png")
 
 
 func _on_gui_input(event: InputEvent) -> void:

@@ -5,9 +5,9 @@ extends Control
 # Lista os decks salvos, gerencia deck ativo e navega para edição.
 # ==============================================================================
 
-const CENA_LOBBY       := "res://scenes/Lobby/Lobby.tscn"
-const CENA_DECKBUILDER := "res://scenes/DeckBuilder/deckbuilder.tscn"
-const CENA_FUNDO_CAPA  := "res://components/fundo_capa.tscn"
+const CENA_LOBBY       := "res://Scenes/Menus/Lobby.tscn"
+const CENA_DECKBUILDER := "res://Scenes/Menus/deckbuilder.tscn"
+const CENA_FUNDO_CAPA  := "res://Scenes/Components/fundo_capa.tscn"
 
 # -----------------------------------------------------------------------------
 # REFERÊNCIAS DOS NÓS — ESTÁTICOS

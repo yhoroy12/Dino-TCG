@@ -1,9 +1,9 @@
 [gd_scene load_steps=6 format=3 uid="uid://41oept1sefba"]
 
-[ext_resource type="Script" uid="uid://dy2ravucaqijv" path="res://components/card/card_effecct.gd" id="1_trmg8"]
-[ext_resource type="FontFile" uid="uid://cp8ww3bo1jg1l" path="res://assest/fonts/Anton-Regular.ttf" id="2_0b4ut"]
-[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="3_s3hhr"]
-[ext_resource type="Texture2D" uid="uid://cmmtq0gauqrsh" path="res://assest/textures/cards/TCG Card Vestigio.png" id="4_g3abx"]
+[ext_resource type="Script" uid="uid://dy2ravucaqijv" path="res://Scenes/Components/card/card_effecct.gd" id="1_trmg8"]
+[ext_resource type="FontFile" uid="uid://cp8ww3bo1jg1l" path="res://UI/Fonts/Anton-Regular.ttf" id="2_0b4ut"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://Assets/placeholder.png" id="3_s3hhr"]
+[ext_resource type="Texture2D" uid="uid://cmmtq0gauqrsh" path="res://Assets/Cards/Vestigios/TCG Card Vestigio.png" id="4_g3abx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tt5f0"]
 bg_color = Color(0.6, 0.6, 0.6, 0)

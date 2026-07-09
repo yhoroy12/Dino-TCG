@@ -18,7 +18,7 @@ const DURACAO_ANIMACAO_CARTA: float = 0.3
 const DURACAO_ANIMACAO_MOEDA: float = 1.5
 const DISTANCIA_SNAP_ZONAS: float = 50.0  # Pixels
 const VELOCIDADE_CARTA_HAND: float = 8.0  # Unidades por frame
-const CENA_CARTA := preload("res://components/card/Card.tscn")
+const CENA_CARTA := preload("res://Scenes/Components/card/Card.tscn")
 
 # ==============================================================================
 # REFERÊNCIAS DE NÓS (@onready)

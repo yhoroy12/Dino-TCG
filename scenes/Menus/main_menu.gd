@@ -2,8 +2,8 @@ extends Control
 
 # Caminhos recomendados para as suas outras cenas. 
 # Ajuste os caminhos abaixo conforme a sua pasta "res://" real.
-const CENA_JOGAR = "res://scenes/Lobby/Lobby.tscn"
-const CENA_DECK_BUILDER = "res://scenes/DeckBuilder/deckbuilder.tscn"
+const CENA_JOGAR = "res://Scenes/Menus/Lobby.tscn"
+const CENA_DECK_BUILDER = "res://Scenes/Menus/deckbuilder.tscn"
 const CENA_LOJA = ""
 const CENA_CONFIGURACOES = ""
 

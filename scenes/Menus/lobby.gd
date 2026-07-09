@@ -8,11 +8,11 @@ extends Control
 # -----------------------------------------------------------------------------
 # CAMINHOS DAS CENAS
 # -----------------------------------------------------------------------------
-const CENA_MENU_PRINCIPAL  := "res://scenes/MainMenu/MainMenu.tscn"
+const CENA_MENU_PRINCIPAL  := "res://Scenes/Menus/MainMenu.tscn"
 const CENA_HISTORIA        := ""
-const CENA_TREINAMENTO     := "res://scenes/ArenaBatalha/ModoTreino.tscn"
+const CENA_TREINAMENTO     := "res://Scenes/Menus/ModoTreino.tscn"
 const CENA_COLECAO         := ""
-const CENA_GERENCIAR_DECKS := "res://scenes/DeckBuilder/GerenciadorDecks.tscn"
+const CENA_GERENCIAR_DECKS := "res://Scenes/Menus/GerenciadorDecks.tscn"
 # TODO: criar a cena de sala de espera e descomentar a linha abaixo
 # const CENA_SALA_ESPERA  := "res://scenes/multiplayer/sala_espera.tscn"
 

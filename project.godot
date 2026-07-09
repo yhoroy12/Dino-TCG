@@ -16,10 +16,11 @@ config/features=PackedStringArray("4.4", "Forward Plus")
 
 [autoload]
 
-CardDatabase="*res://core/autoloads/manager/CardDatabase.gd"
-DeckManager="*res://core/autoloads/manager/DeckManager.gd"
-GameState="*res://core/autoloads/GameState.gd"
+GameState="*res://Scripts/Core/GameState.gd"
 TurnManager="*res://Scripts/Core/TurnManager.gd"
+SetupManager="*res://Scripts/Core/SetupManager.gd"
+CardDatabase="*res://Scripts/Data/CardDatabase.gd"
+DeckManager="*res://Scripts/Data/DeckManager.gd"
 
 [display]
 

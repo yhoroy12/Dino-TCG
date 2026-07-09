@@ -43,7 +43,7 @@ func inicializar(recurso: CardResource) -> void:
 	
 	# 2. SISTEMA DE BORDA TEMÁTICA POR NOME DO TERRITÓRIO
 	var nome_limpo = recurso_carta.name.to_lower().strip_edges()
-	var caminho_borda = "res://assest/textures/cards/TCG Card Territorio " + nome_limpo + ".png"
+	var caminho_borda = "res://Assets/Cards/Territories/ " + nome_limpo + ".png"
 	
 	# Fallback inteligente: se não existir uma textura específica com o nome exato da carta,
 	# você pode usar uma genérica padrão para evitar caminhos quebrados
@@ -51,7 +51,7 @@ func inicializar(recurso: CardResource) -> void:
 		borda.texture = load(caminho_borda)
 	elif borda:
 		# Fallback para o território padrão existente se a arte gerada por IA não estiver no projeto
-		borda.texture = preload("res://assest/textures/cards/TCG Card Territorio Fartura e Pobreza.png")
+		borda.texture = preload("res://Assets/Cards/Territories/TCG Card Territorio Fartura e Pobreza.png")
 	
 	# 3. Carregamento dinâmico da arte central pelo ID da carta
 	if placeholder:
@@ -59,7 +59,7 @@ func inicializar(recurso: CardResource) -> void:
 		if ResourceLoader.exists(caminho_arte):
 			placeholder.texture = load(caminho_arte)
 		else:
-			placeholder.texture = preload("res://assest/textures/cards/placeholder.png")
+			placeholder.texture = preload("res://Assets/placeholder.png")
 
 
 func _on_gui_input(event: InputEvent) -> void:

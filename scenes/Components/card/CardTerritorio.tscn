@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://bk3bqkt5cwiu2"]
 
-[ext_resource type="Script" uid="uid://diwawaxd2hd5d" path="res://components/card/CardTerritorio.gd" id="1_4nk2x"]
-[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://assest/textures/cards/placeholder.png" id="1_xy4fq"]
-[ext_resource type="Texture2D" uid="uid://dot8mfp17xpm3" path="res://assest/textures/cards/TCG Card Territorio Fartura e Pobreza.png" id="2_4nk2x"]
+[ext_resource type="Script" uid="uid://diwawaxd2hd5d" path="res://Scenes/Components/card/CardTerritorio.gd" id="1_4nk2x"]
+[ext_resource type="Texture2D" uid="uid://box0ppmwknuvf" path="res://Assets/placeholder.png" id="1_xy4fq"]
+[ext_resource type="Texture2D" uid="uid://dot8mfp17xpm3" path="res://Assets/Cards/Territories/TCG Card Territorio Fartura e Pobreza.png" id="2_4nk2x"]
 
 [node name="CardTerritorio" type="Control"]
 custom_minimum_size = Vector2(150, 233)

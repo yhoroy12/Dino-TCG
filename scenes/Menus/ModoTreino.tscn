@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://dcku5uodvbcdp"]
 
-[ext_resource type="Script" uid="uid://drw52qwvwb1hp" path="res://scenes/ArenaBatalha/modo_treino.gd" id="1_yctop"]
-[ext_resource type="Texture2D" uid="uid://brc6ayifhw3xb" path="res://assest/textures/enemies/rex/tyrannosaurus-rex.jpg" id="2_nc2np"]
-[ext_resource type="Texture2D" uid="uid://dw5gxwfncjf5n" path="res://assest/textures/enemies/trike/Trike-treino.webp" id="3_dph0b"]
-[ext_resource type="Texture2D" uid="uid://bm82aymsqildx" path="res://assest/textures/enemies/raptor/Raptor.jpg" id="4_8s0yn"]
+[ext_resource type="Script" uid="uid://1k4her8v5iyx" path="res://Scenes/Menus/modo_treino.gd" id="1_yctop"]
+[ext_resource type="Texture2D" uid="uid://brc6ayifhw3xb" path="res://Assets/Enemies/rex/tyrannosaurus-rex.jpg" id="2_nc2np"]
+[ext_resource type="Texture2D" uid="uid://dw5gxwfncjf5n" path="res://Assets/Enemies/trike/Trike-treino.webp" id="3_dph0b"]
+[ext_resource type="Texture2D" uid="uid://bm82aymsqildx" path="res://Assets/Enemies/raptor/Raptor.jpg" id="4_8s0yn"]
 
 [node name="ModoTreino" type="Control"]
 layout_mode = 3

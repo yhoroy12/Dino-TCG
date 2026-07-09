@@ -20,16 +20,16 @@ extends MarginContainer
 # ============================================================================
 # CENAS DE CARTAS (por tipo)
 # ============================================================================
-const CENA_ANIMAL     = preload("res://components/card/Card.tscn")
-const CENA_CATACLISMO = preload("res://components/card/CardEffect.tscn")
-const CENA_TERRITORIO = preload("res://components/card/CardTerritorio.tscn")
-const CENA_VESTIGIO   = preload("res://components/card/CardEffect.tscn")
-const CENA_PRIMORDIAL = preload("res://components/card/CardForcaPrimordial.tscn")
+const CENA_ANIMAL     = preload("res://Scenes/Components/card/Card.tscn")
+const CENA_CATACLISMO = preload("res://Scenes/Components/card/CardEffect.tscn")
+const CENA_TERRITORIO = preload("res://Scenes/Components/card/CardTerritorio.tscn")
+const CENA_VESTIGIO   = preload("res://Scenes/Components/card/CardEffect.tscn")
+const CENA_PRIMORDIAL = preload("res://Scenes/Components/card/CardForcaPrimordial.tscn")
 
 # ============================================================================
 # CENAS DE NAVEGAÇÃO
 # ============================================================================
-const CENA_LOBBY := "res://scenes/Lobby/Lobby.tscn"
+const CENA_LOBBY := "res://Scenes/Menus/Lobby.tscn"
 
 # ============================================================================
 # CONFIGURAÇÕES DE ESCALA 
@@ -101,7 +101,7 @@ func _caregar_colecao() -> void:
 
 func _carregar_deck_em_edicao() -> void:
 	"""Verifica se há um deck em edição e carrega seus dados"""
-	_deck_original = GameState.consumir_deck_em_edicao()
+	_deck_original = DeckManager.consumir_deck_em_edicao()
 	
 	if _deck_original.is_empty():
 		# Modo novo deck
