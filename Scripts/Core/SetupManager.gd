@@ -1,185 +1,214 @@
 # ==================================================
 # Nome: SetupManager
-# Categoria: Core
+# Categoria: Managers
 # Responsável pela preparação da partida.
 #
 # Deve controlar:
-# - Escolha de moeda
-# - Lançamento da moeda
-# - Compra inicial
-# - Mulligan
-# - Cartas bônus do mulligan
+# - Sorteio de quem joga primeiro
+# - Escolha de ordem (o vencedor decide 1º ou 2º)
+# - Compra inicial (7 cartas)
+# - Mulligan (repete a compra automaticamente até haver Filhote)
+# - Cartas bônus de compensação por mulligan
 # - Escolha do animal ativo inicial
 #
-# Não deve controlar turnos.
+# Não deve controlar turnos (isso é do TurnManager, que este
+# script chama apenas UMA vez, ao final, para iniciar a partida).
+#
+# Autoload (singleton), no mesmo padrão de GameState/TurnManager.
+# Usa signals porque duas etapas dependem de decisão do jogador
+# (via UI): escolha de ordem e escolha do animal ativo.
 # ==================================================
-func escolher_moeda():
-	#Responsavel por verificar qual a escolha do jogador se ele quer ser o primeiro ou segundo
-	return
-
-func lançar_moeda():
-	#Responsavel por lançar a moeda e gerar o resultado de cara ou coroa
-	return
-func renderizar_deck():
-	#responsavel por embaralhar o deck dos jogadores no inicio da partida
-	return
-func compra_inicial():
-	#Responsavel por comprar as primeiras 7 cartas da mao de cada jogador
-	return
-func mulligan():
-	#responsavel por verificar a mão de cada jogador se possui ao menos um filhote, executar o mulligan
-	return
-func entregar_cartas_extras():
-	#responsavel por entregar as cartas extras para o jogador como resultado do mulligan
-	return
-func escolher_animal_ativo():
-	#responsavel por solicitar o animal ativo para inicio da partida
-	return
+extends Node
 
 
-#==============================================
-# Funções que tinha o Gamestate antigo
-#======================================
-func confirmar_lancamento_moeda() -> void:
-	var resultado := lancar_moeda("Sorteio do Primeiro Jogador")
-	jogador_ativo = 0 if resultado else 1
-	print("GameState: Jogador %d vai jogar primeiro." % jogador_ativo)
+# ==================================================
+# SIGNALS
+# A UI escuta esses sinais para saber quando pedir uma decisão
+# ao jogador, e chama de volta confirmar_escolha_ordem() /
+# confirmar_animal_ativo() quando o jogador decidir.
+# ==================================================
+
+signal sorteio_realizado(vencedor_id: int)
+signal solicitar_escolha_ordem(vencedor_id: int)
+signal mulligan_realizado(jogador_id: int, quantidade: int)
+signal solicitar_escolha_ativo(jogador_id: int)
+signal setup_concluido()
+
+
+# ==================================================
+# ESTADO INTERNO DO SETUP
+# Existe só durante a preparação da partida. Depois que
+# setup_concluido é emitido, GameState passa a ser a única
+# fonte da verdade — nada aqui deve ser lido de fora.
+# ==================================================
+
+var _vencedor_sorteio: int = -1
+var _mulligans_por_jogador: Dictionary = {0: 0, 1: 0}
+var _ativo_confirmado: Dictionary = {0: false, 1: false}
+
+
+# ==================================================
+# ENTRADA PÚBLICA
+# ==================================================
+
+## Ponto de entrada do setup. Cria os dois jogadores, embaralha
+## os decks e inicia o sorteio de quem joga primeiro.
+func iniciar_partida(nome_deck_j0: String, nome_deck_j1: String) -> void:
+	GameState.partida_ativa = false
+
+	_vencedor_sorteio = -1
+	_mulligans_por_jogador = {0: 0, 1: 0}
+	_ativo_confirmado = {0: false, 1: false}
+
+	GameState.jogador_1 = _criar_jogador(0, nome_deck_j0)
+	GameState.jogador_2 = _criar_jogador(1, nome_deck_j1)
+
+	_lancar_moeda()
+
+
+## Chamado pela UI quando o vencedor do sorteio decide a ordem.
+## quer_jogar_primeiro: true = vencedor joga primeiro, false =
+## vencedor abre mão da ordem e deixa o adversário jogar primeiro.
+func confirmar_escolha_ordem(vencedor_id: int, quer_jogar_primeiro: bool) -> void:
+	if vencedor_id != _vencedor_sorteio:
+		return
+
+	if quer_jogar_primeiro:
+		GameState.jogador_ativo = vencedor_id
+	else:
+		GameState.jogador_ativo = 1 if vencedor_id == 0 else 0
+
 	_executar_compra_inicial()
 
-func _executar_compra_inicial() -> void:
-	print("\n========== COMPRA INICIAL ==========")
-	for i in range(7):
-		print("Rodada de compra: ", i + 1)
-		_comprar_carta_silencioso(0)
-		_comprar_carta_silencioso(1)
-	print("Mão Jogador 0: ", jogadores[0]["mao"].size())
-	print("Mão Jogador 1: ", jogadores[1]["mao"].size())	
-	
-	print("Iniciando verificação de mulligan...")
-	_verificar_mulligan(0)
 
-func _verificar_mulligan(jogador_id: int) -> void:
-	print("\n========== VERIFICAR MULLIGAN ==========")
-	print("Jogador: ", jogador_id)
-	print("Cartas na mão: ", jogadores[jogador_id]["mao"].size())
-	var tem_filhote := false
-	for carta in jogadores[jogador_id]["mao"]:
-		if carta == null:
-			print("Carta NULL encontrada")
-			continue
+## Chamado pela UI quando um jogador escolhe seu animal ativo
+## inicial (índice de uma carta na própria mão).
+## Retorna false se a escolha for inválida (ex: não é Filhote).
+func confirmar_animal_ativo(jogador_id: int, indice_na_mao: int) -> bool:
+	var jogador := _obter_jogador(jogador_id)
 
-		print(
-			"Carta: ",
-			carta.name,
-			" | Tipo: ",
-			carta.super_type,
-			" | Stage: ",
-			carta.stage
-		)
-		
-		if carta.super_type == "animal" and carta.stage == "Filhote":
-			print("FILHOTE ENCONTRADO!")
-			tem_filhote = true
-			break
-	print("Resultado Mulligan: ", tem_filhote)
-	
-	if tem_filhote:
-		# Passa para o próximo jogador ou para escolha do ativo
-		if jogador_id == 0:
-			_verificar_mulligan(1)
-		else:
-			_entregar_cartas_extras_mulligan()
-	else:
-		print("Solicitando mulligan...")
-		emit_signal("solicitar_mulligan", jogador_id)
+	if indice_na_mao < 0 or indice_na_mao >= jogador.mao.size():
+		return false
 
-func confirmar_mulligan(jogador_id: int) -> void:
-	print("\n========== MULLIGAN ==========")
-	print("Jogador: ", jogador_id)
-	print("Mulligan #: ", _mulligans_jogador[jogador_id] + 1)
+	var carta: CardResource = jogador.mao[indice_na_mao]
 
-	print("Cartas devolvidas ao deck: ",jogadores[jogador_id]["mao"].size())
-	
-	_mulligans_jogador[jogador_id] += 1
-	# Devolve a mão ao deck e reembaralha
-	for carta in jogadores[jogador_id]["mao"]:
-		jogadores[jogador_id]["deck"].append(carta)
-	
-	jogadores[jogador_id]["mao"].clear()
-	print("Deck após devolver cartas: ",jogadores[jogador_id]["deck"].size())
-	
-	jogadores[jogador_id]["deck"].shuffle()
+	# TODO: migrar para RuleValidator.validate_active_animal(carta)
+	# quando o RuleValidator estiver corrigido.
+	if carta.super_type != "animal" or carta.stage != "Filhote":
+		return false
 
-	# Compra nova mão
-	for i in range(7):
-		_comprar_carta_silencioso(jogador_id)
-	print("Nova mão: ",
-		jogadores[jogador_id]["mao"].size())
-
-	_verificar_mulligan(jogador_id)
-
-func _entregar_cartas_extras_mulligan() -> void:
-	for jogador_id in [0, 1]:
-		var quantidade = _mulligans_jogador[jogador_id]
-		if quantidade > 0:
-			var adversario_id := 1 if jogador_id == 0 else 0
-			for i in range(quantidade):
-				_comprar_carta_silencioso(adversario_id)
-			print("GameState: Jogador %d recebeu %d carta(s) extra(s) por mulligan do adversário." % [adversario_id, quantidade])
-			emit_signal("cartas_extras_entregues", adversario_id, quantidade)
-
-	# Solicita escolha do ativo para o jogador que vai jogar primeiro
-	emit_signal("solicitar_escolha_ativo", jogador_ativo)
-
-func inicializar_setup(nome_deck_j0: String, nome_deck_j1: String) -> void:
-	# Inicializa estruturas sem iniciar o turno
-	partida_ativa = false
-	turno_atual = TURNO_INICIAL
-	fase_atual = Fase.COMPRAR
-	_mulligans_jogador = [0, 0]
-	_ativo_confirmado = [false, false]
-
-	jogadores = {
-		0: {
-			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j0),
-			"mao": [] as Array[CardResource],
-			"banco": [],
-			"zona_ativo": null,
-			"pilha_descarte": [] as Array[CardResource],
-			"pontos_comida": 0,
-			"animais_nocauteados": 0,
-			"condicao": Condicao.NENHUMA,
-			"turnos_na_condicao": 0
-		},
-		1: {
-			"deck": DeckManager.carregar_deck_para_partida(nome_deck_j1),
-			"mao": [] as Array[CardResource],
-			"banco": [],
-			"zona_ativo": null,
-			"pilha_descarte": [] as Array[CardResource],
-			"pontos_comida": 0,
-			"animais_nocauteados": 0,
-			"condicao": Condicao.NENHUMA,
-			"turnos_na_condicao": 0
-		}
-	}
-
-	jogadores[0]["deck"].shuffle()
-	jogadores[1]["deck"].shuffle()
-	print("GameState: inicializar_setup chamado. Jogadores prontos.")
-	emit_signal("solicitar_lancamento_moeda")
-
-func confirmar_ativo(jogador_id: int, indice_na_mao: int) -> bool:
-	var resultado := jogar_animal_para_ativo(jogador_id, indice_na_mao)
-	if not resultado: return false
+	jogador.mao.remove_at(indice_na_mao)
+	jogador.ativo = AnimalInstance.new(carta)
 
 	_ativo_confirmado[jogador_id] = true
-	print("GameState: Jogador %d confirmou o ativo inicial." % jogador_id)
 
-	# Verifica se o outro jogador ainda não confirmou
-	var outro_id := 1 if jogador_id == 0 else 0
-	if not _ativo_confirmado[outro_id]:
-		emit_signal("solicitar_escolha_ativo", outro_id)
+	var adversario_id := 1 if jogador_id == 0 else 0
+	if not _ativo_confirmado[adversario_id]:
+		solicitar_escolha_ativo.emit(adversario_id)
 	else:
-		_iniciar_primeiro_turno()
+		_concluir_setup()
+
 	return true
+
+
+# ==================================================
+# SORTEIO
+# ==================================================
+
+func _lancar_moeda() -> void:
+	_vencedor_sorteio = 0 if randf() < 0.5 else 1
+
+	sorteio_realizado.emit(_vencedor_sorteio)
+	solicitar_escolha_ordem.emit(_vencedor_sorteio)
+
+
+# ==================================================
+# COMPRA INICIAL E MULLIGAN
+# ==================================================
+
+func _executar_compra_inicial() -> void:
+	_realizar_mulligan_automatico(GameState.jogador_1)
+	_realizar_mulligan_automatico(GameState.jogador_2)
+
+	_entregar_cartas_extras_por_mulligan()
+
+	solicitar_escolha_ativo.emit(GameState.jogador_ativo)
+
+
+## Compra 7 cartas. Se a mão não tiver nenhum Filhote, devolve a
+## mão ao deck, embaralha e repete — regra oficial de mulligan.
+##
+## TODO: migrar a checagem "mão tem Filhote" para
+## RuleValidator.validate_mulligan() quando o arquivo estiver
+## corrigido, para centralizar toda validação de regra num único
+## lugar em vez de espalhar entre managers.
+func _realizar_mulligan_automatico(jogador: PlayerState) -> void:
+	_comprar_mao_inicial(jogador)
+
+	while not _mao_possui_filhote(jogador):
+		_mulligans_por_jogador[jogador.id] += 1
+		mulligan_realizado.emit(jogador.id, _mulligans_por_jogador[jogador.id])
+
+		jogador.deck.append_array(jogador.mao)
+		jogador.mao.clear()
+		jogador.deck.shuffle()
+
+		_comprar_mao_inicial(jogador)
+
+
+func _comprar_mao_inicial(jogador: PlayerState) -> void:
+	for i in range(7):
+		DrawSystem.comprar_carta(jogador)
+
+
+func _mao_possui_filhote(jogador: PlayerState) -> bool:
+	for carta in jogador.mao:
+		if carta.super_type == "animal" and carta.stage == "Filhote":
+			return true
+
+	return false
+
+
+## Compensação de mulligan: para cada mulligan que um jogador fez,
+## o adversário dele compra 1 carta extra.
+func _entregar_cartas_extras_por_mulligan() -> void:
+	for jogador_id in _mulligans_por_jogador.keys():
+		var quantidade: int = _mulligans_por_jogador[jogador_id]
+
+		if quantidade <= 0:
+			continue
+
+		var adversario := _obter_adversario(jogador_id)
+
+		for i in range(quantidade):
+			DrawSystem.comprar_carta(adversario)
+
+
+# ==================================================
+# FINALIZAÇÃO
+# ==================================================
+
+func _concluir_setup() -> void:
+	GameState.partida_ativa = true
+	setup_concluido.emit()
+	TurnManager.iniciar_turno()
+
+
+# ==================================================
+# HELPERS
+# ==================================================
+
+func _criar_jogador(id: int, nome_deck: String) -> PlayerState:
+	var jogador := PlayerState.new()
+	jogador.id = id
+	jogador.deck = DeckManager.carregar_deck_para_partida(nome_deck)
+	jogador.deck.shuffle()
+	return jogador
+
+
+func _obter_jogador(id: int) -> PlayerState:
+	return GameState.jogador_1 if id == 0 else GameState.jogador_2
+
+
+func _obter_adversario(id: int) -> PlayerState:
+	return GameState.jogador_2 if id == 0 else GameState.jogador_1

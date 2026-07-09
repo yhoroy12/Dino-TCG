@@ -1,4 +1,5 @@
 # ==================================================
+# FINALIZADO
 # Nome: KnockoutSystem
 # Categoria: Systems
 # Responsável pelos nocautes.

@@ -1,4 +1,5 @@
 # ==================================================
+# FINALIZADO
 # Nome: ConditionSystem
 # Categoria: Systems
 # Responsável pelas condições especiais.
@@ -15,6 +16,7 @@
 
 class_name ConditionSystem
 
+#Condições existentes.
 enum Tipo {
 	NENHUMA,
 	ADORMECIDO,

@@ -1,6 +1,6 @@
 # ==================================================
 # Nome: TurnManager
-# Categoria: Core
+# Categoria: Managers
 # Responsável pelo fluxo dos turnos.
 #
 # Deve controlar:
@@ -12,47 +12,42 @@
 # - Efeitos de fim de turno
 #
 # Não deve resolver combates.
+#
+# Autoload (singleton), assim como GameState. NÃO guarda estado
+# próprio de turno/fase — toda essa informação mora em GameState
+# (única fonte da verdade). TurnManager só sabe COMO avançar
+# esse estado, nunca é ele mesmo a fonte da verdade sobre o
+# estado atual.
 # ==================================================
+extends Node
 
-enum {INICIO, COMPRA, COMIDA, PRINCIPAL, ATAQUE, FINAL}
-var fase = INICIO
 
-func iniciar_turno():
-	# Define a fase inicial do turno
-	fase = INICIO
+func iniciar_turno() -> void:
+	GameState.fase_atual = GameState.Fase.INICIO
 
-	# Reseta flags de controle do turno
-	_resetar_flags_turno(GameState)
+	_resetar_flags_turno()
 
-	# Avança para a próxima fase
 	fase_compra()
-	
-func fase_compra():
-	# Atualiza fase
-	fase = COMPRA
 
-	# Compra a carta do turno
-	DrawSystem.comprar_carta(
-		GameState.get_jogador_atual()
-	)
 
-	# Próxima fase
+func fase_compra() -> void:
+	GameState.fase_atual = GameState.Fase.COMPRA
+
+	DrawSystem.comprar_carta(GameState.get_jogador_atual())
+
 	fase_comida()
-func fase_comida():
-	# Atualiza fase
-	fase = COMIDA
 
-	# Distribui comida passiva
-	FoodSystem.distribuir_comida_passiva(
-		GameState.get_jogador_atual()
-	)
 
-	# Próxima fase
+func fase_comida() -> void:
+	GameState.fase_atual = GameState.Fase.COMIDA
+
+	FoodSystem.distribuir_comida_passiva(GameState.get_jogador_atual())
+
 	fase_principal()
-	
-func fase_principal():
-	# Atualiza fase
-	fase = PRINCIPAL
+
+
+func fase_principal() -> void:
+	GameState.fase_atual = GameState.Fase.PRINCIPAL
 
 	# Nesta fase o jogador controla o jogo.
 	#
@@ -68,45 +63,70 @@ func fase_principal():
 	#
 	# O TurnManager não executa nada aqui.
 	# Apenas informa que a fase atual é PRINCIPAL.
-func fase_ataque():
-	# Atualiza fase
-	fase = ATAQUE
 
-	# A UI/BattleManager escolhe e executa o ataque.
-	# Após a resolução do ataque o turno termina.
-	fase_final()
-	
-func fase_final():
-	# Atualiza fase
-	fase = FINAL
 
-	# Processa condições especiais
-	ConditionSystem.processar_fim_turno(
-		GameState
-	)
+## Chamado quando o jogador decide atacar (via BattleManager/UI).
+##
+## IMPORTANTE: esta função NÃO encerra o turno sozinha. O ataque
+## ainda precisa ser resolvido pelo BattleManager (CombatSystem +
+## DamageSystem + KnockoutSystem); só DEPOIS dessa resolução o
+## BattleManager deve chamar TurnManager.fase_final() explicitamente.
+func fase_ataque() -> void:
+	GameState.fase_atual = GameState.Fase.ATAQUE
+	# A partir daqui, o BattleManager assume o controle da
+	# resolução do ataque. O TurnManager espera ser chamado de volta.
 
-	# Passa o turno
-	_passar_turno(GameState)
-	
 
-func _passar_turno(game_state):
-	_trocar_jogador(game_state)
+func fase_final() -> void:
+	GameState.fase_atual = GameState.Fase.FINAL
 
-	game_state.turno_atual += 1
+	_processar_fim_de_turno_dos_animais()
 
-	iniciar_turno()
+	_passar_turno()
+
 
 # ==================================================
 # FUNÇÕES PRIVADAS
 # ==================================================
-func _trocar_jogador(game_state):
-	if game_state.jogador_ativo == 0:
-		game_state.jogador_ativo = 1
-	else:
-		game_state.jogador_ativo = 0
+
+func _passar_turno() -> void:
+	_trocar_jogador()
+
+	GameState.turno_atual += 1
+
+	iniciar_turno()
 
 
-func _resetar_flags_turno(game_state):
-	game_state.energia_anexada_neste_turno = false
-	game_state.recuo_realizado_neste_turno = false
-	game_state.cataclismo_jogado_neste_turno = false
+func _trocar_jogador() -> void:
+	GameState.jogador_ativo = 1 if GameState.jogador_ativo == 0 else 0
+
+
+func _resetar_flags_turno() -> void:
+	GameState.energia_anexada_neste_turno = false
+	GameState.recuo_realizado_neste_turno = false
+	GameState.cataclismo_jogado_neste_turno = false
+
+
+## Processa fim de turno de TODOS os animais em campo (ativo +
+## banco) dos DOIS jogadores: condições especiais (ConditionSystem)
+## e efeitos temporários (EffectSystem).
+##
+## Precisa rodar para os dois jogadores, não só para o jogador da
+## vez, porque um animal do adversário também pode estar contando
+## turnos de uma condição ou de um efeito com Escopo.TURNO_ATUAL.
+##
+## era_turno_do_dono diferencia os dois grupos: para os animais do
+## jogador cujo turno está terminando agora, passamos true (conta
+## para efeitos com Escopo.TURNOS_DO_DONO); para os animais do
+## adversário, passamos false.
+func _processar_fim_de_turno_dos_animais() -> void:
+	var jogador_da_vez: PlayerState = GameState.get_jogador_atual()
+	var jogador_adversario: PlayerState = GameState.get_jogador_adversario()
+
+	for animal in jogador_da_vez.animais_em_campo():
+		ConditionSystem.processar_fim_de_turno(animal)
+		EffectSystem.processar_fim_de_turno(animal, true)
+
+	for animal in jogador_adversario.animais_em_campo():
+		ConditionSystem.processar_fim_de_turno(animal)
+		EffectSystem.processar_fim_de_turno(animal, false)

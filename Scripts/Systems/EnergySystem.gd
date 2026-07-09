@@ -1,6 +1,7 @@
 class_name EnergySystem
 
 # ==================================================
+# Finalizado
 # ENERGY SYSTEM
 # Responsável por:
 # - Anexar energias

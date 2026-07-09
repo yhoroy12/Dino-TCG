@@ -1,14 +1,15 @@
-class_name EvolutionSystem
+class_name GrowSystem
 
 # ==================================================
-# EVOLUTION SYSTEM
+# FINALIZADO
+# Grow SYSTEM
 # Responsável por:
-# - Verificar evolução
-# - Executar evolução
+# - Verificar Crescimento
+# - Executar Crescimento
 # ==================================================
 
 
-static func pode_evoluir(
+static func pode_crescer(
 	instancia : AnimalInstance,
 	carta_evolucao : CardResource
 ) -> bool:
@@ -34,12 +35,12 @@ static func pode_evoluir(
 	return true
 
 
-static func evoluir(
+static func crescer(
 	instancia : AnimalInstance,
 	carta_evolucao : CardResource
 ) -> bool:
 
-	if !pode_evoluir(instancia, carta_evolucao):
+	if !pode_crescer(instancia, carta_evolucao):
 		return false
 
 	var carta_antiga = instancia.card
@@ -58,7 +59,7 @@ static func evoluir(
 
 	return true
 
-	if !pode_evoluir(instancia, carta_evolucao):
+	if !pode_crescer(instancia, carta_evolucao):
 		return false
 
 	var hp_anterior = instancia.current_hp

@@ -1,5 +1,8 @@
 class_name DrawSystem
+#SISTEMA DE COMPRA E BUSCA DE CARTAS NO DECK
+#FINALIZADO
 
+#compra a carta do topo do deck
 static func comprar_carta(player: PlayerState) -> CardResource:
 
 	if player.deck.is_empty():
@@ -8,6 +11,8 @@ static func comprar_carta(player: PlayerState) -> CardResource:
 	player.mao.append(carta)
 	return carta
 
+
+#Procura uma carta no deck
 static func buscar_cartas(
 	player: PlayerState,
 	filtro: Callable,
@@ -25,6 +30,7 @@ static func buscar_cartas(
 				break
 
 	return resultado
-	
+
+# Embaralha as cartas do deck
 static func embaralhar_deck(player: PlayerState):
 	player.deck.shuffle()
