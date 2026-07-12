@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bqw5085vpsvht"]
 
-[ext_resource type="Script" uid="uid://dqv0yew3fosi1" path="res://data/CardGenerator.gd" id="1_3uvw6"]
+[ext_resource type="Script" uid="uid://cn58ryw3xsfae" path="res://Scripts/Data/CardGenerator.gd" id="1_3uvw6"]
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -19,3 +19,5 @@ offset_bottom = 301.0
 text = "Importar as cartas para resource
 "
 script = ExtResource("1_3uvw6")
+
+[connection signal="pressed" from="Button" to="Button" method="_on_pressed"]

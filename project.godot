@@ -21,6 +21,7 @@ TurnManager="*res://Scripts/Core/TurnManager.gd"
 SetupManager="*res://Scripts/Core/SetupManager.gd"
 CardDatabase="*res://Scripts/Data/CardDatabase.gd"
 DeckManager="*res://Scripts/Data/DeckManager.gd"
+MatchData="*res://Scripts/Data/MatchData.gd"
 
 [display]
 

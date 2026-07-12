@@ -14,10 +14,10 @@ enum Modo { COMPLETO, MINI }
 @export var modo: Modo = Modo.COMPLETO
 @export var virada_para_baixo: bool = false
 
-const TEXTURA_VERSO := "res://assest/textures/cards/verso_nome.jpg"
 
-# Agora retemos o Objeto Resource nativo e tipado em vez de um dicionário solto
-var recurso_carta: CardResource = null
+# Cartas de Efeito (Cataclismo/Vestígio/Território) são EffectResource,
+# não CardResource — CardResource hoje é exclusivo de Animal.
+var recurso_carta: EffectResource = null
 
 # Dicionário para armazenar referências aos labels (mais seguro)
 var labels: Dictionary = {}
@@ -82,7 +82,7 @@ func _on_mouse_entered() -> void:
 # ----------------------------------------------------------------------------
 # INTERFACE PÚBLICA DE CARREGAMENTO
 # ----------------------------------------------------------------------------
-func inicializar(recurso: CardResource) -> void:
+func inicializar(recurso: EffectResource) -> void:
 	"""Inicializa a carta com um recurso CardResource"""
 	if recurso == null:
 		push_error("Erro: Tentou inicializar uma carta visual com um Resource nulo.")
@@ -112,12 +112,7 @@ func definir_face(para_baixo: bool) -> void:
 # ----------------------------------------------------------------------------
 func _renderizar_verso() -> void:
 	"""Renderiza o verso da carta"""
-	if card_image and ResourceLoader.exists(TEXTURA_VERSO):
-		card_image.texture = load(TEXTURA_VERSO)
-		# Esconde todos os elementos filhos
-		for filho in card_image.get_children():
-			if filho is Control:
-				filho.hide()
+	HelperUI.aplicar_verso(card_image, card_image.get_children() if card_image else [])
 
 
 func _renderizar_frente() -> void:
@@ -146,17 +141,14 @@ func _aplicar_textura_de_fundo() -> void:
 		return
 	
 	var super_type = recurso_carta.super_type.to_lower().strip_edges()
-	var caminho_textura := "res://assest/textures/cards/TCG Card Vestigio.png"
+	var caminho_textura := "res://Assets/Cards/Vestigios/TCG Card Vestigio.png"
 
 	# Seleciona a textura baseada no tipo de efeito
 	match super_type:
 		"cataclismo":
-			caminho_textura = "res://assest/textures/cards/TCG Card Cataclismo.png"
+			caminho_textura = "res://Assets/Cards/Cataclismos/TCG Card Cataclismo.png"
 		"vestigio":
-			caminho_textura = "res://assest/textures/cards/TCG Card Vestigio.png"
-		"territorio":
-			# Adicione aqui o caminho para a textura de território se existir
-			caminho_textura = "res://assest/textures/cards/TCG Card Territorio.png"
+			caminho_textura = "res://Assets/Cards/Vestigios/TCG Card Vestigio.png"
 		_:
 			push_warning("Tipo de efeito desconhecido: %s. Usando padrão (Vestigio)" % super_type)
 	

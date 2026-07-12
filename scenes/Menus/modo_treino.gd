@@ -95,9 +95,13 @@ func _on_start_pressed() -> void:
 		deck_ativo
 	])
 
-	GameState.deck_pendente_j0 = deck_ativo
-	GameState.deck_pendente_j1 = deck_ativo
-	
+	# Treino hoje é espelho do próprio deck do jogador — quando existir
+	# um deck específico por adversário (Rex/Trike/Raptor), troca o
+	# primeiro argumento por ele em vez de reusar deck_ativo.
+	if not MatchData.preparar_partida_vs_ia(deck_ativo, _dificuldade, _adversario_selecionado.name):
+		print("[ModoTreino] ❌ Falha ao preparar a partida.")
+		return
+
 	get_tree().change_scene_to_file(CENA_BATALHA)
 
 # -----------------------------------------------------------------------------

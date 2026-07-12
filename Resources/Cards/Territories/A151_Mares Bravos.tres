@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://b3g7sdy2r1m8h"]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_6j554"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_upoup"]
 
 [resource]
-script = ExtResource("1_6j554")
+script = ExtResource("1_upoup")
 id = "A151"
 name = "Mares Bravos"
 super_type = "territorio"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Uma vez durante o turno de cada jogador, ele pode curar 30 pontos de dano de seus dinossauros azuis"
 mec_trigger = "uma_vez_por_turno"
 mec_condition = "sempre"

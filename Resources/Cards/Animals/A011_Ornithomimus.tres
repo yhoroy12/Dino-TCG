@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_4ejsw"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_387nx"]
 
 [resource]
-script = ExtResource("1_4ejsw")
+script = ExtResource("1_387nx")
 id = "A011"
 name = "Ornithomimus"
 super_type = "animal"

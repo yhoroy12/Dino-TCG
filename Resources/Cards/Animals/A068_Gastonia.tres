@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_h4dhk"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_n21t0"]
 
 [resource]
-script = ExtResource("1_h4dhk")
+script = ExtResource("1_n21t0")
 id = "A068"
 name = "Gastonia"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 2
 ability_name = "Couraça"
 attack_name = "Anqui strike"
 attack_cost = "🟢🟢⚪"
-damage_base = 80
+damage_base = 0
 damage_type = "fixo"
 text_ui = "cause +60 de dano para cada nodossauro adulto no seu banco"
 mec_trigger = "ao_atacar"

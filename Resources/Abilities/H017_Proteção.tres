@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_p32fj"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_s54qr"]
 
 [resource]
-script = ExtResource("1_p32fj")
+script = ExtResource("1_s54qr")
 id = "H017"
 name = "Proteção"
 text_ui = "Se este dinossauro sofrer dano, jogue uma moeda. Se cair cara, previna 100 de dano recebido."

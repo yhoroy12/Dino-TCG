@@ -4,17 +4,20 @@ extends Control
 # CardForcaPrimordial.gd — Controlador Visual de Energias (Força Primordial)
 # ==============================================================================
 
-signal hovered(recurso_carta: CardResource)
+signal hovered(recurso_carta: EffectResource)
 signal clicado(nodo_carta: Control, botao: int)
 signal removido(nodo_carta: Control)
 
-# Agora retemos o Objeto Resource nativo e tipado
-var recurso_carta: CardResource = null
+# Energia (Força Primordial) é EffectResource, não CardResource —
+# CardResource hoje é exclusivo de Animal.
+var recurso_carta: EffectResource = null
 
 @onready var borda: TextureRect             = $borda
 @onready var label_nome: Label              = $Nome
 @onready var label_efeito: Label            = $efeito
 @onready var placeholder_img: TextureRect   = $placeholderimagem
+
+@export var virada_para_baixo: bool = false
 
 func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
@@ -27,13 +30,19 @@ func _on_mouse_entered() -> void:
 
 
 # Transição para o método padrão unificado do projeto
-func inicializar(recurso: CardResource) -> void:
+func inicializar(recurso: EffectResource) -> void:
 	if recurso == null:
 		push_error("Erro: Tentou inicializar CardForcaPrimordial com Resource nulo.")
 		return
 		
 	recurso_carta = recurso
 	
+	if virada_para_baixo:
+		_renderizar_verso()
+	else:
+		_renderizar_frente()
+
+func _renderizar_frente():	
 	# 1. Preenche os textos básicos baseados nas propriedades diretas
 	if label_nome:   
 		label_nome.text = "Força Primordial"
@@ -45,7 +54,7 @@ func inicializar(recurso: CardResource) -> void:
 	var cor_carta = recurso_carta.mec_filter_color.to_lower().strip_edges()
 	
 	# Monta o caminho dinâmico exatamente como o teu projeto estruturado precisa
-	var caminho_borda = "res://assest/textures/cards/TCG Card Primordial " + cor_carta + ".png"
+	var caminho_borda = "res://Assets/Cards/Energies/TCG Card Primordial " + cor_carta + ".png"
 	
 	# Verifica se o arquivo de textura existe antes de tentar carregar
 	if ResourceLoader.exists(caminho_borda) and borda:
@@ -55,12 +64,23 @@ func inicializar(recurso: CardResource) -> void:
 		
 	# Opcional: Se decidires colocar imagens únicas para cada energia pelo ID no futuro
 	if placeholder_img:
-		var caminho_arte = "res://assest/textures/cards/artes/" + recurso_carta.id + ".png"
+		var caminho_arte = "res://Assets/Arts/Energies/" + recurso_carta.id + ".png"
 		if ResourceLoader.exists(caminho_arte):
 			placeholder_img.texture = load(caminho_arte)
 		else:
 			placeholder_img.texture = preload("res://Assets/placeholder.png")
 
+func _renderizar_verso() -> void:
+	HelperUI.aplicar_verso(borda, [label_nome, label_efeito, placeholder_img])
+
+func definir_face(para_baixo: bool) -> void:
+	if virada_para_baixo == para_baixo:
+		return
+	virada_para_baixo = para_baixo
+	if recurso_carta:
+		if virada_para_baixo: _renderizar_verso()
+		else: _renderizar_frente()
+		
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:

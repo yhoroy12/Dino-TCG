@@ -64,7 +64,7 @@ func configurar(dados: Dictionary) -> void:
 	var total_cartas := 0
 	for entrada in colecao:
 		total_cartas += int(entrada.get("quantidade", 0))
-	label_qtd.text = "%d / %d" % [total_cartas, DeckManager.TAMANHO_DECK_VALIDO]
+	label_qtd.text = "%d / %d" % [total_cartas, DeckRulesSystem.TAMANHO_DECK_VALIDO]
 	print("[FundoCapa] label_qtd definido para: ", label_qtd.text)
 
 	var caminho_capa: String = dados.get("capa", "")

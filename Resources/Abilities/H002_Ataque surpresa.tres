@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_td3mg"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_c2q3d"]
 
 [resource]
-script = ExtResource("1_td3mg")
+script = ExtResource("1_c2q3d")
 id = "H002"
 name = "Ataque surpresa"
 text_ui = "Uma vez durante o seu turno, cause 20 de dano a um dinossauro inimigo (ignora fraqueza e resistência)."

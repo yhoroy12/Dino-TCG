@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_bvsop"]
+
+[resource]
+script = ExtResource("1_bvsop")
+id = "A124"
+name = "Maos frágeis"
+super_type = "cataclismo"
+text_ui = "Descarte sua mão e compre 7 cartas."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "comprar"
+mec_resource = "carta"
+mec_target_player = "dono"
+mec_target_zone = "mao"
+mec_quantity = 7
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"descartar_mao\": true}"

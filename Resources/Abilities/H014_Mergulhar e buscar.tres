@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_ydw5g"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_07de4"]
 
 [resource]
-script = ExtResource("1_ydw5g")
+script = ExtResource("1_07de4")
 id = "H014"
 name = "Mergulhar e buscar"
 text_ui = "Uma vez durante o seu turno, antes de atacar, você pode procurar uma carta qualquer no seu deck, colocá-la em sua mão e embaralhar o deck."

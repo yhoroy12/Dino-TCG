@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_3woax"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_kx3i4"]
 
 [resource]
-script = ExtResource("1_3woax")
+script = ExtResource("1_kx3i4")
 id = "A003"
 name = "Galimminu"
 super_type = "animal"

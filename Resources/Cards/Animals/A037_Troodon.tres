@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_ljb6l"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_sqv1a"]
 
 [resource]
-script = ExtResource("1_ljb6l")
+script = ExtResource("1_sqv1a")
 id = "A037"
 name = "Troodon"
 super_type = "animal"

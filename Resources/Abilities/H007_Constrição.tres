@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_f8aa6"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_g1edw"]
 
 [resource]
-script = ExtResource("1_f8aa6")
+script = ExtResource("1_g1edw")
 id = "H007"
 name = "Constrição"
 text_ui = "O dinossauro ativo do oponente não pode recuar."

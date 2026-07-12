@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_ca14s"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_8vyfr"]
 
 [resource]
-script = ExtResource("1_ca14s")
+script = ExtResource("1_8vyfr")
 id = "A136"
 name = "Chocar Ovos"
 super_type = "vestigio"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Escolha um dinossauro bebe em seu baralho e coloque em sua mão, enseguida embaralhe seu deck."
 mec_trigger = "ao_jogar"
 mec_condition = "sempre"

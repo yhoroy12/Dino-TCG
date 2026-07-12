@@ -1,13 +1,17 @@
 class_name CardResource
-extends Resource
+extends CardBaseResource
+# ==================================================
+# Dado puro de uma carta de Animal. Preenchido pelo CardImporterButton
+# a partir de animais_profissional.csv.
+#
+# id, name, super_type e text_ui vêm de CardBaseResource — não
+# duplicar esses campos aqui.
+# ==================================================
 
 @export_group("Identificadores")
-@export var id: String = ""
-@export var name: String = ""
-@export_enum("animal", "vestigio", "cataclismo", "territorio", "energia") var super_type: String = "animal"
 @export var sub_type: String = ""
 
-@export_group("Atributos Visuais e Stats")
+@export_group("Atributos e Stats")
 @export var color: String = ""
 @export var stage: String = ""
 @export var grow_from: String = ""
@@ -17,15 +21,14 @@ extends Resource
 @export var resistance: String = ""
 @export var cost_retreat: int = 0
 
-@export_group("Habilidades e Ataques")
+@export_group("Habilidade e Ataque")
 @export var ability_name: String = ""
 @export var attack_name: String = ""
 @export var attack_cost: String = ""
 @export var damage_base: int = 0
 @export var damage_type: String = "fixo"
-@export_multiline var text_ui: String = ""
 
-@export_group("Motor do Jogo (Lógica)")
+@export_group("Motor do Jogo (mec_*)")
 @export var mec_trigger: String = ""
 @export var mec_condition: String = ""
 @export var mec_action: String = ""
@@ -34,10 +37,12 @@ extends Resource
 @export var mec_target_zone: String = ""
 @export var mec_quantity: int = 0
 @export var mec_status_name: String = ""
-
-@export_group("Filtros de Escopo")
 @export var mec_filter_color: String = ""
 @export var mec_filter_stage: String = ""
 @export var mec_origin_zone: String = ""
 @export var mec_duration: int = 0
 @export_multiline var mec_custom_json: String = ""
+
+
+func _init() -> void:
+	super_type = "animal"

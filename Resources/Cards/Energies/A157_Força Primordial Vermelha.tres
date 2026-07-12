@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://qd5icv5uwhf2"]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://dfqu077jp0hft" path="res://data/CardResource.gd" id="1_17rov"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_vrcid"]
 
 [resource]
-script = ExtResource("1_17rov")
+script = ExtResource("1_vrcid")
 id = "A157"
 name = "Força Primordial Vermelha"
 super_type = "energia"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Fornece 1 energia Vermelha."
 mec_trigger = "ao_jogar"
 mec_condition = "sempre"

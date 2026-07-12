@@ -1,0 +1,15 @@
+O mesa_jogador.gd que reescrevi é só a camada de UI da mesa de batalha — ele não decide nada de regra, só renderiza o que os managers do core dizem que aconteceu e captura o que o jogador clica. Dividindo por blocos, hoje ele cuida de:
+1. Ciclo de vida da cena
+_ready() dispara o setup (SetupManager.iniciar_partida(...), lendo os decks do MatchData), conecta a UI aos sinais dos managers, e configura o estado inicial da interface (botão desabilitado, timer parado).
+2. Reagir ao Setup (sinais do SetupManager)
+Escuta sorteio → mostra o pop-up de escolha de ordem que fizemos → escuta mulligan (só loga, é automático) → escuta pedido de escolha do Animal Ativo inicial e trata o clique numa carta da mão como essa escolha → quando o setup termina, chama organizar_cartas_nas_zonas() pra desenhar o estado final na tela.
+3. Reagir a Turnos (sinais do TurnManager)
+Liga/desliga o botão "Passar Turno", controla a barra de progresso do timer visual, mostra de quem é o turno.
+4. Renderizar zonas de cartas
+organizar_cartas_nas_zonas() e _adicionar_carta_na_zona() — pegam o PlayerState (mão, banco, ativo, descarte) e instanciam a cena Card.tscn pra cada carta, posicionando no container/painel certo (mão, campo ativo, slot de banco).
+5. Input do jogador nas cartas
+Clique/arrasto/menu de contexto (atacar, recuar, prender, habilidade). Importante: quando o jogador solta uma carta numa zona, ou clica "Atacar" no menu, a UI não executa nada — só emite o sinal acao_jogador_solicitada, porque validar e aplicar isso é trabalho do BattleManager (que ainda não existe de verdade).
+6. Animações e feedback visual
+Tween de carta indo pra uma zona, pulso de ataque, texto/pop-up flutuante, telas de vitória/empate, contador de comida, ícone de condição especial.
+O que ele explicitamente NÃO faz: validar regra nenhuma, mover carta de fato entre zonas do PlayerState, calcular dano, decidir vencedor. Ele só lê estado já resolvido e mostra na tela, ou pede pro core resolver algo.
+Sobre sua dúvida de "renderizar o deck" — isso já existe parcialmente: hoje _ao_setup_concluido() chama organizar_cartas_nas_zonas(), que desenha mão/banco/ativo/descarte, mas não desenha a pilha do deck em si (a ZonaDeck, painel que devia mostrar quantas cartas restam). Existe até uma função pronta pra isso, atualizar_visual_deck(jogador_id, cartas_restantes), mas ninguém chama ela ainda — nenhum sinal de "carta comprada" existe hoje (nem no DrawSystem, que é puro/estático, nem no TurnManager, que chama DrawSystem.comprar_carta() direto sem avisar ninguém).

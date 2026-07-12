@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_bxjvs"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_knnqb"]
 
 [resource]
-script = ExtResource("1_bxjvs")
+script = ExtResource("1_knnqb")
 id = "H015"
 name = "Olhar afiado"
 text_ui = "Uma vez durante o seu turno, olhe a carta do topo do deck (seu ou do oponente)."

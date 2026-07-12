@@ -1,7 +1,16 @@
 # ==============================================================================
 # MesaDoTabuleiro — Camada de Renderização e Interface (UI)
-# Renderiza o estado do jogo, gerencia interações do jogador e anima transições
-# NUNCA calcula regras — apenas reage aos sinais do GameState
+# Renderiza o estado do jogo, gerencia interações do jogador e anima transições.
+# NUNCA calcula regras — apenas reage a sinais dos managers (SetupManager,
+# TurnManager) e lê estado de GameState/PlayerState.
+#
+# Ações do jogador que exigem validação de regra (jogar carta, atacar, usar
+# habilidade, recuar) NÃO são executadas aqui. A UI apenas emite
+# `acao_jogador_solicitada` — quem decide se a ação é válida e a aplica é o
+# BattleManager (ainda esqueleto na nova arquitetura; ver TODOs abaixo).
+#
+# Requer os seguintes autoloads: GameState, PlayerState (classe, não autoload),
+# SetupManager, TurnManager, MatchData, RuleValidator, ConditionSystem.
 # ==============================================================================
 extends Control
 
@@ -16,9 +25,12 @@ signal turno_visual_atualizado(info_turno: Dictionary)
 # ==============================================================================
 const DURACAO_ANIMACAO_CARTA: float = 0.3
 const DURACAO_ANIMACAO_MOEDA: float = 1.5
+const DURACAO_POPUP_ORDEM: float = 15.0  # Segundos até decidir sozinho, se o jogador não clicar
 const DISTANCIA_SNAP_ZONAS: float = 50.0  # Pixels
-const VELOCIDADE_CARTA_HAND: float = 8.0  # Unidades por frame
-const CENA_CARTA := preload("res://Scenes/Components/card/Card.tscn")
+
+# ID fixo do jogador humano nesta cena. Se algum dia isso deixar de ser fixo
+# (ex: espectador, replay), é só isso que precisa mudar.
+const ID_JOGADOR_HUMANO := 0
 
 # ==============================================================================
 # REFERÊNCIAS DE NÓS (@onready)
@@ -56,6 +68,19 @@ var tempo_restante_turno: float = 0.0
 var turno_em_progresso: bool = false
 var jogador_ativo_id: int = -1
 
+# Setup: enquanto != -1, indica que estamos esperando ESSE jogador clicar
+# numa carta da própria mão para escolher o Animal Ativo inicial.
+var _jogador_aguardando_escolha_ativo: int = -1
+
+# Pop-up ativo de qualquer etapa do setup (moeda, ordem, mulligan) —
+# só um por vez, todos sequenciais, por isso uma variável só.
+var _popup_setup_ativo: Control = null
+
+# true enquanto o setup não termina. Usado só pra saber se o Animal
+# Ativo inicial deve nascer virado pra baixo (os dois só viram de
+# frente juntos, quando _ao_setup_concluido roda).
+var _setup_em_andamento: bool = true
+
 # Controle de cartas
 var carta_selecionada: Control = null
 var carta_em_arrasto: Control = null
@@ -63,7 +88,6 @@ var offset_arrasto: Vector2 = Vector2.ZERO
 var zona_alvo_potencial: Control = null
 
 # Animações
-var tween_ativa: Tween = null
 var dicionario_tweens_cartas: Dictionary = {}  # { CardUI: Tween }
 
 # Sistema de zoom (integração com CardZoomManager)
@@ -75,139 +99,41 @@ var menu_contextual_ativo: Control = null
 # ==============================================================================
 
 func _ready() -> void:
-	"""Inicializa a mesa de jogo e conecta os sinais do GameState"""
 	_validar_referencias()
-	_conectar_sinais_gamestate()
+	_conectar_sinais_setup_manager()
+	_conectar_sinais_turn_manager()
 	_configurar_interface_inicial()
-	
+
 	print("✓ MesaDoTabuleiro inicializada com sucesso")
-	GameState.inicializar_setup(GameState.deck_pendente_j0, GameState.deck_pendente_j1)
+
+	# MatchData é só o "envelope" de transição entre a tela de seleção
+	# de deck e esta cena — ver MatchData.gd. Quem de fato inicia a
+	# partida é o SetupManager, não o GameState.
+	SetupManager.iniciar_partida(MatchData.deck_pendente_j0, MatchData.deck_pendente_j1)
+	MatchData.limpar()
+
 
 func _process(delta: float) -> void:
-	"""Atualiza UI em tempo real (timer de turno, arrasto de cartas)"""
 	if turno_em_progresso:
 		_atualizar_contador_turno(delta)
-	
-	# Atualização de arrasto de cartas
+
 	if carta_em_arrasto != null and is_instance_valid(carta_em_arrasto):
 		_processar_arrasto_carta()
 
 
 func _input(event: InputEvent) -> void:
-	"""Processa inputs do teclado e mouse"""
 	if not get_tree().root.is_ancestor_of(self):
 		return
-	
-	# ESC para cancelar arrasto
+
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_cancelar_arrasto()
 		get_tree().root.set_input_as_handled()
-# ==================================================
-# FLUXO DE SETUP DA PARTIDA
-# ==================================================
-
-# Func: _iniciar_setup_visual
-# Responsável por iniciar toda a sequência visual de preparação da partida.
-# Deve ser chamada assim que a cena MesaJogador estiver pronta.
-# Não executa regras do jogo, apenas inicia a primeira etapa do setup.
-# Próximo passo esperado: _mostrar_escolha_moeda()
-#
-# Return:
-# void
-func _iniciar_setup_visual() -> void:
-	pass
-
-
-# Func: _mostrar_escolha_moeda
-# Exibe a interface para o jogador escolher Cara ou Coroa.
-# Deve habilitar os controles de seleção e aguardar interação do jogador.
-# Nenhuma regra do GameState é executada nesta etapa.
-#
-# Return:
-# void
-func _mostrar_escolha_moeda() -> void:
-	pass
-
-
-# Func: _ao_escolher_moeda
-# Callback disparado quando o jogador escolhe Cara ou Coroa.
-# Armazena a escolha localmente e solicita ao GameState a execução do sorteio.
-# Também pode iniciar a animação da moeda.
-#
-# Parâmetros:
-# escolha: String ("cara" ou "coroa")
-#
-# Return:
-# void
-func _ao_escolher_moeda(escolha: String) -> void:
-	pass
-
-
-# Func: _ao_resultado_moeda
-# Recebe o resultado oficial do sorteio vindo do GameState.
-# Atualiza a interface mostrando o resultado da moeda.
-# Informa ao jogador se ele será o primeiro ou o segundo a jogar.
-# Ao finalizar a animação ou confirmação visual, deve avançar para a compra inicial.
-#
-# Return:
-# void
-func _ao_resultado_moeda() -> void:
-	pass
-
-
-# Func: _mostrar_mao_inicial
-# Solicita ao sistema visual a renderização da mão inicial, deck,
-# descarte e demais elementos básicos da mesa.
-# Deve ser executada antes da etapa de Mulligan para que o jogador
-# possa visualizar as cartas recebidas.
-#
-# Return:
-# void
-func _mostrar_mao_inicial() -> void:
-	pass
-
-
-# Func: _iniciar_mulligan
-# Inicia a fase de Mulligan.
-# Verifica junto ao GameState se o jogador possui uma mão válida.
-# Caso necessário, apresenta os controles para confirmar o Mulligan.
-# Caso não seja necessário, encaminha diretamente para a próxima etapa.
-#
-# Return:
-# void
-func _iniciar_mulligan() -> void:
-	pass
-
-
-# Func: _finalizar_mulligan
-# Executada após todos os Mulligans terem sido resolvidos.
-# Atualiza visualmente a mão do jogador, entrega cartas extras quando necessário
-# e garante que a mesa reflita o estado final do setup.
-# Ao concluir esta etapa, deve emitir ou solicitar a conclusão oficial do setup.
-#
-# Return:
-# void
-func _finalizar_mulligan() -> void:
-	pass
-
-
-# Func: _iniciar_escolha_ativo
-# Inicia a etapa de seleção do Animal Ativo inicial.
-# Destaca os Filhotes elegíveis na mão do jogador.
-# Aguarda a escolha e envia a seleção ao GameState para validação.
-# Esta é a última etapa do setup antes do início da partida.
-#
-# Return:
-# void
-func _iniciar_escolha_ativo() -> void:
-	pass
 
 # ==============================================================================
 # VALIDAÇÃO E CONEXÃO DE SINAIS
 # ==============================================================================
 
 func _validar_referencias() -> void:
-	"""Valida se todos os nós necessários existem"""
 	var nodos_criticos: Array[String] = [
 		"MesaContainer/LadoJogador/JogadorFlow/CombatRow/CampoAtivo",
 		"MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/CombatRow/CampoAtivo",
@@ -215,207 +141,350 @@ func _validar_referencias() -> void:
 		"TimerTurno",
 		"Progessbar"
 	]
-	
+
 	for caminho_nodo in nodos_criticos:
 		if not has_node(caminho_nodo):
 			push_error("❌ Nó crítico não encontrado: " + caminho_nodo)
-	
-	# Tenta encontrar CardZoomManager se existir na cena
+
 	card_zoom_manager = get_tree().root.find_child("CardZoomManager", true, false)
 
 
-func _conectar_sinais_gamestate() -> void:
-	"""Conecta os sinais do GameState para atualizações visuais"""
-	if not GameState:
-		push_error("❌ GameState (Autoload) não está disponível!")
+func _conectar_sinais_setup_manager() -> void:
+	"""Conecta os sinais de SetupManager — todos existem hoje, mapeiam
+	1:1 pras etapas oficiais de preparação da partida."""
+	if not SetupManager:
+		push_error("❌ SetupManager (Autoload) não está disponível!")
 		return
-	#solicitar o lançamento da moeda para jogador inicial
-	GameState.solicitar_lancamento_moeda.connect(_ao_solicitar_lancamento_moeda)
-	
-	#Mulligan
-	GameState.solicitar_mulligan.connect(_ao_solicitar_mulligan)
-	
-	#Escolher Animal Ativo
-	GameState.solicitar_escolha_ativo.connect(_ao_solicitar_escolha_ativo)
-	
-	#Morreu de fome
-	GameState.animal_nocauteado_por_fome.connect(_ao_animal_nocauteado_por_fome)
-	
-	#Setup 
-	GameState.setup_concluido.connect(_ao_setup_concluido)
-	
-	# Turnos e Fases
-	GameState.turno_iniciado.connect(_ao_turno_iniciado)
-	GameState.turno_encerrado.connect(_ao_turno_encerrado)
-	
-	# Cartas
-	GameState.animal_nocauteado.connect(_ao_animal_nocauteado)
-	
-	# Condições
-	GameState.condicao_aplicada.connect(_ao_condicao_aplicada)
-	
-	# Alimentação
-	GameState.alimentacao_distribuida.connect(_ao_alimentacao_distribuida)
-	
-	# Moedas
-	GameState.moeda_lancada.connect(_ao_moeda_lancada)
-	
-	# Vitória
-	GameState.vitoria.connect(_ao_vitoria)
-	GameState.empate.connect(_ao_empate)
-	
-	# Botão Passar Turno
+
+	SetupManager.solicitar_lancamento_moeda.connect(_ao_solicitar_lancamento_moeda)
+	SetupManager.sorteio_realizado.connect(_ao_sorteio_realizado)
+	SetupManager.solicitar_escolha_ordem.connect(_ao_solicitar_escolha_ordem)
+	SetupManager.mulligan_necessario.connect(_ao_mulligan_necessario)
+	SetupManager.mulligan_realizado.connect(_ao_mulligan_realizado)
+	SetupManager.solicitar_escolha_ativo.connect(_ao_solicitar_escolha_ativo)
+	SetupManager.setup_concluido.connect(_ao_setup_concluido)
+
+
+func _conectar_sinais_turn_manager() -> void:
+	"""Requer o patch que adiciona turno_iniciado/turno_encerrado ao
+	TurnManager — sem isso a UI não sabe quando os turnos mudam."""
+	if not TurnManager:
+		push_error("❌ TurnManager (Autoload) não está disponível!")
+		return
+
+	TurnManager.turno_iniciado.connect(_ao_turno_iniciado)
+	TurnManager.turno_encerrado.connect(_ao_turno_encerrado)
+
 	botao_passar_turno.pressed.connect(_ao_botao_passar_turno_pressionado)
-	
-	# Timer do Turno
 	timer_turno.timeout.connect(_ao_timer_turno_expirado)
 
 
 func _configurar_interface_inicial() -> void:
-	"""Configura o estado inicial da interface"""
 	botao_passar_turno.disabled = true
 	progresso_turno.value = 0
 	turno_em_progresso = false
 
 # ==============================================================================
-# CALLBACKS DO GAMESTATE — TURNOS
+# CALLBACKS — SETUP DA PARTIDA (SetupManager)
 # ==============================================================================
+
 func _ao_solicitar_lancamento_moeda() -> void:
-	print("🪙 Sorteando primeiro jogador...")
+	"""Só o jogador humano vê esse botão — o sorteio é aleatório de
+	qualquer forma, não faz sentido pedir pro oponente 'clicar' nele."""
+	_fechar_popup_setup()
 
-	GameState.confirmar_lancamento_moeda()
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Sorteio",
+		"Clique para lançar a moeda e ver quem começa."
+	)
+	var botao := Button.new()
+	botao.text = "Lançar Moeda"
+	botao.pressed.connect(func():
+		_fechar_popup_setup()
+		SetupManager.lancar_moeda()
+	)
+	refs["vbox"].add_child(botao)
 
-func _ao_solicitar_mulligan(jogador_id: int) -> void:
-	# Por enquanto apenas confirma automaticamente
-	# Futuramente exibe um painel de confirmação para o jogador
-	print("🔀 Mulligan necessário para Jogador %d" % jogador_id)
-	GameState.confirmar_mulligan(jogador_id)
+	_popup_setup_ativo = refs["overlay"]
+
+
+func _ao_sorteio_realizado(vencedor_id: int) -> void:
+	print("🪙 Jogador %d venceu o sorteio." % vencedor_id)
+	# O resultado é anunciado junto com o pop-up de escolha de ordem
+	# (_ao_solicitar_escolha_ordem, emitido em seguida pelo SetupManager)
+	# — não duplicamos aviso aqui.
+
+
+func _ao_solicitar_escolha_ordem(vencedor_id: int) -> void:
+	if vencedor_id == ID_JOGADOR_HUMANO:
+		_exibir_popup_escolha_ordem(vencedor_id)
+	else:
+		# TODO(IA): enquanto não existe IA de verdade, o oponente
+		# sempre decide jogar primeiro. Quando a IA existir, essa
+		# decisão deve vir dela em vez de um valor fixo aqui.
+		_exibir_popup_resultado_sorteio(vencedor_id)
+		SetupManager.confirmar_escolha_ordem(vencedor_id, true)
+
+
+func _ao_mulligan_necessario(jogador_id: int) -> void:
+	if jogador_id != ID_JOGADOR_HUMANO:
+		# Sem IA de verdade ainda: o oponente confirma na hora, sem
+		# popup nem espera.
+		SetupManager.confirmar_mulligan(jogador_id)
+		return
+
+	_fechar_popup_setup()
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Mulligan necessário",
+		"Sua mão não tem nenhum Animal Filhote. Ela será embaralhada de volta e uma nova mão será comprada."
+	)
+	var botao := Button.new()
+	botao.text = "Confirmar"
+	botao.pressed.connect(func(): _confirmar_mulligan_visual(jogador_id, refs["overlay"]))
+	refs["vbox"].add_child(botao)
+
+	_popup_setup_ativo = refs["overlay"]
+
+	await get_tree().create_timer(DURACAO_POPUP_ORDEM).timeout
+	_confirmar_mulligan_visual(jogador_id, refs["overlay"])
+
+
+func _confirmar_mulligan_visual(jogador_id: int, popup_de_origem: Control) -> void:
+	# Evita confirmar duas vezes (clique + timeout chegando quase
+	# juntos, ou popup já fechado por outra etapa).
+	if _popup_setup_ativo != popup_de_origem:
+		return
+
+	_fechar_popup_setup()
+	SetupManager.confirmar_mulligan(jogador_id)
+
+
+func _ao_mulligan_realizado(jogador_id: int, quantidade: int) -> void:
+	# Notificação pós-fato, só log — a confirmação de verdade já
+	# aconteceu em _ao_mulligan_necessario / _confirmar_mulligan_visual.
+	print("🔀 Jogador %d fez %d mulligan(s)." % [jogador_id, quantidade])
+
 
 func _ao_solicitar_escolha_ativo(jogador_id: int) -> void:
-	# Habilita o modo de seleção de ativo inicial
-	# A carta clicada na mão vai chamar confirmar_ativo()
-	print("🦖 Jogador %d deve escolher o animal ativo inicial." % jogador_id)
-	# Futuramente exibe um painel orientando o jogador
+	if jogador_id == ID_JOGADOR_HUMANO:
+		print("🦖 Jogador %d deve escolher o Animal Ativo inicial (clique num Filhote na mão)." % jogador_id)
+		_jogador_aguardando_escolha_ativo = jogador_id
+		organizar_cartas_nas_zonas(jogador_id)
+		_exibir_texto_flutuante("Selecione um Animal Ativo", 2.0)
+		# TODO(UI): destacar visualmente os Filhotes elegíveis na mão.
+	else:
+		# TODO(IA): sem IA real ainda, o oponente escolhe sozinho o
+		# primeiro Filhote que aparecer na mão — só pra não travar o
+		# setup em teste. Trocar por decisão de verdade quando a IA
+		# existir.
+		_auto_escolher_ativo_oponente(jogador_id)
 
-func _ao_animal_nocauteado_por_fome(jogador_id: int) -> void:
-	print("💀 Animal do Jogador %d morreu de fome. Escolha um substituto do banco." % jogador_id)
-	# Futuramente abre painel de seleção do banco
-	# Por enquanto a mesa aguarda o jogador clicar em um animal do banco
+
+func _auto_escolher_ativo_oponente(jogador_id: int) -> void:
+	var jogador := _obter_player_state(jogador_id)
+
+	for i in jogador.mao.size():
+		var carta := jogador.mao[i]
+		if carta is CardResource and carta.super_type == "animal" and carta.stage == "Filhote":
+			SetupManager.confirmar_animal_ativo(jogador_id, i)
+			return
+
+	push_error("Oponente (Jogador %d) não tem Filhote na mão — mulligan deveria ter garantido isso." % jogador_id)
+
 
 func _ao_setup_concluido() -> void:
 	print("✅ Setup concluído. Partida iniciada!")
+
+	# Os dois Animais Ativos iniciais nascem virados pra baixo durante
+	# o setup (ver _adicionar_carta_na_zona) — aqui é onde eles viram
+	# de frente, os dois "ao mesmo tempo" (mesmo frame).
+	_setup_em_andamento = false
+
 	organizar_cartas_nas_zonas(0)
 	organizar_cartas_nas_zonas(1)
-	print("Mesa: setup_concluido recebido!")
+	atualizar_visual_comida(0)
+	atualizar_visual_comida(1)
+	atualizar_visual_deck(0, _obter_player_state(0).deck.size())
+	atualizar_visual_deck(1, _obter_player_state(1).deck.size())
+
+# ==============================================================================
+# POP-UP DE RESULTADO DO SORTEIO / ESCOLHA DE ORDEM
+# ==============================================================================
+
+func _exibir_popup_escolha_ordem(vencedor_id: int) -> void:
+	"""Pop-up com escolha real: o jogador humano venceu o sorteio e
+	decide se joga primeiro ou deixa o oponente começar. Se ele não
+	decidir a tempo, o pop-up fecha sozinho aplicando o padrão (jogar
+	primeiro) — mesmo padrão de timeout já usado no menu contextual
+	de cartas (_abrir_menu_contextual)."""
+	_fechar_popup_setup()
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Você venceu o sorteio!",
+		"Escolha se quer jogar primeiro ou deixar o oponente começar."
+	)
+	var overlay: Control = refs["overlay"]
+	var vbox: VBoxContainer = refs["vbox"]
+
+	var botao_primeiro := Button.new()
+	botao_primeiro.text = "Jogar Primeiro"
+	botao_primeiro.pressed.connect(func(): _confirmar_ordem_escolhida(vencedor_id, true))
+	vbox.add_child(botao_primeiro)
+
+	var botao_segundo := Button.new()
+	botao_segundo.text = "Deixar Oponente Começar"
+	botao_segundo.pressed.connect(func(): _confirmar_ordem_escolhida(vencedor_id, false))
+	vbox.add_child(botao_segundo)
+
+	_popup_setup_ativo = overlay
+
+	await get_tree().create_timer(DURACAO_POPUP_ORDEM).timeout
+	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == overlay:
+		_confirmar_ordem_escolhida(vencedor_id, true)
+
+
+func _exibir_popup_resultado_sorteio(vencedor_id: int) -> void:
+	"""Pop-up só informativo — usado quando quem venceu o sorteio não
+	é o jogador humano, então não há escolha pra fazer aqui, só aviso."""
+	_fechar_popup_setup()
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Jogador %d venceu o sorteio!" % vencedor_id,
+		"O oponente decidiu jogar primeiro."
+	)
+	_popup_setup_ativo = refs["overlay"]
+
+	await get_tree().create_timer(3.0).timeout
+	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == refs["overlay"]:
+		_fechar_popup_setup()
+
+
+func _confirmar_ordem_escolhida(vencedor_id: int, quer_jogar_primeiro: bool) -> void:
+	_fechar_popup_setup()
+	SetupManager.confirmar_escolha_ordem(vencedor_id, quer_jogar_primeiro)
+
+
+func _fechar_popup_setup() -> void:
+	if is_instance_valid(_popup_setup_ativo):
+		_popup_setup_ativo.queue_free()
+	_popup_setup_ativo = null
+
+# ==============================================================================
+# CALLBACKS — TURNOS E FASES (TurnManager)
+# ==============================================================================
+
 func _ao_turno_iniciado(jogador_id: int) -> void:
-	"""Chamado quando um novo turno inicia"""
 	jogador_ativo_id = jogador_id
 	turno_em_progresso = true
 	tempo_restante_turno = timer_turno.wait_time
-	
-	# Habilita botão apenas se for o turno do jogador humano
-	botao_passar_turno.disabled = (jogador_id != 0)
-	
-	# Inicia o timer visual
+
+	botao_passar_turno.disabled = (jogador_id != ID_JOGADOR_HUMANO)
+
 	if timer_turno.is_stopped():
 		timer_turno.start()
-	
+
 	print("🟢 Turno iniciado! Jogador: %d | Tempo: %.1fs" % [jogador_id, tempo_restante_turno])
-	
-	# Emite sinal de atualização
+
 	turno_visual_atualizado.emit({
 		"jogador_id": jogador_id,
 		"fase": GameState.fase_atual,
 		"turno_numero": GameState.turno_atual
 	})
 
+
 func _ao_turno_encerrado(jogador_id: int) -> void:
-	"""Chamado quando um turno encerra"""
 	turno_em_progresso = false
 	timer_turno.stop()
 	botao_passar_turno.disabled = true
-	
+
 	print("🔴 Turno encerrado! Jogador: %d" % jogador_id)
 
+
 func _atualizar_contador_turno(delta: float) -> void:
-	"""Atualiza o progresso do timer do turno"""
 	tempo_restante_turno = maxf(tempo_restante_turno - delta, 0.0)
-	
-	# Atualiza barra de progresso (0 a 100)
 	progresso_turno.value = (1.0 - (tempo_restante_turno / timer_turno.wait_time)) * 100
-	
-	# Debug opcional
+
 	if fmod(tempo_restante_turno, 10.0) < delta:
 		print("⏱️ Tempo restante: %.1fs" % tempo_restante_turno)
 
+
 func _ao_timer_turno_expirado() -> void:
-	"""Chamado quando o tempo do turno expira automaticamente"""
 	print("⚠️ Tempo do turno expirado! Forçando avanço automático...")
 	_ao_botao_passar_turno_pressionado()
 
+
 func _ao_botao_passar_turno_pressionado() -> void:
-	"""Chamado quando o jogador clica em 'Passar Turno'"""
-	if jogador_ativo_id != 0:
+	"""Chamado quando o jogador clica em 'Passar Turno'. Vai direto pra
+	fase final — pular pra ATAQUE é uma escolha do jogador via botão de
+	atacar (menu contextual), não deste botão."""
+	if jogador_ativo_id != ID_JOGADOR_HUMANO:
 		print("⚠️ Não é o seu turno!")
 		return
-	
-	# Comunica ao GameState
-	GameState.alternar_turno()
+
+	TurnManager.fase_final()
 	turno_em_progresso = false
 
 # ==============================================================================
-# CALLBACKS DO GAMESTATE — CARTAS E CONDIÇÕES
+# TODO(core): SINAIS QUE AINDA NÃO EXISTEM
+#
+# Os pontos abaixo dependiam, na arquitetura antiga, de sinais emitidos
+# pelo GameState (animal_nocauteado, condicao_aplicada,
+# alimentacao_distribuida, vitoria, empate). Hoje ConditionSystem,
+# KnockoutSystem e FoodSystem são "calculadoras" puras — não emitem
+# nada, só calculam quando chamadas.
+#
+# Isso significa que, por enquanto, esta cena NÃO reage automaticamente
+# a nocautes/condições/comida/vitória. Os métodos públicos abaixo
+# (atualizar_visual_condicao, atualizar_visual_comida,
+# animar_animal_nocauteado, _exibir_tela_vitoria, _exibir_tela_empate)
+# continuam existindo e funcionam se chamados — falta só quem os chame
+# no momento certo. O candidato natural é o BattleManager (ainda
+# esqueleto) coordenando CombatSystem -> DamageSystem -> KnockoutSystem
+# e emitindo sinais próprios ao final de cada resolução, e um sistema
+# de vitória ainda não escrito validando RuleValidator.validate_*_victory().
 # ==============================================================================
 
-func _ao_animal_nocauteado(jogador_id: int, instancia: AnimalInstance) -> void:
-	"""Chamado quando um animal é nocauteado"""
+func atualizar_visual_condicao(jogador_id: int) -> void:
+	"""Chamar depois de qualquer ação que possa ter mudado a condição
+	especial do Animal Ativo de um jogador."""
+	var jogador := _obter_player_state(jogador_id)
+	if jogador.ativo == null:
+		return
+
+	var tipo: ConditionSystem.Tipo = ConditionSystem.obter_condicao(jogador.ativo)
+	_renderizar_condicao(jogador_id, tipo)
+
+
+func atualizar_visual_comida(jogador_id: int) -> void:
+	"""Chamar depois de qualquer ação que possa ter mudado a comida
+	disponível de um jogador (ex: fase de comida, alimentar manual)."""
+	var jogador := _obter_player_state(jogador_id)
+	_atualizar_visual_contador_comida(jogador_id, jogador.comida_disponivel)
+
+
+func animar_animal_nocauteado(jogador_id: int, instancia: AnimalInstance) -> void:
 	print("💥 Animal Nocauteado: %s (Jogador %d)" % [instancia.card.name, jogador_id])
-	
-	# Anima a carta saindo da zona ativa
+
 	var campo_origem: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
 	var zona_descarte: Panel = jogador_zona_descarte if jogador_id == 0 else oponente_zona_descarte
-	
-	if _has_child_of_type(campo_origem, Control):
-		var carta_visual: Control = _get_first_child_of_type(campo_origem, Control)
+
+	var carta_visual := _get_first_child_of_type(campo_origem, Control)
+	if carta_visual != null:
 		_animar_carta_para_zona(carta_visual, zona_descarte)
-
-func _ao_condicao_aplicada(jogador_id: int, condicao: int) -> void:
-	"""Chamado quando uma condição especial é aplicada"""
-	var nome_condicao: String = GameState.Condicao.keys()[condicao]
-	print("🔧 Condição Aplicada: %s (Jogador %d)" % [nome_condicao, jogador_id])
-	
-	# Atualiza visual da zona de condição
-	_atualizar_visual_condicao(jogador_id, condicao)
-
-
-func _ao_alimentacao_distribuida(jogador_id: int) -> void:
-	var j = GameState.jogadores[jogador_id]
-	var deposito: int = j["pontos_comida"]
-	var comida_dino: int = 0
-	if j["zona_ativo"] != null:
-		comida_dino = j["zona_ativo"].current_food
-	print("🍖 Depósito: %d | Comida do Dino: %d (Jogador %d)" % [deposito, comida_dino, jogador_id])
-	_atualizar_visual_contador_comida(jogador_id, deposito)
-
-
-func _ao_moeda_lancada(acao: String, resultado: bool) -> void:
-	"""Chamado quando uma moeda é lançada"""
-	var resultado_texto: String = "CARA" if resultado else "COROA"
-	print("🪙 Moeda Lançada (%s): %s" % [acao, resultado_texto])
-	
-	# Anima lançamento de moeda
-	_animar_lancamento_moeda(resultado)
 
 
 func _ao_vitoria(jogador_id: int) -> void:
-	"""Chamado quando um jogador vence"""
 	print("🏆 VITÓRIA! Jogador %d venceu!" % jogador_id)
 	_exibir_tela_vitoria(jogador_id)
 	turno_em_progresso = false
 
 
 func _ao_empate() -> void:
-	"""Chamado quando há empate"""
 	print("🤝 EMPATE!")
 	_exibir_tela_empate()
 	turno_em_progresso = false
@@ -424,77 +493,109 @@ func _ao_empate() -> void:
 # DECK E COMPRA DE CARTAS
 # ==============================================================================
 
-func comprar_carta_animada(jogador_id: int, carta: CardResource) -> void:
-	"""Anima uma carta sendo comprada do deck para a mão"""
+func comprar_carta_animada(jogador_id: int, carta: CardBaseResource) -> void:
 	var zona_deck: Panel = jogador_zona_deck if jogador_id == 0 else oponente_zona_deck
 	var mao_container: HBoxContainer = jogador_mao if jogador_id == 0 else oponente_mao
-	
-	# Cria instância visual da carta (você precisa implementar sua classe CardUI)
-	var carta_visual: Control = _criar_carta_ui(carta)
+
+	var eh_oponente: bool = jogador_id != ID_JOGADOR_HUMANO
+	var carta_visual: Control = _criar_carta_ui(carta, eh_oponente)
 	carta_visual.global_position = zona_deck.global_position
 	add_child(carta_visual)
-	
-	# Anima movimento para a mão
+
 	_animar_carta_para_zona(carta_visual, mao_container)
-	
-	print("🃏 Carta comprada animada: %s" % carta.name)
+
+	print("🃏 Carta comprada animada: %s (Jogador %d)" % [carta.name, jogador_id])
 
 
 func atualizar_visual_deck(jogador_id: int, cartas_restantes: int) -> void:
-	"""Atualiza o visual do deck baseado no número de cartas"""
-	var zona_deck: Panel = jogador_zona_deck if jogador_id == 0 else oponente_zona_deck
-	
-	# Exemplo: modula cor ou escala baseada no número de cartas
-	if cartas_restantes <= 0:
-		zona_deck.modulate = Color.RED
-		zona_deck.self_modulate = Color(1, 0.5, 0.5)  # Avermelhado
-	elif cartas_restantes <= 5:
-		zona_deck.modulate = Color.YELLOW
-		zona_deck.self_modulate = Color(1, 1, 0.5)  # Amarelado
-	else:
-		zona_deck.modulate = Color.WHITE
-		zona_deck.self_modulate = Color.WHITE
-	
-	print("📚 Deck atualizado: %d cartas restantes (Jogador %d)" % [cartas_restantes, jogador_id])
+	"""Desenha a pilha do deck como cartas de verso empilhadas (padrão
+	físico de TCG), com o total de cartas restantes embaixo.
 
+	TODO(core): não existe hoje um sinal de "carta comprada" — nem
+	DrawSystem (puro/estático) nem TurnManager emitem nada quando
+	compram. Por enquanto isso só é chamado uma vez, em
+	_ao_setup_concluido(). Precisa ser chamado de novo a cada compra
+	assim que esse sinal existir, senão a pilha visual fica
+	desatualizada durante a partida."""
+	const MAX_CARTAS_VISIVEIS := 6
+	const OFFSET_PILHA := Vector2(1.5, -1.5)
+
+	var zona_deck: Panel = jogador_zona_deck if jogador_id == 0 else oponente_zona_deck
+
+	for child in zona_deck.get_children():
+		child.queue_free()
+
+	if cartas_restantes <= 0:
+		print("📚 Deck vazio (Jogador %d)" % jogador_id)
+		return
+
+	var quantidade_visual: int = mini(cartas_restantes, MAX_CARTAS_VISIVEIS)
+
+	for i in range(quantidade_visual):
+		var verso: Control = HelperUI.criar_verso_generico()
+		verso.position = OFFSET_PILHA * i
+		verso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		zona_deck.add_child(verso)
+
+	var label_contador := Label.new()
+	label_contador.text = str(cartas_restantes)
+	label_contador.add_theme_font_size_override("font_size", 20)
+	label_contador.anchor_left = 0.5
+	label_contador.anchor_top = 1.0
+	label_contador.offset_left = -12
+	label_contador.offset_top = 6
+	label_contador.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_contador.self_modulate = Color.RED if cartas_restantes <= 5 else Color.WHITE
+	zona_deck.add_child(label_contador)
+
+	print("📚 Deck atualizado: %d cartas restantes (Jogador %d)" % [cartas_restantes, jogador_id])
 
 # ==============================================================================
 # GERENCIAMENTO DE ZONAS E DRAG & DROP
 # ==============================================================================
 
 func organizar_cartas_nas_zonas(jogador_id: int) -> void:
-	"""Reorganiza todas as cartas do jogador em suas respectivas zonas"""
-	var dados_jogador: Dictionary = GameState.jogadores[jogador_id]
-	
-	# Limpa zonas
+	"""Reorganiza todas as cartas do jogador em suas respectivas zonas,
+	lendo direto do PlayerState (GameState.jogador_1 / jogador_2)."""
+	var jogador := _obter_player_state(jogador_id)
+
 	_limpar_zona(jogador_id, "mao")
 	_limpar_zona(jogador_id, "banco")
 	_limpar_zona(jogador_id, "ativo")
 	_limpar_zona(jogador_id, "descarte")
-	
-	# Adiciona mão
-	for carta in dados_jogador["mao"]:
-		_adicionar_carta_na_zona(jogador_id, "mao", carta)
-	
-	# Adiciona banco
-	for instancia in dados_jogador["banco"]:
+
+	for carta_base in jogador.mao:
+		_adicionar_carta_na_zona(jogador_id, "mao", carta_base)
+
+	for instancia in jogador.banco:
 		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card)
-	
-	# Adiciona ativo
-	if dados_jogador["zona_ativo"] != null:
-		_adicionar_carta_na_zona(jogador_id, "ativo", dados_jogador["zona_ativo"].card)
+
+	if jogador.ativo != null:
+		_adicionar_carta_na_zona(jogador_id, "ativo", jogador.ativo.card)
 
 
-func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardResource) -> void:
-	"""Cria uma instância visual de carta e a adiciona à zona especificada"""
-	var carta_visual: Control = _criar_carta_ui(carta)
-	
+func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource) -> void:
+	# Convenção de TCG: só a mão é informação escondida — mas o Animal
+	# Ativo inicial também fica virado pra baixo enquanto o setup
+	# ainda está rolando (os dois viram juntos em _ao_setup_concluido).
+	# Fora do setup, ativo/banco/descarte são sempre públicos, de frente.
+	var eh_mao_do_oponente: bool = (zona_nome == "mao" and jogador_id != ID_JOGADOR_HUMANO)
+	var eh_ativo_inicial_escondido: bool = (zona_nome == "ativo" and _setup_em_andamento)
+	var face_para_baixo: bool = eh_mao_do_oponente or eh_ativo_inicial_escondido
+
+	var carta_visual: Control = _criar_carta_ui(carta, face_para_baixo)
+
 	match zona_nome:
 		"mao":
 			var mao_container: HBoxContainer = jogador_mao if jogador_id == 0 else oponente_mao
 			mao_container.add_child(carta_visual)
-			_configurar_inputs_carta(carta_visual, carta, jogador_id)
-		
+
+			# Carta da mão do oponente fica escondida (verso, ou verso
+			# genérico — ver Helper.instanciar_carta). Não conectamos
+			# input nela: nem clique nem zoom devem expor o que é.
+			if jogador_id == ID_JOGADOR_HUMANO:
+				_configurar_inputs_carta(carta_visual, carta, jogador_id)
+
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
 			campo_ativo.add_child(carta_visual)
@@ -502,202 +603,192 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardRes
 			carta_visual.anchor_top = 0.5
 			carta_visual.offset_left = -carta_visual.size.x / 2
 			carta_visual.offset_top = -carta_visual.size.y / 2
-		
+
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
-			# Encontra primeiro slot vazio
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
 					slot.add_child(carta_visual)
 					break
-		
+
 		"descarte":
-			# Descarte é apenas visual (pilha)
-			pass
+			pass  # Descarte é apenas visual (pilha), não instancia carta a carta.
 
 
-func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardResource, jogador_id: int) -> void:
-	"""Configura os inputs de mouse para uma carta"""
+func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
 	if not carta_visual.is_connected("gui_input", Callable(self, "_ao_input_carta")):
 		carta_visual.gui_input.connect(_ao_input_carta.bindv([carta_visual, carta_resource, jogador_id]))
 
 
-func _ao_input_carta(event: InputEvent, carta_visual: Control, carta_resource: CardResource, jogador_id: int) -> void:
-	"""Processa inputs em uma carta"""
-	# 1. Primeiro garantimos que o evento é um clique de mouse (Pressionar ou Soltar)
+func _ao_input_carta(event: InputEvent, carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Durante a escolha do Animal Ativo inicial, clique na mão tem
+		# um significado especial e não deve virar arrasto/menu normal.
+		if _jogador_aguardando_escolha_ativo == jogador_id:
+			_tentar_confirmar_ativo_inicial(jogador_id, carta_resource)
+			return
+
 	if event is InputEventMouseButton:
-		
-		# 2. Se o botão foi PRESSIONADO
 		if event.pressed:
 			match event.button_index:
 				MOUSE_BUTTON_LEFT:
-					# Inicia arrasto ou abre menu
 					_iniciar_arrasto_carta(carta_visual, carta_resource, jogador_id)
-				
 				MOUSE_BUTTON_RIGHT:
-					# Abre zoom estático de leitura
 					_abrir_zoom_leitura(carta_visual, carta_resource)
-		
-		# 3. Se o botão foi SOLTO (else do event.pressed)
 		else:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				_finalizar_arrasto_carta(carta_visual, carta_resource)
 
-func _iniciar_arrasto_carta(carta_visual: Control, carta_resource: CardResource, jogador_id: int) -> void:
-	"""Inicia o arrasto de uma carta"""
-	if jogador_id != 0:  # Só o jogador humano pode arrastar
+
+func _tentar_confirmar_ativo_inicial(jogador_id: int, carta_resource: CardBaseResource) -> void:
+	var jogador := _obter_player_state(jogador_id)
+	var indice: int = jogador.mao.find(carta_resource)
+
+	if indice == -1:
 		return
-	
+
+	if SetupManager.confirmar_animal_ativo(jogador_id, indice):
+		_jogador_aguardando_escolha_ativo = -1
+		organizar_cartas_nas_zonas(jogador_id)
+	else:
+		_exibir_texto_flutuante("Selecione um Animal Filhote", 1.5)
+
+
+func _iniciar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
+	if jogador_id != ID_JOGADOR_HUMANO:
+		return
+
 	carta_em_arrasto = carta_visual
 	carta_selecionada = carta_visual
 	offset_arrasto = carta_visual.get_local_mouse_position()
-	
-	# Eleva a carta visualmente
+
 	carta_visual.z_index = 100
 	carta_visual.modulate.a = 0.8
-	
+
 	print("👆 Arrasto iniciado: %s" % carta_resource.name)
 
 
 func _processar_arrasto_carta() -> void:
-	"""Atualiza posição da carta durante arrasto"""
 	if carta_em_arrasto == null:
 		return
-	
+
 	var mouse_pos: Vector2 = get_global_mouse_position()
 	carta_em_arrasto.global_position = mouse_pos - offset_arrasto
-	
-	# Detecta zona alvo potencial
+
 	_detectar_zona_alvo(carta_em_arrasto)
 
 
 func _detectar_zona_alvo(carta_visual: Control) -> void:
-	"""Detecta se a carta está perto de uma zona de drop válida"""
 	var zonas_potenciais: Array[Control] = [
 		jogador_campo_ativo,
 		jogador_slots_banco,
 		jogador_zona_descarte
 	]
-	
+
 	zona_alvo_potencial = null
 	var distancia_minima: float = DISTANCIA_SNAP_ZONAS
-	
+
 	for zona in zonas_potenciais:
 		var distancia: float = carta_visual.global_position.distance_to(zona.global_position)
 		if distancia < distancia_minima:
 			distancia_minima = distancia
 			zona_alvo_potencial = zona
-			# Visual feedback (opcional)
 			zona.self_modulate = Color.YELLOW
 
 
 func _cancelar_arrasto() -> void:
-	"""Cancela o arrasto da carta e a retorna à posição original"""
 	if carta_em_arrasto == null:
 		return
-	
-	# Anima volta
+
 	_animar_carta_para_zona(carta_em_arrasto, jogador_mao)
-	
-	# Limpa estado
+
 	carta_em_arrasto = null
 	zona_alvo_potencial = null
-	
+
 	if is_instance_valid(carta_selecionada):
 		carta_selecionada.z_index = 0
 		carta_selecionada.modulate.a = 1.0
 
 
-func _finalizar_arrasto_carta(carta_visual: Control, carta_resource: CardResource) -> void:
-	"""Finaliza o arrasto: snap ou abre o menu de contexto"""
+func _finalizar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResource) -> void:
+	"""IMPORTANTE: esta função NÃO move mais a carta nem confia que a
+	jogada deu certo. Não existe hoje um manager que aplique "jogar
+	carta pro campo/banco" com validação de regra — isso é trabalho
+	pendente do BattleManager (ou de um novo PlayCardManager) usando
+	RuleValidator.validate_bench_placement / validate_bench_size etc.
+	Por ora só emitimos o pedido e devolvemos a carta pra mão; quando
+	o manager existir, ele deve chamar de volta algo como
+	`organizar_cartas_nas_zonas(jogador_id)` pra esta cena refletir o
+	resultado real."""
 	if zona_alvo_potencial == null:
-		# Se não foi arrastada para nenhuma zona válida, foi um clique curto!
 		_abrir_menu_contextual(carta_visual, carta_resource)
 		_cancelar_arrasto()
 		return
-	
-	# Determina qual zona e comunica ao GameState
-	var indice_mao: int = GameState.jogadores[0]["mao"].find(carta_resource)
+
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var indice_mao: int = jogador.mao.find(carta_resource)
 	if indice_mao == -1:
 		print("⚠️ Carta não encontrada na mão!")
 		_cancelar_arrasto()
 		return
-	
+
 	if zona_alvo_potencial == jogador_campo_ativo:
-		if GameState.jogar_animal_para_ativo(0, indice_mao):
-			_animar_carta_para_zona(carta_visual, jogador_campo_ativo)
-			print("✓ Carta jogada no campo ativo")
-		else:
-			_cancelar_arrasto()
-	
+		acao_jogador_solicitada.emit("jogar_para_ativo", {"indice_mao": indice_mao, "carta": carta_resource})
 	elif zona_alvo_potencial == jogador_slots_banco:
-		if GameState.jogar_animal_para_banco(0, indice_mao):
-			_animar_carta_para_zona(carta_visual, jogador_slots_banco)
-			print("✓ Carta jogada no banco")
-		else:
-			_cancelar_arrasto()
-	
-	else:
-		_cancelar_arrasto()
-	
+		acao_jogador_solicitada.emit("jogar_para_banco", {"indice_mao": indice_mao, "carta": carta_resource})
+
+	# TODO(core): trocar por animação condicionada à confirmação do
+	# manager. Por enquanto sempre cancela visualmente (a carta volta
+	# pra mão) até existir um listener que aplique e confirme a jogada.
+	_cancelar_arrasto()
+
 	carta_em_arrasto = null
 	zona_alvo_potencial = null
-	
+
 # ==============================================================================
 # SISTEMA DE ZOOM E MENU CONTEXTUAL
 # ==============================================================================
 
-func _abrir_zoom_leitura(carta_visual: Control, carta_resource: CardResource) -> void:
-	"""Abre o zoom estático para leitura (botão direito)"""
+func _abrir_zoom_leitura(carta_visual: Control, carta_resource: CardBaseResource) -> void:
 	if card_zoom_manager == null:
 		print("⚠️ CardZoomManager não disponível")
 		return
-	
-	# Usa CardZoomManager para fazer zoom
+
 	card_zoom_manager.exibir_zoom_carta(carta_visual, carta_resource)
-	
-	#COMENTE A LINHA ABAIXO QUE ESTAVA AQUI:
-	# _abrir_menu_contextual(carta_visual, carta_resource)
 
 
-func _abrir_menu_contextual(carta_visual: Control, carta_resource: CardResource) -> void:
-	"""Abre menu flutuante com ações disponíveis (botão esquerdo depois de zoom)"""
-	# 🔥 CORREÇÃO AQUI: Se já existe um menu aberto na tela, fecha ele antes!
+func _abrir_menu_contextual(carta_visual: Control, carta_resource: CardBaseResource) -> void:
 	if is_instance_valid(menu_contextual_ativo):
-		menu_contextual_ativo.queue_free()	
-	# Cria painel flutuante com botões
+		menu_contextual_ativo.queue_free()
+
 	var menu: Panel = Panel.new()
 	menu.add_theme_stylebox_override("panel", StyleBoxFlat.new())
 	menu.custom_minimum_size = Vector2(150, 120)
 	menu.global_position = carta_visual.global_position + Vector2(100, 100)
-	
+
 	var vbox: VBoxContainer = VBoxContainer.new()
 	menu.add_child(vbox)
-	
-	# Botões do menu (ativados/desativados baseado em regras do GameState)
+
 	var botoes: Array = [
 		{"texto": "Prender/Presente", "acao": "_acao_prender"},
 		{"texto": "Atacar", "acao": "_acao_atacar"},
 		{"texto": "Usar Habilidade", "acao": "_acao_usar_habilidade"},
 		{"texto": "Recuar", "acao": "_acao_recuar"}
 	]
-	
+
 	for item_botao in botoes:
 		var botao: Button = Button.new()
 		botao.text = item_botao["texto"]
 		botao.pressed.connect(Callable(self, item_botao["acao"]).bindv([carta_resource]))
-		
-		# Valida se a ação é permitida pelo GameState
+
 		var habilitado: bool = _validar_acao_permitida(item_botao["acao"], carta_resource)
 		botao.disabled = not habilitado
-		
+
 		vbox.add_child(botao)
-	
-	# Adiciona à cena
+
 	add_child(menu)
 	menu_contextual_ativo = menu
-	
-	# Fecha menu após 30 segundos ou clique fora
+
 	await get_tree().create_timer(30.0).timeout
 	if is_instance_valid(menu_contextual_ativo):
 		menu_contextual_ativo.queue_free()
@@ -705,48 +796,49 @@ func _abrir_menu_contextual(carta_visual: Control, carta_resource: CardResource)
 
 
 func _validar_acao_permitida(acao: String, carta: CardResource) -> bool:
-	"""Valida se uma ação é permitida baseado no GameState"""
-	var dados_jogador: Dictionary = GameState.jogadores[0]
-	
+	"""Delega pro RuleValidator sempre que a regra já está
+	implementada. Ações cuja regra ainda é esqueleto (validate_retreat
+	hoje sempre retorna false) ficam corretamente desabilitadas até
+	serem implementadas no RuleValidator — não simulamos aqui."""
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+
 	match acao:
 		"_acao_prender":
-			return dados_jogador["zona_ativo"] != null and dados_jogador["pontos_comida"] >= 1
-		
+			return jogador.ativo != null and jogador.comida_disponivel >= 1
+
 		"_acao_atacar":
-			return GameState.fase_atual == GameState.Fase.ATAQUE and GameState.pode_atacar(0)
-		
+			if GameState.fase_atual != GameState.Fase.ATAQUE:
+				return false
+			if jogador.ativo == null:
+				return false
+			return RuleValidator.validate_attack(jogador.ativo, carta)
+
 		"_acao_usar_habilidade":
-			return dados_jogador["zona_ativo"] != null and carta.text_ui != ""
-		
+			return jogador.ativo != null and carta.text_ui != ""
+
 		"_acao_recuar":
-			return GameState.pode_recuar(0)
-	
+			return RuleValidator.validate_retreat(jogador.ativo, jogador, GameState)
+
 	return false
 
 
 func _acao_prender(carta: CardResource) -> void:
-	"""Ação: Prender/Presente"""
 	print("📌 Ação: Prender/Presente em %s" % carta.name)
 	acao_jogador_solicitada.emit("prender", {"carta": carta})
 
 
 func _acao_atacar(carta: CardResource) -> void:
-	"""Ação: Atacar com o animal ativo"""
 	print("⚔️ Ação: Atacar com %s" % carta.name)
 	acao_jogador_solicitada.emit("atacar", {"carta": carta})
-	
-	# Toca animação de ataque
 	_animar_ataque(carta)
 
 
 func _acao_usar_habilidade(carta: CardResource) -> void:
-	"""Ação: Usar habilidade da carta"""
 	print("✨ Ação: Usar habilidade de %s" % carta.name)
 	acao_jogador_solicitada.emit("usar_habilidade", {"carta": carta})
 
 
 func _acao_recuar(carta: CardResource) -> void:
-	"""Ação: Recuar animal ativo"""
 	print("🔄 Ação: Recuar %s" % carta.name)
 	acao_jogador_solicitada.emit("recuar", {"carta": carta})
 
@@ -755,27 +847,22 @@ func _acao_recuar(carta: CardResource) -> void:
 # ==============================================================================
 
 func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao: float = DURACAO_ANIMACAO_CARTA) -> void:
-	"""Anima uma carta se movendo para uma zona"""
-	# Mata tween anterior se existir
 	if dicionario_tweens_cartas.has(carta_visual):
 		dicionario_tweens_cartas[carta_visual].kill()
-	
+
 	var tween: Tween = create_tween()
 	dicionario_tweens_cartas[carta_visual] = tween
-	
+
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_duration(duracao)
-	
-	# Anima posição
+
 	tween.tween_property(
 		carta_visual,
 		"global_position",
 		zona_alvo.global_position,
 		duracao
 	)
-	
-	# Callback ao terminar
+
 	tween.tween_callback(func():
 		dicionario_tweens_cartas.erase(carta_visual)
 		if is_instance_valid(carta_visual):
@@ -785,107 +872,101 @@ func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao:
 
 
 func _animar_ataque(carta: CardResource) -> void:
-	"""Anima o ataque visual do animal ativo"""
 	var campo_ativo: Panel = jogador_campo_ativo
 	if campo_ativo.get_child_count() == 0:
 		return
-	
+
 	var carta_visual: Control = _get_first_child_of_type(campo_ativo, Control)
-	
+	if carta_visual == null:
+		return
+
 	var tween: Tween = create_tween()
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.set_trans(Tween.TRANS_QUAD)
-	
-	# Animação de pulso
+
 	tween.tween_property(carta_visual, "scale", Vector2(1.2, 1.2), 0.1)
 	tween.tween_property(carta_visual, "scale", Vector2(1.0, 1.0), 0.1)
 	tween.tween_property(carta_visual, "scale", Vector2(1.15, 1.15), 0.1)
 	tween.tween_property(carta_visual, "scale", Vector2(1.0, 1.0), 0.1)
 
 
-func _animar_lancamento_moeda(resultado: bool) -> void:
-	"""Anima um lançamento de moeda"""
-	print("🎪 Lançamento de moeda animado: %s" % ("CARA" if resultado else "COROA"))
-	
-	# Você pode instanciar um AnimatedSprite2D ou criar uma animação visual aqui
-	# Por enquanto, é apenas um placeholder
-	var moeda_label: Label = Label.new()
-	moeda_label.text = "CARA" if resultado else "COROA"
-	moeda_label.add_theme_font_size_override("font_size", 48)
-	moeda_label.global_position = get_viewport().get_visible_rect().get_center()
-	add_child(moeda_label)
-	
+func _exibir_texto_flutuante(texto: String, duracao: float) -> void:
+	"""Substitui o antigo _animar_lancamento_moeda — generalizado pra
+	qualquer mensagem central de curta duração (resultado de sorteio,
+	etc.), evitando duplicar a mesma animação de Label pra cada caso."""
+	var label: Label = Label.new()
+	label.text = texto
+	label.add_theme_font_size_override("font_size", 48)
+	label.global_position = get_viewport().get_visible_rect().get_center()
+	add_child(label)
+
 	var tween: Tween = create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
-	
-	tween.tween_property(moeda_label, "modulate", Color.TRANSPARENT, DURACAO_ANIMACAO_MOEDA)
-	tween.tween_callback(func(): moeda_label.queue_free())
 
+	tween.tween_property(label, "modulate", Color.TRANSPARENT, duracao)
+	tween.tween_callback(func(): label.queue_free())
 
 # ==============================================================================
 # FEEDBACKS VISUAIS — CONDIÇÕES E COMIDA
 # ==============================================================================
 
-func _atualizar_visual_condicao(jogador_id: int, condicao: int) -> void:
-	"""Altera o visual da carta ativa baseado na condição"""
+func _renderizar_condicao(jogador_id: int, tipo: ConditionSystem.Tipo) -> void:
 	var zona_condicao: Panel = jogador_condicao_especial if jogador_id == 0 else oponente_condicao_especial
-	var nome_condicao: String = GameState.Condicao.keys()[condicao]
-	
-	# Cria um label ou ícone representando a condição
+
+	for child in zona_condicao.get_children():
+		child.queue_free()
+
+	if tipo == ConditionSystem.Tipo.NENHUMA:
+		return
+
+	var nome_condicao: String = ConditionSystem.Tipo.keys()[tipo]
+
 	var condicao_visual: Label = Label.new()
 	condicao_visual.text = nome_condicao
 	condicao_visual.add_theme_font_size_override("font_size", 24)
-	
-	match condicao:
-		GameState.Condicao.ADORMECIDO:
+
+	match tipo:
+		ConditionSystem.Tipo.ADORMECIDO:
 			condicao_visual.self_modulate = Color.LIGHT_BLUE
-		GameState.Condicao.PARALISADO:
+		ConditionSystem.Tipo.PARALISADO:
 			condicao_visual.self_modulate = Color.YELLOW
-		GameState.Condicao.ENVENENADO:
+		ConditionSystem.Tipo.ENVENENADO:
 			condicao_visual.self_modulate = Color.GREEN
-		GameState.Condicao.SANGRANDO:
+		ConditionSystem.Tipo.SANGRANDO:
 			condicao_visual.self_modulate = Color.RED
-	
-	# Limpa zona anterior
-	for child in zona_condicao.get_children():
-		child.queue_free()
-	
+		ConditionSystem.Tipo.CONDENADO:
+			condicao_visual.self_modulate = Color.PURPLE
+
 	zona_condicao.add_child(condicao_visual)
 	print("🔧 Visual de condição atualizado: %s" % nome_condicao)
 
 
 func _atualizar_visual_contador_comida(jogador_id: int, pontos: int) -> void:
-	"""Atualiza o sprite e UI do contador de comida"""
 	var contador_panel: Panel = jogador_contador_comida if jogador_id == 0 else oponente_contador_comida
-	
-	# Limpa filhos anteriores
+
 	for child in contador_panel.get_children():
 		child.queue_free()
-	
-	# Cria Label com número de pontos
+
 	var label_comida: Label = Label.new()
 	label_comida.text = str(pontos)
 	label_comida.add_theme_font_size_override("font_size", 32)
 	label_comida.modulate = Color.ORANGE
-	
+
 	contador_panel.add_child(label_comida)
-	
-	# Configura hover para exibir tooltip
+
 	if not contador_panel.is_connected("mouse_entered", Callable(self, "_ao_mouse_entrou_comida")):
 		contador_panel.mouse_entered.connect(_ao_mouse_entrou_comida.bindv([jogador_id, pontos]))
 		contador_panel.mouse_exited.connect(_ao_mouse_saiu_comida)
-	
+
 	print("🍖 Contador de comida atualizado: %d pontos (Jogador %d)" % [pontos, jogador_id])
 
 
 func _ao_mouse_entrou_comida(jogador_id: int, pontos: int) -> void:
-	"""Exibe tooltip ao hover no contador de comida"""
 	print("ℹ️ Hover em contador de comida: %d pontos" % pontos)
 
 
 func _ao_mouse_saiu_comida() -> void:
-	"""Remove tooltip ao sair do hover"""
 	pass
 
 # ==============================================================================
@@ -893,70 +974,52 @@ func _ao_mouse_saiu_comida() -> void:
 # ==============================================================================
 
 func _exibir_tela_vitoria(ganhador_id: int) -> void:
-	"""Exibe a tela de vitória"""
-	var tela_vitoria: Panel = Panel.new()
-	tela_vitoria.anchor_left = 0
-	tela_vitoria.anchor_top = 0
-	tela_vitoria.anchor_right = 1
-	tela_vitoria.anchor_bottom = 1
-	
-	var stylebox: StyleBoxFlat = StyleBoxFlat.new()
-	stylebox.bg_color = Color.BLACK
-	stylebox.set_corner_radius_all(0)
-	tela_vitoria.add_theme_stylebox_override("panel", stylebox)
-	
-	var label_vitoria: Label = Label.new()
-	label_vitoria.text = "🏆 JOGADOR %d VENCEU! 🏆" % ganhador_id
-	label_vitoria.add_theme_font_size_override("font_size", 64)
-	label_vitoria.anchor_left = 0.5
-	label_vitoria.anchor_top = 0.5
-	label_vitoria.offset_left = -250
-	label_vitoria.offset_top = -50
-	
-	tela_vitoria.add_child(label_vitoria)
-	add_child(tela_vitoria)
-	
+	_exibir_tela_final("🏆 JOGADOR %d VENCEU! 🏆" % ganhador_id, Color.BLACK)
 	print("🏆 Tela de vitória exibida para Jogador: %d" % ganhador_id)
 
 
 func _exibir_tela_empate() -> void:
-	"""Exibe a tela de empate"""
-	var tela_empate: Panel = Panel.new()
-	tela_empate.anchor_left = 0
-	tela_empate.anchor_top = 0
-	tela_empate.anchor_right = 1
-	tela_empate.anchor_bottom = 1
-	
-	var stylebox: StyleBoxFlat = StyleBoxFlat.new()
-	stylebox.bg_color = Color.GRAY
-	tela_empate.add_theme_stylebox_override("panel", stylebox)
-	
-	var label_empate: Label = Label.new()
-	label_empate.text = "🤝 EMPATE! 🤝"
-	label_empate.add_theme_font_size_override("font_size", 64)
-	label_empate.anchor_left = 0.5
-	label_empate.anchor_top = 0.5
-	label_empate.offset_left = -200
-	label_empate.offset_top = -50
-	
-	tela_empate.add_child(label_empate)
-	add_child(tela_empate)
-	
+	_exibir_tela_final("🤝 EMPATE! 🤝", Color.GRAY)
 	print("🤝 Tela de empate exibida")
+
+
+func _exibir_tela_final(texto: String, cor_fundo: Color) -> void:
+	var tela: Panel = Panel.new()
+	tela.anchor_left = 0
+	tela.anchor_top = 0
+	tela.anchor_right = 1
+	tela.anchor_bottom = 1
+
+	var stylebox: StyleBoxFlat = StyleBoxFlat.new()
+	stylebox.bg_color = cor_fundo
+	tela.add_theme_stylebox_override("panel", stylebox)
+
+	var label: Label = Label.new()
+	label.text = texto
+	label.add_theme_font_size_override("font_size", 64)
+	label.anchor_left = 0.5
+	label.anchor_top = 0.5
+	label.offset_left = -250
+	label.offset_top = -50
+
+	tela.add_child(label)
+	add_child(tela)
 
 # ==============================================================================
 # MÉTODOS AUXILIARES
 # ==============================================================================
 
-func _criar_carta_ui(carta: CardResource) -> Control:
-	var instancia = CENA_CARTA.instantiate()
-	instancia.inicializar(carta)
-	return instancia
-	
+func _obter_player_state(jogador_id: int) -> PlayerState:
+	return GameState.jogador_1 if jogador_id == 0 else GameState.jogador_2
+
+
+func _criar_carta_ui(carta: CardBaseResource, face_para_baixo: bool = false) -> Control:
+	return HelperUI.instanciar_carta(carta, face_para_baixo)
+
+
 func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
-	"""Remove todas as cartas visuais de uma zona"""
 	var container: Control = null
-	
+
 	match zona_nome:
 		"mao":
 			container = jogador_mao if jogador_id == 0 else oponente_mao
@@ -966,45 +1029,31 @@ func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 			container = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
 		"descarte":
 			container = jogador_zona_descarte if jogador_id == 0 else oponente_zona_descarte
-	
+
 	if container:
 		for child in container.get_children():
 			child.queue_free()
 
 
-func _has_child_of_type(parent: Node, tipo: Object) -> bool:
-	"""Verifica se um nó tem filhos do tipo especificado"""
-	for child in parent.get_children():
-		if is_instance_of(child, tipo):
-			return true
-	return false
-
-
 func _get_first_child_of_type(parent: Node, tipo: Object) -> Control:
-	"""Retorna o primeiro filho do tipo especificado"""
-	
 	for child in parent.get_children():
 		if is_instance_of(child, tipo):
 			return child as Control
 	return null
-
 
 # ==============================================================================
 # CLEANUP
 # ==============================================================================
 
 func _exit_tree() -> void:
-	"""Limpa recursos ao sair da cena"""
-	if tween_ativa:
-		tween_ativa.kill()
-	
 	for tween in dicionario_tweens_cartas.values():
 		if tween:
 			tween.kill()
-	
-	# Desconecta sinais para evitar erros
-	if GameState and GameState.is_connected("turno_iniciado", Callable(self, "_ao_turno_iniciado")):
-		GameState.turno_iniciado.disconnect(_ao_turno_iniciado)
+
+	if TurnManager and TurnManager.turno_iniciado.is_connected(_ao_turno_iniciado):
+		TurnManager.turno_iniciado.disconnect(_ao_turno_iniciado)
+	if TurnManager and TurnManager.turno_encerrado.is_connected(_ao_turno_encerrado):
+		TurnManager.turno_encerrado.disconnect(_ao_turno_encerrado)
 
 # ==============================================================================
 # FIM DO SCRIPT

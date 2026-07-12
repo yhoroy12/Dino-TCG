@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_14oox"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_yaey8"]
 
 [resource]
-script = ExtResource("1_14oox")
+script = ExtResource("1_yaey8")
 id = "H018"
 name = "Sacrifício altruísta"
 text_ui = "Quantas vezes desejar durante o seu turno, você pode mover 1 marcador de dano (10 de dano) de um dos seus outros dinossauros para este dinossauro."

@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_2boca"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_j1a5u"]
 
 [resource]
-script = ExtResource("1_2boca")
+script = ExtResource("1_j1a5u")
 id = "H006"
 name = "Canção revigorante"
 text_ui = "Uma vez durante o seu turno, cure 20 de dano de cada um dos seus dinossauros."

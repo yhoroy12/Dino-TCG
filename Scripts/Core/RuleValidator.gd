@@ -74,27 +74,46 @@ static func validate_match_start(game_state) -> bool:
 # ==================================================
 
 ## Valida construção do deck.
-static func validate_deck(deck) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+##
+## Delega para DeckRulesSystem, que é a implementação real (também usada
+## ao vivo pela UI do deck_builder) — evita duas fontes de verdade para
+## a mesma regra.
+static func validate_deck(deck: DeckData) -> bool:
+	if deck == null:
+		return false
+
+	return DeckRulesSystem.validar_deck(deck)["valido"]
 
 
 ## Valida quantidade de cartas.
-static func validate_deck_size(deck) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+static func validate_deck_size(deck: DeckData) -> bool:
+	if deck == null:
+		return false
+
+	return deck.cartas.size() == DeckRulesSystem.TAMANHO_DECK_VALIDO
 
 
 ## Valida limite de cópias.
-static func validate_card_copies(deck) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+static func validate_card_copies(deck: DeckData) -> bool:
+	if deck == null:
+		return false
+
+	for carta in deck.cartas:
+		var limite: int = DeckRulesSystem.obter_limite_copias(carta)
+		var copias: int = DeckRulesSystem.contar_copias(deck.cartas, carta.id)
+
+		if copias > limite:
+			return false
+
+	return true
 
 
 ## Valida presença obrigatória de filhote.
-static func validate_baby_requirement(deck) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+static func validate_baby_requirement(deck: DeckData) -> bool:
+	if deck == null:
+		return false
+
+	return DeckRulesSystem.validar_deck(deck)["possui_filhote"]
 
 
 # ==================================================

@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_yqhla"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_y5atj"]
 
 [resource]
-script = ExtResource("1_yqhla")
+script = ExtResource("1_y5atj")
 id = "A154"
 name = "Fartura e Pobreza"
 super_type = "territorio"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Lado de cima(Fartura) Os dinossauros ganham um bonus de +1 de comida por turno Lado de baixo(Pobreza) Os dinossauros perdem -1 pontos de comida por turno."
 mec_trigger = "inicio_turno"
 mec_condition = "sempre"

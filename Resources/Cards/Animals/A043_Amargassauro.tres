@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://m4ndrqjehp47"]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_dmmpe"]
+[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_0egmk"]
 
 [resource]
-script = ExtResource("1_dmmpe")
+script = ExtResource("1_0egmk")
 id = "A043"
 name = "Amargassauro"
 super_type = "animal"

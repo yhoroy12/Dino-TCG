@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_svnxx"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_kd227"]
 
 [resource]
-script = ExtResource("1_svnxx")
+script = ExtResource("1_kd227")
 id = "H004"
 name = "Aterrorizar crianças"
 text_ui = "Enquanto este dinossauro estiver no campo ativo, o oponente não pode evoluir/crescer o dinossauro ativo dele."

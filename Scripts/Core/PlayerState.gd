@@ -4,10 +4,13 @@ extends RefCounted
 var id : int
 
 # Deck
+# CardBaseResource (não CardResource) porque deck/mão/descarte podem
+# conter Animal (CardResource) e Energia/Vestígio/Cataclismo/Território
+# (EffectResource) ao mesmo tempo.
 
-var deck : Array[CardResource] = []
-var mao : Array[CardResource] = []
-var descarte : Array[CardResource] = []
+var deck : Array[CardBaseResource] = []
+var mao : Array[CardBaseResource] = []
+var descarte : Array[CardBaseResource] = []
 
 # Campo
 

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_06a3a"]
+
+[resource]
+script = ExtResource("1_06a3a")
+id = "A128"
+name = "Recuo tático"
+super_type = "cataclismo"
+text_ui = "Coloque o seu dinossauro ativo no banco."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "forcar_recuo"
+mec_resource = "status"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

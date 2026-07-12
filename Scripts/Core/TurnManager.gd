@@ -22,10 +22,24 @@
 extends Node
 
 
+# ==================================================
+# SINAIS
+# Fluxo puro, sem carregar dado além do necessário pra UI
+# saber "o que" e "de quem". TurnManager continua sem
+# guardar estado próprio — quem quiser saber a fase ou o
+# turno atual lê em GameState, como sempre.
+# ==================================================
+
+signal turno_iniciado(jogador_id: int)
+signal turno_encerrado(jogador_id: int)
+
+
 func iniciar_turno() -> void:
 	GameState.fase_atual = GameState.Fase.INICIO
 
 	_resetar_flags_turno()
+
+	turno_iniciado.emit(GameState.jogador_ativo)
 
 	fase_compra()
 
@@ -81,6 +95,10 @@ func fase_final() -> void:
 	GameState.fase_atual = GameState.Fase.FINAL
 
 	_processar_fim_de_turno_dos_animais()
+
+	# Emitido ANTES de trocar o jogador ativo: turno_encerrado deve
+	# informar quem estava terminando o turno, não quem está começando.
+	turno_encerrado.emit(GameState.jogador_ativo)
 
 	_passar_turno()
 

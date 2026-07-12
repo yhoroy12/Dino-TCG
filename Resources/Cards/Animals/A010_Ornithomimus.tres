@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_k16yd"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_38hrw"]
 
 [resource]
-script = ExtResource("1_k16yd")
+script = ExtResource("1_38hrw")
 id = "A010"
 name = "Ornithomimus"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 1
 ability_name = ""
 attack_name = "Ataque duplo"
 attack_cost = "⚪"
-damage_base = 20
+damage_base = 0
 damage_type = "fixo"
 text_ui = "Jogue duas moedas, para cada cara cause 20 de dano."
 mec_trigger = "ao_atacar"

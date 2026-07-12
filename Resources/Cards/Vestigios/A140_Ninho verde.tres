@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_avc16"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_rwst8"]
 
 [resource]
-script = ExtResource("1_avc16")
+script = ExtResource("1_rwst8")
 id = "A140"
 name = "Ninho verde"
 super_type = "vestigio"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Olhe a primeira carta do seu baralho se for um dinossauro verde coloque em sua mão, se não coloque embaixo do baralho."
 mec_trigger = "ao_jogar"
 mec_condition = "sempre"

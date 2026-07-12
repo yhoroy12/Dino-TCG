@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_3eoci"]
+
+[resource]
+script = ExtResource("1_3eoci")
+id = "A127"
+name = "Pele escamosa"
+super_type = "cataclismo"
+text_ui = "Durante seu proximo turno seus dinossauros levam -10 de dano dos ataques inimigos."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "modificar_dano_recebido"
+mec_resource = "hp"
+mec_target_player = "dono"
+mec_target_zone = "ativo"
+mec_quantity = -10
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 1
+mec_custom_json = "{\"tipo_duracao\": \"proximo_turno_adversario\"}"

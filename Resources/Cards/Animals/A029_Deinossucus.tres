@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_0x3sh"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_7cw6n"]
 
 [resource]
-script = ExtResource("1_0x3sh")
+script = ExtResource("1_7cw6n")
 id = "A029"
 name = "Deinossucus"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 2
 ability_name = "Mandibula Dilacerante"
 attack_name = "Giro da morte"
 attack_cost = "🔵🔵⚪"
-damage_base = 80
+damage_base = 0
 damage_type = "condicional"
 text_ui = "Se esse dino tiver 2 energias Azuis a mais do que o necessário cause + 60 de dano."
 mec_trigger = "ao_atacar"

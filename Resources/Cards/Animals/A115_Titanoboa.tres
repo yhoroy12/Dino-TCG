@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_cmc71"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_ei6ol"]
 
 [resource]
-script = ExtResource("1_cmc71")
+script = ExtResource("1_ei6ol")
 id = "A115"
 name = "Titanoboa"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 2
 ability_name = "Constrição."
 attack_name = "Constrição"
 attack_cost = "🔴🔴"
-damage_base = 50
+damage_base = 0
 damage_type = "fixo"
 text_ui = "Se o dino do adiversario entrou no campo ativo nesse turno cause +80 de dano."
 mec_trigger = "ao_atacar"

@@ -8,8 +8,8 @@
 custom_minimum_size = Vector2(150, 233)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 150.0
-offset_bottom = 233.0
+offset_right = 450.0
+offset_bottom = 700.0
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_g2yap")
@@ -20,6 +20,7 @@ offset_left = 43.0
 offset_top = 128.0
 offset_right = 402.0
 offset_bottom = 470.0
+mouse_filter = 2
 texture = ExtResource("1_g6gvi")
 expand_mode = 1
 
@@ -27,6 +28,7 @@ expand_mode = 1
 layout_mode = 0
 offset_right = 450.0
 offset_bottom = 700.0
+mouse_filter = 2
 texture = ExtResource("2_g2yap")
 expand_mode = 1
 stretch_mode = 5

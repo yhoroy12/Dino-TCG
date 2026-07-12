@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_jlu8x"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_vlmji"]
 
 [resource]
-script = ExtResource("1_jlu8x")
+script = ExtResource("1_vlmji")
 id = "H008"
 name = "Couraça"
 text_ui = "Este dinossauro recebe 10 a menos de dano vindos de ataques do adversário."

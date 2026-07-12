@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_e84g4"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_y0ki0"]
 
 [resource]
-script = ExtResource("1_e84g4")
+script = ExtResource("1_y0ki0")
 id = "A032"
 name = "Dilophossauro"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 3
 ability_name = "Ataque Venenoso"
 attack_name = "Shock anafilatico"
 attack_cost = "🔵🔵"
-damage_base = 40
+damage_base = 0
 damage_type = "fixo"
 text_ui = "se o dino inimigo estiver envenenado cause +100 de dano"
 mec_trigger = "ao_atacar"

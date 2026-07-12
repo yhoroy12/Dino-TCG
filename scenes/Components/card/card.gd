@@ -13,8 +13,6 @@ enum Modo { COMPLETO, MINI }
 @export var modo: Modo = Modo.COMPLETO
 @export var virada_para_baixo: bool = false
 
-const TEXTURA_VERSO := "res://assest/textures/cards/verso_nome.jpg"
-
 # Agora retemos o Objeto Resource nativo e tipado em vez de um dicionário solto
 var recurso_carta: CardResource = null
 
@@ -33,7 +31,6 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	gui_input.connect(_on_gui_input)
 	_atualizar_modo_exibicao()
-
 
 func _carregar_referencias() -> void:
 	"""Carrega referências dos nós de forma segura"""
@@ -205,11 +202,11 @@ func _renderizar_frente() -> void:
 func _obter_textura_icone_dieta(tipo_dieta: String) -> Texture2D:
 	match tipo_dieta:
 		"carnivoro":
-			return load("res://assest/textures/cards/icone carnivoro.png") # <- Adicione aqui o caminho do ícone
+			return load("res://Assets/Icons/icone carnivoro.png") # <- Adicione aqui o caminho do ícone
 		"herbivoro":
-			return load("res://assest/textures/cards/icone herbivoro.png") # <- Adicione aqui o caminho do ícone
+			return load("res://Assets/Icons/icone herbivoro.png") # <- Adicione aqui o caminho do ícone
 		"psivoro":
-			return load("res://assest/textures/cards/icone psivoro.png")   # <- Adicione aqui o caminho do ícone
+			return load("res://Assets/Icons/icone psivoro.png")   # <- Adicione aqui o caminho do ícone
 		_:
 			return null
 
@@ -217,27 +214,23 @@ func _aplicar_textura_de_fundo() -> void:
 	if card_image == null or recurso_carta == null: return
 	
 	var cor = recurso_carta.color.to_lower().strip_edges()
-	var caminho_textura := "res://assest/textures/cards/Frente base blue.png"
+	var caminho_textura := "res://assest/Cards/Animals/TCG Card azul.png"
 
 	match cor:
-		"azul":     caminho_textura = "res://assest/textures/cards/TCG Card azul.png"
-		"vermelho": caminho_textura = "res://assest/textures/cards/TCG Card vermelho.png"
-		"verde":    caminho_textura = "res://assest/textures/cards/TCG Card verde.png"
-		"amarelo":  caminho_textura = "res://assest/textures/cards/TCG Card amarelo.png"
-		"marrom":   caminho_textura = "res://assest/textures/cards/TCG Card marrom.png"
+		"azul":     caminho_textura = "res://Assets/Cards/Animals/TCG Card azul.png"
+		"vermelho": caminho_textura = "res://Assets/Cards/Animals/TCG Card vermelho.png"
+		"verde":    caminho_textura = "res://Assets/Cards/Animals/TCG Card verde.png"
+		"amarelo":  caminho_textura = "res://Assets/Cards/Animals/TCG Card amarelo.png"
+		"marrom":   caminho_textura = "res://Assets/Cards/Animals/TCG Card marrom.png"
 
 	if ResourceLoader.exists(caminho_textura):
 		card_image.texture = load(caminho_textura)
 
 
 func _renderizar_verso() -> void:
-	if card_image and ResourceLoader.exists(TEXTURA_VERSO):
-		card_image.texture = load(TEXTURA_VERSO)
-		for filho in card_image.get_children():
-			if filho is Control:
-				filho.hide()
-		_hide_sprite("dietaicon1")
-		_hide_sprite("dietaicon3")
+	HelperUI.aplicar_verso(card_image, card_image.get_children() if card_image else [])
+	_hide_sprite("dietaicon1")
+	_hide_sprite("dietaicon3")
 
 
 func _exibir_todos_os_elementos() -> void:

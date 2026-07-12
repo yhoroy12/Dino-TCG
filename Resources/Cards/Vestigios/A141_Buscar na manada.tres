@@ -1,25 +1,12 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_yqyrb"]
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_qbn5u"]
 
 [resource]
-script = ExtResource("1_yqyrb")
+script = ExtResource("1_qbn5u")
 id = "A141"
 name = "Buscar na manada"
 super_type = "vestigio"
-sub_type = ""
-color = ""
-stage = ""
-hp = 0
-food_points = 0
-weakness = ""
-resistance = ""
-cost_retreat = 0
-ability_name = ""
-attack_name = ""
-attack_cost = ""
-damage_base = 0
-damage_type = ""
 text_ui = "Descarte um dinossauro da sua mão e busque um dinossauro no seu deck da mesma cor."
 mec_trigger = "ao_jogar"
 mec_condition = "sempre"

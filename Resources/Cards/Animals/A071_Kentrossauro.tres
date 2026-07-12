@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_73bho"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_fuubc"]
 
 [resource]
-script = ExtResource("1_73bho")
+script = ExtResource("1_fuubc")
 id = "A071"
 name = "Kentrossauro"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 2
 ability_name = "Armadura de Espinho"
 attack_name = "Giro dilacerante"
 attack_cost = "🟢🟢🟢"
-damage_base = 70
+damage_base = 0
 damage_type = "fixo"
 text_ui = "cause +20 de dano para cada energia ligada ao dino inimigo"
 mec_trigger = "ao_atacar"

@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_x5j7j"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_hfta4"]
 
 [resource]
-script = ExtResource("1_x5j7j")
+script = ExtResource("1_hfta4")
 id = "H019"
 name = "Suporte aéreo"
 text_ui = "Enquanto este dinossauro estiver no banco, o seu dinossauro ativo tem o custo de recuo zerado."

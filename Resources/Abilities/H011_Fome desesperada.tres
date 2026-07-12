@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_o03d5"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_5mipx"]
 
 [resource]
-script = ExtResource("1_o03d5")
+script = ExtResource("1_5mipx")
 id = "H011"
 name = "Fome desesperada"
 text_ui = "Uma vez durante o seu turno, você pode descartar uma carta da sua mão para comprar uma carta do seu deck."

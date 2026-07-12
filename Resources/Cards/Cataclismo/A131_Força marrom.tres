@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_0kdm8"]
+
+[resource]
+script = ExtResource("1_0kdm8")
+id = "A131"
+name = "Força marrom"
+super_type = "cataclismo"
+text_ui = "Adicione uma energia do seu baralho ao dinossauro marrom em campo."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = "energia"
+mec_target_player = "dono"
+mec_target_zone = "escolha_campo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = "deck"
+mec_duration = 0
+mec_custom_json = "{\"restricao_alvo\": {\"cor\": \"marrom\"}}"

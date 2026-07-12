@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_5hyif"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_1ly6d"]
 
 [resource]
-script = ExtResource("1_5hyif")
+script = ExtResource("1_1ly6d")
 id = "A026"
 name = "Compsognathus"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 2
 ability_name = "Aterrorizar Crianças"
 attack_name = "Ataque em equipe"
 attack_cost = "🔵🔵⚪"
-damage_base = 30
+damage_base = 0
 damage_type = "fixo"
 text_ui = "Esse ataque causa 30 de dano para cada dino no seu banco"
 mec_trigger = "ao_atacar"

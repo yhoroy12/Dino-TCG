@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_a8ppj"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_kgc8b"]
 
 [resource]
-script = ExtResource("1_a8ppj")
+script = ExtResource("1_kgc8b")
 id = "A039"
 name = "Velociraptor"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 1
 ability_name = ""
 attack_name = "Ataque em equipe"
 attack_cost = "🔵🔵"
-damage_base = 30
+damage_base = 0
 damage_type = "fixo"
 text_ui = "Esse ataque causa 30 de dano para cada dino no seu banco"
 mec_trigger = "ao_atacar"

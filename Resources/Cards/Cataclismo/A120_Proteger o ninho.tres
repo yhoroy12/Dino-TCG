@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_y7l80"]
+
+[resource]
+script = ExtResource("1_y7l80")
+id = "A120"
+name = "Proteger o ninho"
+super_type = "cataclismo"
+text_ui = "Pegue um dinossauro bebe do cemiterio e coloque na sua mão."
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "puxar"
+mec_resource = "carta"
+mec_target_player = "dono"
+mec_target_zone = "mao"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = "filhote"
+mec_origin_zone = "zona_fossil"
+mec_duration = 0
+mec_custom_json = ""

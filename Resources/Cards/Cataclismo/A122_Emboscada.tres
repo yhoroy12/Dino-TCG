@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EffectResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Data/EffectResource.gd" id="1_vcema"]
+
+[resource]
+script = ExtResource("1_vcema")
+id = "A122"
+name = "Emboscada"
+super_type = "cataclismo"
+text_ui = "Escolha um dinossauro do seu opontente que já tenha contadores de dano nele e coloque no campo ativo"
+mec_trigger = "ao_jogar"
+mec_condition = "sempre"
+mec_action = "bloquear_acao"
+mec_resource = "carta"
+mec_target_player = "adversario"
+mec_target_zone = "ativo"
+mec_quantity = 1
+mec_status_name = ""
+mec_filter_color = ""
+mec_filter_stage = ""
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""

@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_dl48u"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_k0wu2"]
 
 [resource]
-script = ExtResource("1_dl48u")
+script = ExtResource("1_k0wu2")
 id = "A097"
 name = "Carnotauro"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 1
 ability_name = "Pernas Rápidas"
 attack_name = "Investida Ascendente"
 attack_cost = "🔴"
-damage_base = 40
+damage_base = 0
 damage_type = "fixo"
 text_ui = "Jogue uma moeda esse ataque causa +60 de dano se cair cara."
 mec_trigger = "ao_atacar"

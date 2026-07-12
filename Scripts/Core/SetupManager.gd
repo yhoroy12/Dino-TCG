@@ -29,7 +29,9 @@ extends Node
 # ==================================================
 
 signal sorteio_realizado(vencedor_id: int)
+signal solicitar_lancamento_moeda()
 signal solicitar_escolha_ordem(vencedor_id: int)
+signal mulligan_necessario(jogador_id: int)
 signal mulligan_realizado(jogador_id: int, quantidade: int)
 signal solicitar_escolha_ativo(jogador_id: int)
 signal setup_concluido()
@@ -46,6 +48,11 @@ var _vencedor_sorteio: int = -1
 var _mulligans_por_jogador: Dictionary = {0: 0, 1: 0}
 var _ativo_confirmado: Dictionary = {0: false, 1: false}
 
+# Fila de jogadores ainda em checagem de mulligan (processados em
+# ordem — um precisa terminar todas as tentativas antes do próximo
+# começar, porque só existe uma UI de confirmação por vez).
+var _fila_mulligan: Array[int] = []
+
 
 # ==================================================
 # ENTRADA PÚBLICA
@@ -59,11 +66,12 @@ func iniciar_partida(nome_deck_j0: String, nome_deck_j1: String) -> void:
 	_vencedor_sorteio = -1
 	_mulligans_por_jogador = {0: 0, 1: 0}
 	_ativo_confirmado = {0: false, 1: false}
+	_fila_mulligan = []
 
 	GameState.jogador_1 = _criar_jogador(0, nome_deck_j0)
 	GameState.jogador_2 = _criar_jogador(1, nome_deck_j1)
 
-	_lancar_moeda()
+	solicitar_lancamento_moeda.emit()
 
 
 ## Chamado pela UI quando o vencedor do sorteio decide a ordem.
@@ -90,10 +98,15 @@ func confirmar_animal_ativo(jogador_id: int, indice_na_mao: int) -> bool:
 	if indice_na_mao < 0 or indice_na_mao >= jogador.mao.size():
 		return false
 
-	var carta: CardResource = jogador.mao[indice_na_mao]
+	var carta_base: CardBaseResource = jogador.mao[indice_na_mao]
 
 	# TODO: migrar para RuleValidator.validate_active_animal(carta)
 	# quando o RuleValidator estiver corrigido.
+	if not (carta_base is CardResource):
+		return false
+
+	var carta: CardResource = carta_base as CardResource
+
 	if carta.super_type != "animal" or carta.stage != "Filhote":
 		return false
 
@@ -122,10 +135,15 @@ func confirmar_animal_ativo(jogador_id: int, indice_na_mao: int) -> bool:
 # SORTEIO
 # ==================================================
 
-func _lancar_moeda() -> void:
+## Chamado pela UI quando o jogador clica no botão "Lançar Moeda".
+func lancar_moeda() -> void:
 	_vencedor_sorteio = 0 if randf() < 0.5 else 1
 
 	sorteio_realizado.emit(_vencedor_sorteio)
+	# TODO(UI): dá pra inserir aqui um sinal de animação do coinflip
+	# (ex: animacao_moeda_iniciada) pra UI tocar a animação e só then
+	# revelar o resultado / pedir a escolha de ordem. Por ora os dois
+	# sinais saem juntos, sem animação.
 	solicitar_escolha_ordem.emit(_vencedor_sorteio)
 
 
@@ -134,33 +152,53 @@ func _lancar_moeda() -> void:
 # ==================================================
 
 func _executar_compra_inicial() -> void:
-	_realizar_mulligan_automatico(GameState.jogador_1)
-	_realizar_mulligan_automatico(GameState.jogador_2)
+	_comprar_mao_inicial(GameState.jogador_1)
+	_comprar_mao_inicial(GameState.jogador_2)
 
-	_entregar_cartas_extras_por_mulligan()
+	_fila_mulligan = [0, 1]
+	_processar_proximo_mulligan()
 
-	solicitar_escolha_ativo.emit(GameState.jogador_ativo)
+
+## Avança a fila de checagem de mulligan. Se o jogador da vez já tem
+## Filhote na mão, passa pro próximo. Se não tem, emite
+## mulligan_necessario() e PARA — só continua quando a UI chamar
+## confirmar_mulligan() de volta (uma vez por tentativa).
+func _processar_proximo_mulligan() -> void:
+	if _fila_mulligan.is_empty():
+		_entregar_cartas_extras_por_mulligan()
+		solicitar_escolha_ativo.emit(GameState.jogador_ativo)
+		return
+
+	var jogador_id: int = _fila_mulligan[0]
+	var jogador := _obter_jogador(jogador_id)
+
+	if _mao_possui_filhote(jogador):
+		_fila_mulligan.pop_front()
+		_processar_proximo_mulligan()
+		return
+
+	mulligan_necessario.emit(jogador_id)
 
 
-## Compra 7 cartas. Se a mão não tiver nenhum Filhote, devolve a
-## mão ao deck, embaralha e repete — regra oficial de mulligan.
-##
-## TODO: migrar a checagem "mão tem Filhote" para
-## RuleValidator.validate_mulligan() quando o arquivo estiver
-## corrigido, para centralizar toda validação de regra num único
-## lugar em vez de espalhar entre managers.
-func _realizar_mulligan_automatico(jogador: PlayerState) -> void:
+## Chamado pela UI depois que o jogador confirma (clique ou timeout
+## de 15s) que viu o aviso de mulligan. Refaz a mão e volta a
+## checar — se ainda não tiver Filhote, mulligan_necessario() dispara
+## de novo (uma confirmação por tentativa, não uma por jogador).
+func confirmar_mulligan(jogador_id: int) -> void:
+	if _fila_mulligan.is_empty() or _fila_mulligan[0] != jogador_id:
+		return
+
+	var jogador := _obter_jogador(jogador_id)
+
+	_mulligans_por_jogador[jogador_id] += 1
+	mulligan_realizado.emit(jogador_id, _mulligans_por_jogador[jogador_id])
+
+	jogador.deck.append_array(jogador.mao)
+	jogador.mao.clear()
+	jogador.deck.shuffle()
 	_comprar_mao_inicial(jogador)
 
-	while not _mao_possui_filhote(jogador):
-		_mulligans_por_jogador[jogador.id] += 1
-		mulligan_realizado.emit(jogador.id, _mulligans_por_jogador[jogador.id])
-
-		jogador.deck.append_array(jogador.mao)
-		jogador.mao.clear()
-		jogador.deck.shuffle()
-
-		_comprar_mao_inicial(jogador)
+	_processar_proximo_mulligan()
 
 
 func _comprar_mao_inicial(jogador: PlayerState) -> void:
@@ -168,9 +206,15 @@ func _comprar_mao_inicial(jogador: PlayerState) -> void:
 		DrawSystem.comprar_carta(jogador)
 
 
+## TODO: migrar para RuleValidator.validate_mulligan() quando o
+## arquivo estiver corrigido, para centralizar toda validação de
+## regra num único lugar em vez de espalhar entre managers.
 func _mao_possui_filhote(jogador: PlayerState) -> bool:
 	for carta in jogador.mao:
-		if carta.super_type == "animal" and carta.stage == "Filhote":
+		# .stage só existe em CardResource (Animal) — cartas de Efeito
+		# na mão (Energia/Vestígio/etc.) não têm esse campo e devem
+		# ser ignoradas aqui, não travar a checagem.
+		if carta is CardResource and carta.super_type == "animal" and carta.stage == "Filhote":
 			return true
 
 	return false
@@ -208,7 +252,12 @@ func _concluir_setup() -> void:
 func _criar_jogador(id: int, nome_deck: String) -> PlayerState:
 	var jogador := PlayerState.new()
 	jogador.id = id
-	jogador.deck = DeckManager.carregar_deck_para_partida(nome_deck)
+
+	# DeckManager não tem mais carregar_deck_para_partida() — a API
+	# atual é carregar_deck(nome) -> DeckData, com as cartas já
+	# resolvidas em DeckData.cartas (CardBaseResource).
+	var deck_data: DeckData = DeckManager.carregar_deck(nome_deck)
+	jogador.deck = deck_data.cartas.duplicate()
 	jogador.deck.shuffle()
 	return jogador
 

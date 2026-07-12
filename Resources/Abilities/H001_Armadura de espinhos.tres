@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="AbilityResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/AbilityResource.gd" id="1_jv12c"]
+[ext_resource type="Script" path="res://Scripts/Data/AbilityResource.gd" id="1_0vnmk"]
 
 [resource]
-script = ExtResource("1_jv12c")
+script = ExtResource("1_0vnmk")
 id = "H001"
 name = "Armadura de espinhos"
 text_ui = "Se este dinossauro sofrer dano de um ataque inimigo, cause 20 de dano ao dinossauro atacante."

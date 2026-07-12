@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://data/CardResource.gd" id="1_4e60r"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_e3a0o"]
 
 [resource]
-script = ExtResource("1_4e60r")
+script = ExtResource("1_e3a0o")
 id = "A074"
 name = "Maiassauro"
 super_type = "animal"
@@ -19,7 +19,7 @@ cost_retreat = 1
 ability_name = "Cuidadora"
 attack_name = "Proteger a familia"
 attack_cost = "🟢🟢"
-damage_base = 40
+damage_base = 0
 damage_type = "multiplicador"
 text_ui = "Cause 40 de dano vezes o números de dino Filhotes no seu banco"
 mec_trigger = "ao_atacar"
