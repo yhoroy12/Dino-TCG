@@ -3,23 +3,21 @@ class_name DrawSystem
 #FINALIZADO
 
 #compra a carta do topo do deck
-static func comprar_carta(player: PlayerState) -> CardResource:
-
+static func comprar_carta(player: PlayerState) -> CardBaseResource:
 	if player.deck.is_empty():
 		return null
-	var carta = player.deck.pop_front()
+	var carta: CardBaseResource = player.deck.pop_front()
 	player.mao.append(carta)
 	return carta
-
 
 #Procura uma carta no deck
 static func buscar_cartas(
 	player: PlayerState,
 	filtro: Callable,
 	quantidade: int = 1
-) -> Array[CardResource]:
+) -> Array[CardBaseResource]:
 
-	var resultado : Array[CardResource] = []
+	var resultado : Array[CardBaseResource] = []
 
 	for carta in player.deck:
 

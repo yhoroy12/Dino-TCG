@@ -66,7 +66,7 @@ var jogador_2: PlayerState
 
 # Campo Global
 
-var territorio_ativo: CardResource = null
+var territorio_ativo: EffectResource = null
 
 
 # Vitória

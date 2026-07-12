@@ -28,6 +28,12 @@ const DURACAO_ANIMACAO_MOEDA: float = 1.5
 const DURACAO_POPUP_ORDEM: float = 15.0  # Segundos até decidir sozinho, se o jogador não clicar
 const DISTANCIA_SNAP_ZONAS: float = 50.0  # Pixels
 
+# Tamanhos dos slots, copiados do MesaJogador.tscn — usados pra
+# escalar as cartas (nascem em 150x233, maiores que qualquer slot daqui).
+const TAMANHO_SLOT_ATIVO: Vector2 = Vector2(128, 179)
+const TAMANHO_SLOT_BANCO: Vector2 = Vector2(100, 145)
+const ALTURA_MAO: float = 133.0
+
 # ID fixo do jogador humano nesta cena. Se algum dia isso deixar de ser fixo
 # (ex: espectador, replay), é só isso que precisa mudar.
 const ID_JOGADOR_HUMANO := 0
@@ -241,15 +247,23 @@ func _ao_mulligan_necessario(jogador_id: int) -> void:
 		"Mulligan necessário",
 		"Sua mão não tem nenhum Animal Filhote. Ela será embaralhada de volta e uma nova mão será comprada."
 	)
+	var overlay: Control = refs["overlay"]
+
 	var botao := Button.new()
 	botao.text = "Confirmar"
-	botao.pressed.connect(func(): _confirmar_mulligan_visual(jogador_id, refs["overlay"]))
+	botao.pressed.connect(func(): _confirmar_mulligan_visual(jogador_id, overlay))
 	refs["vbox"].add_child(botao)
 
-	_popup_setup_ativo = refs["overlay"]
+	_popup_setup_ativo = overlay
 
 	await get_tree().create_timer(DURACAO_POPUP_ORDEM).timeout
-	_confirmar_mulligan_visual(jogador_id, refs["overlay"])
+	# Guarda igual aos outros pop-ups de setup: se o jogador já
+	# confirmou por clique antes do timeout, _popup_setup_ativo já foi
+	# pra null (ou trocou de popup) e overlay já foi queue_free()ado —
+	# sem essa checagem, o timeout tentaria chamar a função passando
+	# um Control já destruído, o que crasha o jogo.
+	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == overlay:
+		_confirmar_mulligan_visual(jogador_id, overlay)
 
 
 func _confirmar_mulligan_visual(jogador_id: int, popup_de_origem: Control) -> void:
@@ -473,9 +487,14 @@ func animar_animal_nocauteado(jogador_id: int, instancia: AnimalInstance) -> voi
 	var campo_origem: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
 	var zona_descarte: Panel = jogador_zona_descarte if jogador_id == 0 else oponente_zona_descarte
 
-	var carta_visual := _get_first_child_of_type(campo_origem, Control)
-	if carta_visual != null:
-		_animar_carta_para_zona(carta_visual, zona_descarte)
+	# O filho direto do campo_ativo agora é o envelope (ver
+	# _adicionar_carta_na_zona), não mais a carta visual crua — mas
+	# como o envelope também é um Control comum, animar seu
+	# global_position tem exatamente o mesmo efeito visual de animar a
+	# carta diretamente, então nenhuma outra mudança é necessária aqui.
+	var envelope := _get_first_child_of_type(campo_origem, Control)
+	if envelope != null:
+		_animar_carta_para_zona(envelope, zona_descarte)
 
 
 func _ao_vitoria(jogador_id: int) -> void:
@@ -583,36 +602,66 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 	var eh_ativo_inicial_escondido: bool = (zona_nome == "ativo" and _setup_em_andamento)
 	var face_para_baixo: bool = eh_mao_do_oponente or eh_ativo_inicial_escondido
 
-	var carta_visual: Control = _criar_carta_ui(carta, face_para_baixo)
-
+	# Padrão do envelope (mesmo do deck_builder.gd, agora centralizado
+	# em HelperUI.instanciar_carta_escalada): o Container/Panel-pai só
+	# enxerga um Control vazio com custom_minimum_size já correto; a
+	# carta real fica livre dentro dele, sem brigar por tamanho com
+	# ninguém. Isso elimina a necessidade de call_deferred — a escala
+	# é calculada matematicamente, não depende do _ready() da carta
+	# nem do sort do Container.
 	match zona_nome:
 		"mao":
 			var mao_container: HBoxContainer = jogador_mao if jogador_id == 0 else oponente_mao
-			mao_container.add_child(carta_visual)
+			var resultado := HelperUI.instanciar_carta_escalada(carta, Vector2(9999, ALTURA_MAO), face_para_baixo)
+			if resultado.is_empty():
+				return
+			mao_container.add_child(resultado["envelope"])
 
-			# Carta da mão do oponente fica escondida (verso, ou verso
-			# genérico — ver Helper.instanciar_carta). Não conectamos
-			# input nela: nem clique nem zoom devem expor o que é.
+			# Carta da mão do oponente fica escondida (verso). Não
+			# conectamos input nela: nem clique nem zoom devem expor
+			# o que é.
 			if jogador_id == ID_JOGADOR_HUMANO:
-				_configurar_inputs_carta(carta_visual, carta, jogador_id)
+				_configurar_inputs_carta(resultado["visual"], carta, jogador_id)
 
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
-			campo_ativo.add_child(carta_visual)
-			carta_visual.anchor_left = 0.5
-			carta_visual.anchor_top = 0.5
-			carta_visual.offset_left = -carta_visual.size.x / 2
-			carta_visual.offset_top = -carta_visual.size.y / 2
+			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_ATIVO, face_para_baixo)
+			if resultado.is_empty():
+				return
+			var envelope: Control = resultado["envelope"]
+			campo_ativo.add_child(envelope)
+			_centralizar_envelope_no_painel(envelope)
 
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
+			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
+			if resultado.is_empty():
+				return
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
-					slot.add_child(carta_visual)
+					slot.add_child(resultado["envelope"])
 					break
 
 		"descarte":
 			pass  # Descarte é apenas visual (pilha), não instancia carta a carta.
+
+
+## Centraliza um envelope (já com custom_minimum_size correto) dentro
+## do Panel pai via anchors — substitui o antigo
+## _aplicar_escala_e_centralizar_ativo. Não precisa de call_deferred:
+## HelperUI.instanciar_carta_escalada calcula o tamanho final na hora,
+## então a centralização roda no mesmo frame, sem esperar layout
+## nenhum.
+func _centralizar_envelope_no_painel(envelope: Control) -> void:
+	var tamanho: Vector2 = envelope.custom_minimum_size
+	envelope.anchor_left = 0.5
+	envelope.anchor_top = 0.5
+	envelope.anchor_right = 0.5
+	envelope.anchor_bottom = 0.5
+	envelope.offset_left = -tamanho.x / 2.0
+	envelope.offset_top = -tamanho.y / 2.0
+	envelope.offset_right = tamanho.x / 2.0
+	envelope.offset_bottom = tamanho.y / 2.0
 
 
 func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
@@ -658,6 +707,30 @@ func _iniciar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResou
 	if jogador_id != ID_JOGADOR_HUMANO:
 		return
 
+	# Containers (a HandContainer é um HBoxContainer) reposicionam os
+	# filhos sozinhos e brigam com qualquer position/global_position
+	# manual. Pra arrastar de verdade, a carta precisa sair do
+	# Container enquanto dura o arrasto — reparenta preservando a
+	# posição visual, pra não dar um "pulo" perceptível.
+	#
+	# IMPORTANTE: carta_visual aqui é a carta "nua" (dentro do
+	# envelope), não o envelope em si. Ao reparentar só ela pra fora
+	# do envelope, o envelope-vazio fica órfão dentro da mão — por
+	# isso removemos o envelope também, senão ele deixa um "buraco"
+	# do tamanho de uma carta na HandContainer enquanto dura o arrasto.
+	var envelope_origem: Node = carta_visual.get_parent()
+	var pai_do_envelope: Node = envelope_origem.get_parent() if envelope_origem else null
+
+	var posicao_global: Vector2 = carta_visual.global_position
+	if envelope_origem:
+		envelope_origem.remove_child(carta_visual)
+	if pai_do_envelope and envelope_origem:
+		pai_do_envelope.remove_child(envelope_origem)
+		envelope_origem.queue_free()
+
+	add_child(carta_visual)
+	carta_visual.global_position = posicao_global
+
 	carta_em_arrasto = carta_visual
 	carta_selecionada = carta_visual
 	offset_arrasto = carta_visual.get_local_mouse_position()
@@ -700,14 +773,22 @@ func _cancelar_arrasto() -> void:
 	if carta_em_arrasto == null:
 		return
 
-	_animar_carta_para_zona(carta_em_arrasto, jogador_mao)
+	# Não dá pra animar de volta pro slot certo dentro da
+	# HandContainer (Container reposiciona filhos sozinho — tentar
+	# tween.global_position é isso que causava as cartas empilhando no
+	# canto). A carta nunca saiu de PlayerState.mao, só a visual foi
+	# arrancada do Container (e o envelope original já foi destruído
+	# em _iniciar_arrasto_carta) — então descarta essa visual órfã e
+	# reconstrói a mão inteira (com um envelope novo), que a
+	# HandContainer resolve o posicionamento sozinha.
+	if is_instance_valid(carta_em_arrasto):
+		carta_em_arrasto.queue_free()
 
 	carta_em_arrasto = null
+	carta_selecionada = null
 	zona_alvo_potencial = null
 
-	if is_instance_valid(carta_selecionada):
-		carta_selecionada.z_index = 0
-		carta_selecionada.modulate.a = 1.0
+	organizar_cartas_nas_zonas(ID_JOGADOR_HUMANO)
 
 
 func _finalizar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResource) -> void:
@@ -795,11 +876,19 @@ func _abrir_menu_contextual(carta_visual: Control, carta_resource: CardBaseResou
 		menu_contextual_ativo = null
 
 
-func _validar_acao_permitida(acao: String, carta: CardResource) -> bool:
+func _validar_acao_permitida(acao: String, carta: CardBaseResource) -> bool:
 	"""Delega pro RuleValidator sempre que a regra já está
 	implementada. Ações cuja regra ainda é esqueleto (validate_retreat
 	hoje sempre retorna false) ficam corretamente desabilitadas até
-	serem implementadas no RuleValidator — não simulamos aqui."""
+	serem implementadas no RuleValidator — não simulamos aqui.
+
+	Prender/Atacar/Habilidade/Recuar só existem pra Animal — cartas de
+	Efeito/Território/Energia não têm essas ações, então nem chegam a
+	entrar no match (evita passar EffectResource/etc pro RuleValidator,
+	que espera CardResource especificamente)."""
+	if not (carta is CardResource) or carta.super_type != "animal":
+		return false
+
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
 
 	match acao:
@@ -822,23 +911,23 @@ func _validar_acao_permitida(acao: String, carta: CardResource) -> bool:
 	return false
 
 
-func _acao_prender(carta: CardResource) -> void:
+func _acao_prender(carta: CardBaseResource) -> void:
 	print("📌 Ação: Prender/Presente em %s" % carta.name)
 	acao_jogador_solicitada.emit("prender", {"carta": carta})
 
 
-func _acao_atacar(carta: CardResource) -> void:
+func _acao_atacar(carta: CardBaseResource) -> void:
 	print("⚔️ Ação: Atacar com %s" % carta.name)
 	acao_jogador_solicitada.emit("atacar", {"carta": carta})
 	_animar_ataque(carta)
 
 
-func _acao_usar_habilidade(carta: CardResource) -> void:
+func _acao_usar_habilidade(carta: CardBaseResource) -> void:
 	print("✨ Ação: Usar habilidade de %s" % carta.name)
 	acao_jogador_solicitada.emit("usar_habilidade", {"carta": carta})
 
 
-func _acao_recuar(carta: CardResource) -> void:
+func _acao_recuar(carta: CardBaseResource) -> void:
 	print("🔄 Ação: Recuar %s" % carta.name)
 	acao_jogador_solicitada.emit("recuar", {"carta": carta})
 
@@ -876,18 +965,34 @@ func _animar_ataque(carta: CardResource) -> void:
 	if campo_ativo.get_child_count() == 0:
 		return
 
-	var carta_visual: Control = _get_first_child_of_type(campo_ativo, Control)
+	# O filho direto do campo_ativo é o envelope, não a carta. Precisa
+	# furar mais um nível pra chegar na carta visual de verdade.
+	var envelope := _get_first_child_of_type(campo_ativo, Control)
+	if envelope == null or envelope.get_child_count() == 0:
+		return
+
+	var carta_visual: Control = envelope.get_child(0) as Control
 	if carta_visual == null:
 		return
+
+	# BUG CORRIGIDO: a versão anterior fazia
+	# `carta_visual.scale = Vector2(1.2, 1.2)` — um valor ABSOLUTO.
+	# Isso sobrescrevia a escala correta calculada por
+	# HelperUI.instanciar_carta_escalada (ex.: 0.55 pro slot ativo),
+	# fazendo a carta "explodir" pro tamanho de uma carta não escalada
+	# durante o pulso de ataque. O pulso agora é relativo à escala de
+	# repouso da própria carta.
+	var escala_base: Vector2 = carta_visual.scale
+	var escala_pulso: Vector2 = escala_base * 1.15
 
 	var tween: Tween = create_tween()
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.set_trans(Tween.TRANS_QUAD)
 
-	tween.tween_property(carta_visual, "scale", Vector2(1.2, 1.2), 0.1)
-	tween.tween_property(carta_visual, "scale", Vector2(1.0, 1.0), 0.1)
-	tween.tween_property(carta_visual, "scale", Vector2(1.15, 1.15), 0.1)
-	tween.tween_property(carta_visual, "scale", Vector2(1.0, 1.0), 0.1)
+	tween.tween_property(carta_visual, "scale", escala_pulso, 0.1)
+	tween.tween_property(carta_visual, "scale", escala_base, 0.1)
+	tween.tween_property(carta_visual, "scale", escala_pulso, 0.1)
+	tween.tween_property(carta_visual, "scale", escala_base, 0.1)
 
 
 func _exibir_texto_flutuante(texto: String, duracao: float) -> void:
