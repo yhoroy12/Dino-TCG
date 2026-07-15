@@ -1,6 +1,5 @@
 class_name DrawSystem
 #SISTEMA DE COMPRA E BUSCA DE CARTAS NO DECK
-#FINALIZADO
 
 #compra a carta do topo do deck
 static func comprar_carta(player: PlayerState) -> CardBaseResource:
@@ -10,14 +9,16 @@ static func comprar_carta(player: PlayerState) -> CardBaseResource:
 	player.mao.append(carta)
 	return carta
 
-#Procura uma carta no deck
+# Procura uma carta no deck (funciona pra CardResource E EffectResource,
+# já que ambos herdam de CardBaseResource — quem quiser só Animais ou
+# só Efeitos filtra isso dentro do Callable `filtro`, ex:
 static func buscar_cartas(
 	player: PlayerState,
 	filtro: Callable,
 	quantidade: int = 1
 ) -> Array[CardBaseResource]:
 
-	var resultado : Array[CardBaseResource] = []
+	var resultado: Array[CardBaseResource] = []
 
 	for carta in player.deck:
 

@@ -77,7 +77,6 @@ grow_horizontal = 2
 grow_vertical = 2
 rotation = 3.14159
 pivot_offset = Vector2(640, 250)
-metadata/_edit_group_ = true
 
 [node name="OponenteFlow" type="VBoxContainer" parent="MesaContainer/LadoOponente/OponenteRotator"]
 layout_mode = 1
@@ -142,11 +141,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SlotBanco4" type="Panel" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/BoardRow/BenchContainer"]
-custom_minimum_size = Vector2(100, 145)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="SlotBanco5" type="Panel" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/BoardRow/BenchContainer"]
 custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -236,11 +230,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SlotBanco4" type="Panel" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow/BenchContainer"]
-custom_minimum_size = Vector2(100, 145)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="SlotBanco5" type="Panel" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow/BenchContainer"]
 custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
 size_flags_horizontal = 3

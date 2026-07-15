@@ -55,7 +55,11 @@ func fase_compra() -> void:
 func fase_comida() -> void:
 	GameState.fase_atual = GameState.Fase.COMIDA
 
-	FoodSystem.distribuir_comida_passiva(GameState.get_jogador_atual())
+	# Modelo B (confirmado com o time): o jogador ganha pontos no
+	# POOL (comida_disponivel), cumulativos — a distribuição pros
+	# animais é manual, feita pelo jogador na Fase Principal via
+	# BattleManager.processar_acao("distribuir_comida", ...).
+	FoodSystem.ganhar_pool_comida(GameState.get_jogador_atual())
 
 	fase_principal()
 
@@ -124,6 +128,15 @@ func _resetar_flags_turno() -> void:
 	GameState.recuo_realizado_neste_turno = false
 	GameState.cataclismo_jogado_neste_turno = false
 
+	# BUG CORRIGIDO: evoluiu_este_turno nunca era resetado depois de
+	# setado true em EvolutionSystem.crescer() — na prática, um animal
+	# que evoluísse uma vez nunca mais poderia evoluir de novo no
+	# resto da partida. Reseta pros animais do jogador cujo turno está
+	# começando agora (GameState.jogador_ativo já foi trocado por
+	# _trocar_jogador antes desta função rodar).
+	for animal in GameState.get_jogador_atual().animais_em_campo():
+		animal.evoluiu_este_turno = false
+
 
 ## Processa fim de turno de TODOS os animais em campo (ativo +
 ## banco) dos DOIS jogadores: condições especiais (ConditionSystem)
@@ -154,3 +167,15 @@ func _processar_fim_de_turno_dos_animais() -> void:
 	for animal in jogador_adversario.animais_em_campo():
 		ConditionSystem.processar_fim_de_turno(animal)
 		EffectSystem.processar_fim_de_turno(animal, false)
+
+	# Regra confirmada com o time: a redução passiva de 1 ponto de
+	# comida por turno só se aplica ao Animal ATIVO do jogador cujo
+	# turno está terminando — o Banco Reserva nunca perde comida
+	# passivamente (só por efeito de carta/habilidade explícito).
+	FoodSystem.aplicar_reducao_passiva(jogador_da_vez)
+
+	# Checa nocautes causados pela redução de comida acima (fome).
+	# Nocautes por dano de combate já são resolvidos na hora do
+	# ataque, pelo BattleManager — esta chamada aqui cobre
+	# especificamente o gatilho de fim de turno.
+	KnockoutSystem.processar_todos_nocautes(jogador_da_vez)

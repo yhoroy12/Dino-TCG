@@ -18,8 +18,9 @@ config/features=PackedStringArray("4.4", "Forward Plus")
 
 GameState="*res://Scripts/Core/GameState.gd"
 TurnManager="*res://Scripts/Core/TurnManager.gd"
-SetupManager="*res://Scripts/Core/SetupManager.gd"
 CardDatabase="*res://Scripts/Data/CardDatabase.gd"
+SetupManager="*res://Scripts/Core/SetupManager.gd"
+BattleManager="*res://Scripts/Core/BattleManager.gd"
 DeckManager="*res://Scripts/Data/DeckManager.gd"
 MatchData="*res://Scripts/Data/MatchData.gd"
 

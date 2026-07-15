@@ -136,16 +136,41 @@ static func validate_deck_out(player) -> bool:
 # BANCO RESERVA
 # ==================================================
 
-## Valida entrada de animal no banco.
-static func validate_bench_placement(card, player) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## ⚠️ AJUSTE AQUI se o valor oficial for outro — hoje 4, conforme
+## confirmado com o time (não é mais 5, valor antigo assumido errado).
+## Nenhum outro lugar do projeto tem esse número hardcoded; só esta
+## constante precisa mudar.
+const TAMANHO_MAXIMO_BANCO: int = 4
 
 
-## Valida limite de banco.
-static func validate_bench_size(player) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida entrada de um animal (vindo da mão) no Banco Reserva.
+##
+## Regra confirmada: só Animais Bebês (stage == "Filhote") podem ser
+## colocados no Banco a partir da mão durante a Fase Principal —
+## animais em estágios posteriores só chegam a campo por evolução
+## (EvolutionSystem/GrowSystem), nunca direto da mão.
+static func validate_bench_placement(card, player: PlayerState) -> bool:
+	if card == null or player == null:
+		return false
+
+	if not (card is CardResource):
+		return false
+
+	if card.super_type != "animal":
+		return false
+
+	if card.stage != "Filhote":
+		return false
+
+	return validate_bench_size(player)
+
+
+## Valida se ainda há espaço no Banco Reserva.
+static func validate_bench_size(player: PlayerState) -> bool:
+	if player == null:
+		return false
+
+	return player.banco.size() < TAMANHO_MAXIMO_BANCO
 
 
 # ==================================================
@@ -153,15 +178,29 @@ static func validate_bench_size(player) -> bool:
 # ==================================================
 
 ## Valida crescimento de um animal.
-static func validate_evolution(instancia, nova_carta, game_state) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+##
+## Delega para EvolutionSystem.pode_crescer, que já cobre: não evoluir
+## no turno em que entrou, não evoluir 2x no mesmo turno, e linhagem
+## correta (carta_evolucao.stage_from == instancia.card.card_id) —
+## evita duas fontes de verdade pra mesma regra, mesmo padrão já usado
+## em validate_deck (delega pro DeckRulesSystem).
+##
+## game_state não é usado hoje (a regra não depende de fase/turno além
+## do que já está em AnimalInstance), mas o parâmetro fica pra manter
+## a assinatura consistente com o resto do arquivo e permitir extensão
+## futura sem quebrar quem já chama esta função.
+static func validate_evolution(instancia: AnimalInstance, nova_carta: CardResource, _game_state = null) -> bool:
+	return EvolutionSystem.pode_crescer(instancia, nova_carta)
 
 
-## Valida linhagem evolutiva.
-static func validate_evolution_line(instancia, nova_carta) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida linhagem evolutiva isoladamente (sem checar turno) — útil
+## pra UI destacar quais cartas da mão são evoluções válidas pro
+## animal selecionado, sem se importar se ele pode evoluir *agora*.
+static func validate_evolution_line(instancia: AnimalInstance, nova_carta: CardResource) -> bool:
+	if instancia == null or nova_carta == null:
+		return false
+
+	return nova_carta.stage_from == instancia.card.card_id
 
 
 ## Valida requisito de comida.
@@ -180,13 +219,35 @@ static func validate_evolution_turn_requirement(instancia) -> bool:
 # SISTEMA DE COMIDA
 # ==================================================
 
-## Valida distribuição de comida.
-static func validate_food_distribution(player, targets) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida distribuição de comida do pool do jogador (comida_disponivel)
+## pra um animal específico.
+##
+## Regra confirmada (Modelo B): o jogador ganha 3 pontos de pool por
+## turno, cumulativos, e distribui manualmente pra qualquer animal em
+## campo (Ativo ou Banco), quantas vezes quiser, respeitando só o que
+## sobrar no pool.
+static func validate_food_distribution(player: PlayerState, animal: AnimalInstance, quantidade: int) -> bool:
+	if player == null or animal == null:
+		return false
+
+	if quantidade <= 0:
+		return false
+
+	if quantidade > player.comida_disponivel:
+		return false
+
+	if animal != player.ativo and not player.banco.has(animal):
+		return false
+
+	return true
 
 
-## Valida limite de comida.
+## Valida limite máximo de comida por animal.
+##
+## TODO: o rulebook não define um teto de comida por animal — deixado
+## como esqueleto até essa regra existir. Enquanto não implementada,
+## NÃO chamar esta função pra bloquear distribuição (validate_food_distribution
+## não depende dela).
 static func validate_food_limit(animal) -> bool:
 	# TODO: implementar quando este bloco entrar na ordem de prioridade.
 	return false
@@ -221,16 +282,34 @@ static func validate_starvation(animal: AnimalInstance) -> bool:
 # ENERGIAS
 # ==================================================
 
-## Valida anexação de energia.
-static func validate_energy_attachment(player, animal, energy) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida anexação de uma carta de energia (força primordial) a um
+## animal. Cobre: energia é de fato EffectResource super_type
+## "energia", animal pertence ao jogador (Ativo ou Banco), e o limite
+## de 1x por turno (GameState.energia_anexada_neste_turno).
+static func validate_energy_attachment(player: PlayerState, animal: AnimalInstance, energy) -> bool:
+	if player == null or animal == null or energy == null:
+		return false
+
+	if not (energy is EffectResource):
+		return false
+
+	if energy.super_type != "energia":
+		return false
+
+	if animal != player.ativo and not player.banco.has(animal):
+		return false
+
+	return validate_energy_attachment_limit(player)
 
 
-## Valida limite de energia por turno.
+## Valida limite de energia por turno: só 1 anexação de força
+## primordial por turno, independente de quantos animais o jogador
+## tenha.
 static func validate_energy_attachment_limit(player) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+	if player == null:
+		return false
+
+	return not GameState.energia_anexada_neste_turno
 
 
 ## Valida custo de energia.
@@ -381,29 +460,90 @@ static func validate_bleeding(animal) -> bool:
 # RECUO
 # ==================================================
 
-## Valida recuo.
-static func validate_retreat(animal, player, game_state) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida se ainda há energia suficiente ANEXADA pro custo de recuo,
+## sem exigir uma seleção específica ainda — usado pra habilitar/
+## desabilitar a AÇÃO na UI (ex: menu contextual), antes do jogador
+## escolher quais energias exatas vai descartar.
+static func validate_retreat_possivel(animal: AnimalInstance, player: PlayerState) -> bool:
+	if animal == null or player == null:
+		return false
+
+	if animal != player.ativo:
+		return false
+
+	if GameState.recuo_realizado_neste_turno:
+		return false
+
+	if not ConditionSystem.pode_tentar_acao(animal, "recuar"):
+		return false
+
+	if animal.attached_energies.size() < animal.card.cost_retreat:
+		return false
+
+	return validate_replacement_active(player)
 
 
-## Valida pagamento do custo de recuo.
-static func validate_retreat_cost(animal) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## Valida recuo do Animal Ativo (troca por um animal do Banco).
+##
+## `energias_selecionadas` são as energias anexadas ao animal que o
+## JOGADOR escolheu descartar pra pagar o custo de recuo — a escolha
+## de QUAIS energias descartar (quando há mais de uma opção que serve,
+## já que o custo é uma contagem simples, sem exigir cor específica)
+## é decisão estratégica do jogador, nunca automática.
+static func validate_retreat(animal: AnimalInstance, player: PlayerState, energias_selecionadas: Array = [], _game_state = null) -> bool:
+	if not validate_retreat_possivel(animal, player):
+		return false
+
+	return validate_retreat_cost(animal, energias_selecionadas)
 
 
-## Valida escolha do novo ativo.
-static func validate_retreat_target(animal, replacement) -> bool:
-	# TODO: implementar quando este bloco entrar na ordem de prioridade.
-	return false
+## BUG CORRIGIDO: cost_retreat em CardResource é um int (contagem
+## simples de energias, QUALQUER cor) — não uma String de emoji como
+## attack_cost. A suposição anterior (parsear como custo colorido)
+## estava errada; corrigido pra contagem simples.
+##
+## A seleção precisa: (a) ter exatamente `animal.card.cost_retreat`
+## energias (não permite "sobrar" selecionada à toa), e (b) todas as
+## energias selecionadas precisarem estar de fato anexadas a este
+## animal. Não há exigência de cor.
+static func validate_retreat_cost(animal: AnimalInstance, energias_selecionadas: Array = []) -> bool:
+	if animal == null or animal.card == null:
+		return false
+
+	var custo: int = animal.card.cost_retreat
+
+	# Carta sem custo de recuo (0) = recuo gratuito.
+	if custo <= 0:
+		return true
+
+	if energias_selecionadas.size() != custo:
+		return false
+
+	for energia in energias_selecionadas:
+		if not animal.attached_energies.has(energia):
+			return false
+
+	return true
+
+
+## Valida se o animal escolhido no Banco pra substituir o Ativo é
+## válido (pertence ao Banco do mesmo jogador e ainda está vivo).
+static func validate_retreat_target(player: PlayerState, replacement: AnimalInstance) -> bool:
+	if player == null or replacement == null:
+		return false
+
+	if not player.banco.has(replacement):
+		return false
+
+	return replacement.current_hp > 0
 
 
 # ==================================================
 # ATAQUE
 # ==================================================
 
-## Mapa de emoji -> cor, usado para interpretar CardResource.attack_cost.
+## Mapa de emoji -> cor, usado para interpretar attack_cost/retreat_cost
+## de CardResource.
 ##
 ## ATENÇÃO: assumi essa correspondência com base em apenas 1 exemplo
 ## confirmado (⚪ = incolor). Confirmem se os emojis das outras 5
@@ -421,16 +561,16 @@ const MAPA_EMOJI_COR := {
 }
 
 
-## Converte o attack_cost (String de emojis) da carta em um
+## Converte uma String de emojis (attack_cost OU retreat_cost) num
 ## Dictionary no formato esperado por
 ## AnimalInstance.tem_energias_suficientes(), ex: {"vermelha": 2, "incolor": 1}.
-static func _construir_custo_do_ataque(
-	ataque: CardResource
-) -> Dictionary:
-
+## Generalizado a partir do parser de custo de ataque pra ser reusado
+## também pelo custo de recuo — mesma sintaxe de dado, mesmo parser,
+## uma fonte só de verdade.
+static func _construir_custo_por_emojis(simbolos: String) -> Dictionary:
 	var custo: Dictionary = {}
 
-	for simbolo in ataque.attack_cost:
+	for simbolo in simbolos:
 		var cor: String = MAPA_EMOJI_COR.get(simbolo, "")
 
 		if cor == "":
@@ -439,6 +579,16 @@ static func _construir_custo_do_ataque(
 		custo[cor] = custo.get(cor, 0) + 1
 
 	return custo
+
+
+## Converte o attack_cost (String de emojis) da carta em um
+## Dictionary no formato esperado por
+## AnimalInstance.tem_energias_suficientes(), ex: {"vermelha": 2, "incolor": 1}.
+static func _construir_custo_do_ataque(
+	ataque: CardResource
+) -> Dictionary:
+
+	return _construir_custo_por_emojis(ataque.attack_cost)
 
 
 ## Valida declaração de ataque.

@@ -71,6 +71,13 @@ static func processar_nocaute(
 	# Move carta principal para descarte
 	player.descarte.append(animal.card)
 
+	# Move a pilha de evolução inteira (cartas de estágios
+	# anteriores, empilhadas por baixo — ver AnimalInstance.pilha_evolucao
+	# e EvolutionSystem.crescer) para o descarte também.
+	for carta_empilhada in animal.pilha_evolucao:
+		player.descarte.append(carta_empilhada)
+	animal.pilha_evolucao.clear()
+
 	# Move energias anexadas para descarte
 	for energia in animal.attached_energies:
 		player.descarte.append(energia)

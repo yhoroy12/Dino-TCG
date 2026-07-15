@@ -26,7 +26,6 @@ signal turno_visual_atualizado(info_turno: Dictionary)
 const DURACAO_ANIMACAO_CARTA: float = 0.3
 const DURACAO_ANIMACAO_MOEDA: float = 1.5
 const DURACAO_POPUP_ORDEM: float = 15.0  # Segundos até decidir sozinho, se o jogador não clicar
-const DISTANCIA_SNAP_ZONAS: float = 50.0  # Pixels
 
 # Tamanhos dos slots, copiados do MesaJogador.tscn — usados pra
 # escalar as cartas (nascem em 150x233, maiores que qualquer slot daqui).
@@ -87,11 +86,19 @@ var _popup_setup_ativo: Control = null
 # frente juntos, quando _ao_setup_concluido roda).
 var _setup_em_andamento: bool = true
 
-# Controle de cartas
-var carta_selecionada: Control = null
-var carta_em_arrasto: Control = null
-var offset_arrasto: Vector2 = Vector2.ZERO
-var zona_alvo_potencial: Control = null
+# Controle de seleção de alvo (Crescer, Fortalecer, Retroceder,
+# Alimentar) — substitui o antigo sistema de arrasto (drag-and-drop),
+# removido por gerar bug de estado: clicar numa segunda carta enquanto
+# a primeira estava "grudada" no mouse sobrescrevia a variável de
+# controle sem soltar a primeira, deixando-a órfã na árvore.
+#
+# Fluxo novo: clique na carta de origem -> menu contextual -> opção
+# que precisa de alvo entra em "modo seleção" -> próximo clique num
+# animal válido em campo completa a ação. ESC cancela a qualquer
+# momento (ver _input).
+var _selecao_alvo_ativa: bool = false
+var _selecao_alvo_tipo: String = ""       # "crescer" | "fortalecer" | "retroceder" | "alimentar"
+var _selecao_alvo_dados: Dictionary = {}  # dados extra da ação (indice_mao, carta, quantidade, etc)
 
 # Animações
 var dicionario_tweens_cartas: Dictionary = {}  # { CardUI: Tween }
@@ -123,16 +130,14 @@ func _process(delta: float) -> void:
 	if turno_em_progresso:
 		_atualizar_contador_turno(delta)
 
-	if carta_em_arrasto != null and is_instance_valid(carta_em_arrasto):
-		_processar_arrasto_carta()
-
 
 func _input(event: InputEvent) -> void:
 	if not get_tree().root.is_ancestor_of(self):
 		return
 
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_cancelar_arrasto()
+		_cancelar_selecao_alvo()
+		_fechar_menu_contextual()
 		get_tree().root.set_input_as_handled()
 
 # ==============================================================================
@@ -333,7 +338,7 @@ func _exibir_popup_escolha_ordem(vencedor_id: int) -> void:
 	decide se joga primeiro ou deixa o oponente começar. Se ele não
 	decidir a tempo, o pop-up fecha sozinho aplicando o padrão (jogar
 	primeiro) — mesmo padrão de timeout já usado no menu contextual
-	de cartas (_abrir_menu_contextual)."""
+	de cartas (_abrir_menu_generico)."""
 	_fechar_popup_setup()
 
 	var refs := HelperUI.criar_popup_base(
@@ -587,13 +592,13 @@ func organizar_cartas_nas_zonas(jogador_id: int) -> void:
 		_adicionar_carta_na_zona(jogador_id, "mao", carta_base)
 
 	for instancia in jogador.banco:
-		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card)
+		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card, instancia)
 
 	if jogador.ativo != null:
-		_adicionar_carta_na_zona(jogador_id, "ativo", jogador.ativo.card)
+		_adicionar_carta_na_zona(jogador_id, "ativo", jogador.ativo.card, jogador.ativo)
 
 
-func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource) -> void:
+func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource, instancia: AnimalInstance = null) -> void:
 	# Convenção de TCG: só a mão é informação escondida — mas o Animal
 	# Ativo inicial também fica virado pra baixo enquanto o setup
 	# ainda está rolando (os dois viram juntos em _ao_setup_concluido).
@@ -621,7 +626,7 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			# conectamos input nela: nem clique nem zoom devem expor
 			# o que é.
 			if jogador_id == ID_JOGADOR_HUMANO:
-				_configurar_inputs_carta(resultado["visual"], carta, jogador_id)
+				_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "mao", null)
 
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
@@ -632,6 +637,12 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			campo_ativo.add_child(envelope)
 			_centralizar_envelope_no_painel(envelope)
 
+			# Ativo do oponente é só visual (sem menu de ações) — mas
+			# ainda pode ser alvo de zoom (mantido sem guarda aqui,
+			# já era assim antes).
+			if jogador_id == ID_JOGADOR_HUMANO:
+				_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "ativo", instancia)
+
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
 			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
@@ -640,6 +651,8 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
 					slot.add_child(resultado["envelope"])
+					if jogador_id == ID_JOGADOR_HUMANO:
+						_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "banco", instancia)
 					break
 
 		"descarte":
@@ -664,29 +677,55 @@ func _centralizar_envelope_no_painel(envelope: Control) -> void:
 	envelope.offset_bottom = tamanho.y / 2.0
 
 
-func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
+func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int, contexto: String, instancia: AnimalInstance) -> void:
 	if not carta_visual.is_connected("gui_input", Callable(self, "_ao_input_carta")):
-		carta_visual.gui_input.connect(_ao_input_carta.bindv([carta_visual, carta_resource, jogador_id]))
+		carta_visual.gui_input.connect(_ao_input_carta.bindv([carta_visual, carta_resource, jogador_id, contexto, instancia]))
 
 
-func _ao_input_carta(event: InputEvent, carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Durante a escolha do Animal Ativo inicial, clique na mão tem
-		# um significado especial e não deve virar arrasto/menu normal.
-		if _jogador_aguardando_escolha_ativo == jogador_id:
-			_tentar_confirmar_ativo_inicial(jogador_id, carta_resource)
-			return
+## Despachante único de clique em carta. Decide entre 3 caminhos,
+## nesta ordem de prioridade:
+##   1. Escolha do Animal Ativo inicial (setup) — comportamento especial.
+##   2. Modo de seleção de alvo já ativo (Crescer/Fortalecer/Retroceder/
+##      Alimentar esperando um animal) — clique tenta completar a ação
+##      pendente, não abre menu novo.
+##   3. Clique normal — abre o menu contextual com as opções válidas
+##      pra esta carta neste contexto (mão/ativo/banco).
+##
+## `contexto` é "mao" | "ativo" | "banco". `instancia` é a
+## AnimalInstance correspondente quando o contexto é "ativo"/"banco"
+## (null pra "mao", onde o animal ainda não existe em campo) — precisa
+## ser a instância, não só a carta, porque duas cópias da mesma
+## espécie no Banco compartilham o mesmo CardResource e ficariam
+## ambíguas se identificássemos só pela carta.
+func _ao_input_carta(event: InputEvent, carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int, contexto: String, instancia: AnimalInstance) -> void:
+	if not (event is InputEventMouseButton and event.pressed):
+		return
 
-	if event is InputEventMouseButton:
-		if event.pressed:
-			match event.button_index:
-				MOUSE_BUTTON_LEFT:
-					_iniciar_arrasto_carta(carta_visual, carta_resource, jogador_id)
-				MOUSE_BUTTON_RIGHT:
-					_abrir_zoom_leitura(carta_visual, carta_resource)
-		else:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				_finalizar_arrasto_carta(carta_visual, carta_resource)
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		_abrir_zoom_leitura(carta_visual, carta_resource)
+		return
+
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return
+
+	if _jogador_aguardando_escolha_ativo == jogador_id:
+		_tentar_confirmar_ativo_inicial(jogador_id, carta_resource)
+		return
+
+	if _selecao_alvo_ativa:
+		_tentar_completar_selecao_alvo(instancia, contexto)
+		return
+
+	# Menu de ações só existe pras próprias cartas do jogador humano —
+	# cartas do oponente continuam só com zoom (botão direito, acima).
+	if jogador_id != ID_JOGADOR_HUMANO:
+		return
+
+	var opcoes: Array[Dictionary] = _construir_opcoes_menu(carta_resource, contexto, instancia)
+	if opcoes.is_empty():
+		return
+
+	_abrir_menu_generico(carta_visual.global_position, opcoes)
 
 
 func _tentar_confirmar_ativo_inicial(jogador_id: int, carta_resource: CardBaseResource) -> void:
@@ -703,128 +742,64 @@ func _tentar_confirmar_ativo_inicial(jogador_id: int, carta_resource: CardBaseRe
 		_exibir_texto_flutuante("Selecione um Animal Filhote", 1.5)
 
 
-func _iniciar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int) -> void:
-	if jogador_id != ID_JOGADOR_HUMANO:
-		return
+# ==============================================================================
+# CONSTRUÇÃO DO MENU — regra travada com o time:
+# o TIPO/DADOS da carta decide QUAIS botões existem (Filhote não tem
+# "Crescer", animal sem habilidade não tem "Habilidade" — o botão nem
+# aparece). O ESTADO DO TURNO (já usou energia, já recuou, já jogou
+# cataclismo) decide se um botão que EXISTE fica habilitado — isso já
+# é responsabilidade do RuleValidator, checado antes de adicionar a
+# opção na lista (se não pode, a opção simplesmente não entra —
+# preferimos "não aparece" a "aparece cinza" pra manter o menu curto).
+# ==============================================================================
 
-	# Containers (a HandContainer é um HBoxContainer) reposicionam os
-	# filhos sozinhos e brigam com qualquer position/global_position
-	# manual. Pra arrastar de verdade, a carta precisa sair do
-	# Container enquanto dura o arrasto — reparenta preservando a
-	# posição visual, pra não dar um "pulo" perceptível.
-	#
-	# IMPORTANTE: carta_visual aqui é a carta "nua" (dentro do
-	# envelope), não o envelope em si. Ao reparentar só ela pra fora
-	# do envelope, o envelope-vazio fica órfão dentro da mão — por
-	# isso removemos o envelope também, senão ele deixa um "buraco"
-	# do tamanho de uma carta na HandContainer enquanto dura o arrasto.
-	var envelope_origem: Node = carta_visual.get_parent()
-	var pai_do_envelope: Node = envelope_origem.get_parent() if envelope_origem else null
-
-	var posicao_global: Vector2 = carta_visual.global_position
-	if envelope_origem:
-		envelope_origem.remove_child(carta_visual)
-	if pai_do_envelope and envelope_origem:
-		pai_do_envelope.remove_child(envelope_origem)
-		envelope_origem.queue_free()
-
-	add_child(carta_visual)
-	carta_visual.global_position = posicao_global
-
-	carta_em_arrasto = carta_visual
-	carta_selecionada = carta_visual
-	offset_arrasto = carta_visual.get_local_mouse_position()
-
-	carta_visual.z_index = 100
-	carta_visual.modulate.a = 0.8
-
-	print("👆 Arrasto iniciado: %s" % carta_resource.name)
-
-
-func _processar_arrasto_carta() -> void:
-	if carta_em_arrasto == null:
-		return
-
-	var mouse_pos: Vector2 = get_global_mouse_position()
-	carta_em_arrasto.global_position = mouse_pos - offset_arrasto
-
-	_detectar_zona_alvo(carta_em_arrasto)
-
-
-func _detectar_zona_alvo(carta_visual: Control) -> void:
-	var zonas_potenciais: Array[Control] = [
-		jogador_campo_ativo,
-		jogador_slots_banco,
-		jogador_zona_descarte
-	]
-
-	zona_alvo_potencial = null
-	var distancia_minima: float = DISTANCIA_SNAP_ZONAS
-
-	for zona in zonas_potenciais:
-		var distancia: float = carta_visual.global_position.distance_to(zona.global_position)
-		if distancia < distancia_minima:
-			distancia_minima = distancia
-			zona_alvo_potencial = zona
-			zona.self_modulate = Color.YELLOW
-
-
-func _cancelar_arrasto() -> void:
-	if carta_em_arrasto == null:
-		return
-
-	# Não dá pra animar de volta pro slot certo dentro da
-	# HandContainer (Container reposiciona filhos sozinho — tentar
-	# tween.global_position é isso que causava as cartas empilhando no
-	# canto). A carta nunca saiu de PlayerState.mao, só a visual foi
-	# arrancada do Container (e o envelope original já foi destruído
-	# em _iniciar_arrasto_carta) — então descarta essa visual órfã e
-	# reconstrói a mão inteira (com um envelope novo), que a
-	# HandContainer resolve o posicionamento sozinha.
-	if is_instance_valid(carta_em_arrasto):
-		carta_em_arrasto.queue_free()
-
-	carta_em_arrasto = null
-	carta_selecionada = null
-	zona_alvo_potencial = null
-
-	organizar_cartas_nas_zonas(ID_JOGADOR_HUMANO)
-
-
-func _finalizar_arrasto_carta(carta_visual: Control, carta_resource: CardBaseResource) -> void:
-	"""IMPORTANTE: esta função NÃO move mais a carta nem confia que a
-	jogada deu certo. Não existe hoje um manager que aplique "jogar
-	carta pro campo/banco" com validação de regra — isso é trabalho
-	pendente do BattleManager (ou de um novo PlayCardManager) usando
-	RuleValidator.validate_bench_placement / validate_bench_size etc.
-	Por ora só emitimos o pedido e devolvemos a carta pra mão; quando
-	o manager existir, ele deve chamar de volta algo como
-	`organizar_cartas_nas_zonas(jogador_id)` pra esta cena refletir o
-	resultado real."""
-	if zona_alvo_potencial == null:
-		_abrir_menu_contextual(carta_visual, carta_resource)
-		_cancelar_arrasto()
-		return
-
+func _construir_opcoes_menu(carta: CardBaseResource, contexto: String, instancia: AnimalInstance) -> Array[Dictionary]:
+	var opcoes: Array[Dictionary] = []
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
-	var indice_mao: int = jogador.mao.find(carta_resource)
-	if indice_mao == -1:
-		print("⚠️ Carta não encontrada na mão!")
-		_cancelar_arrasto()
-		return
 
-	if zona_alvo_potencial == jogador_campo_ativo:
-		acao_jogador_solicitada.emit("jogar_para_ativo", {"indice_mao": indice_mao, "carta": carta_resource})
-	elif zona_alvo_potencial == jogador_slots_banco:
-		acao_jogador_solicitada.emit("jogar_para_banco", {"indice_mao": indice_mao, "carta": carta_resource})
+	if carta is CardResource and carta.super_type == "animal":
+		match contexto:
+			"mao":
+				if carta.stage == "Filhote":
+					opcoes.append({"texto": "Reserva", "callback": _acao_reserva.bind(carta)})
+				elif _existe_alvo_de_crescimento(carta, jogador):
+					opcoes.append({"texto": "Crescer", "callback": _iniciar_selecao_crescer.bind(carta)})
 
-	# TODO(core): trocar por animação condicionada à confirmação do
-	# manager. Por enquanto sempre cancela visualmente (a carta volta
-	# pra mão) até existir um listener que aplique e confirme a jogada.
-	_cancelar_arrasto()
+			"ativo":
+				if RuleValidator.validate_retreat_possivel(jogador.ativo, jogador):
+					opcoes.append({"texto": "Retroceder", "callback": _iniciar_selecao_retroceder})
+				if carta.text_ui != "":
+					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
+				if RuleValidator.validate_attack(jogador.ativo, carta):
+					opcoes.append({"texto": "Atacar", "callback": _acao_atacar.bind(carta)})
 
-	carta_em_arrasto = null
-	zona_alvo_potencial = null
+			"banco":
+				if carta.text_ui != "":
+					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
+
+	elif carta is EffectResource:
+		match carta.super_type:
+			"energia":
+				if contexto == "mao" and not GameState.energia_anexada_neste_turno:
+					opcoes.append({"texto": "Fortalecer", "callback": _iniciar_selecao_fortalecer.bind(carta)})
+
+			"cataclismo", "vestigio", "territorio":
+				if contexto == "mao":
+					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
+
+	return opcoes
+
+
+## Existe algum animal em campo (Ativo ou Banco) que essa carta possa
+## evoluir? Usado só pra decidir se o botão "Crescer" aparece — a
+## validação de verdade (turno, etc.) roda de novo na hora de
+## executar, via RuleValidator.validate_evolution dentro do
+## BattleManager.
+func _existe_alvo_de_crescimento(carta_evolucao: CardResource, jogador: PlayerState) -> bool:
+	for instancia in jogador.animais_em_campo():
+		if RuleValidator.validate_evolution_line(instancia, carta_evolucao):
+			return true
+	return false
 
 # ==============================================================================
 # SISTEMA DE ZOOM E MENU CONTEXTUAL
@@ -838,98 +813,379 @@ func _abrir_zoom_leitura(carta_visual: Control, carta_resource: CardBaseResource
 	card_zoom_manager.exibir_zoom_carta(carta_visual, carta_resource)
 
 
-func _abrir_menu_contextual(carta_visual: Control, carta_resource: CardBaseResource) -> void:
-	if is_instance_valid(menu_contextual_ativo):
-		menu_contextual_ativo.queue_free()
+func _abrir_menu_generico(posicao_global: Vector2, opcoes: Array[Dictionary]) -> void:
+	_fechar_menu_contextual()
 
 	var menu: Panel = Panel.new()
 	menu.add_theme_stylebox_override("panel", StyleBoxFlat.new())
-	menu.custom_minimum_size = Vector2(150, 120)
-	menu.global_position = carta_visual.global_position + Vector2(100, 100)
+	menu.custom_minimum_size = Vector2(150, 36 * opcoes.size() + 20)
+	menu.global_position = posicao_global + Vector2(100, 0)
 
 	var vbox: VBoxContainer = VBoxContainer.new()
 	menu.add_child(vbox)
 
-	var botoes: Array = [
-		{"texto": "Prender/Presente", "acao": "_acao_prender"},
-		{"texto": "Atacar", "acao": "_acao_atacar"},
-		{"texto": "Usar Habilidade", "acao": "_acao_usar_habilidade"},
-		{"texto": "Recuar", "acao": "_acao_recuar"}
-	]
-
-	for item_botao in botoes:
+	for opcao in opcoes:
 		var botao: Button = Button.new()
-		botao.text = item_botao["texto"]
-		botao.pressed.connect(Callable(self, item_botao["acao"]).bindv([carta_resource]))
-
-		var habilitado: bool = _validar_acao_permitida(item_botao["acao"], carta_resource)
-		botao.disabled = not habilitado
-
+		botao.text = opcao["texto"]
+		botao.pressed.connect(func():
+			_fechar_menu_contextual()
+			opcao["callback"].call()
+		)
 		vbox.add_child(botao)
 
 	add_child(menu)
 	menu_contextual_ativo = menu
 
 	await get_tree().create_timer(30.0).timeout
+	if is_instance_valid(menu_contextual_ativo) and menu_contextual_ativo == menu:
+		_fechar_menu_contextual()
+
+
+func _fechar_menu_contextual() -> void:
 	if is_instance_valid(menu_contextual_ativo):
 		menu_contextual_ativo.queue_free()
-		menu_contextual_ativo = null
+	menu_contextual_ativo = null
 
 
-func _validar_acao_permitida(acao: String, carta: CardBaseResource) -> bool:
-	"""Delega pro RuleValidator sempre que a regra já está
-	implementada. Ações cuja regra ainda é esqueleto (validate_retreat
-	hoje sempre retorna false) ficam corretamente desabilitadas até
-	serem implementadas no RuleValidator — não simulamos aqui.
+# ==============================================================================
+# MODO DE SELEÇÃO DE ALVO — Crescer, Fortalecer, Retroceder, Alimentar
+# Todas essas ações precisam de um segundo clique (no animal-alvo) pra
+# completar. Entram em modo de seleção via _iniciar_selecao_*, e são
+# resolvidas em _tentar_completar_selecao_alvo quando o jogador clica
+# num animal válido em campo (ver _ao_input_carta).
+# ==============================================================================
 
-	Prender/Atacar/Habilidade/Recuar só existem pra Animal — cartas de
-	Efeito/Território/Energia não têm essas ações, então nem chegam a
-	entrar no match (evita passar EffectResource/etc pro RuleValidator,
-	que espera CardResource especificamente)."""
-	if not (carta is CardResource) or carta.super_type != "animal":
-		return false
-
+func _iniciar_selecao_crescer(carta_evolucao: CardResource) -> void:
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var indice_mao: int = jogador.mao.find(carta_evolucao)
+	if indice_mao == -1:
+		return
 
-	match acao:
-		"_acao_prender":
-			return jogador.ativo != null and jogador.comida_disponivel >= 1
-
-		"_acao_atacar":
-			if GameState.fase_atual != GameState.Fase.ATAQUE:
-				return false
-			if jogador.ativo == null:
-				return false
-			return RuleValidator.validate_attack(jogador.ativo, carta)
-
-		"_acao_usar_habilidade":
-			return jogador.ativo != null and carta.text_ui != ""
-
-		"_acao_recuar":
-			return RuleValidator.validate_retreat(jogador.ativo, jogador, GameState)
-
-	return false
+	_selecao_alvo_ativa = true
+	_selecao_alvo_tipo = "crescer"
+	_selecao_alvo_dados = {"indice_mao": indice_mao, "carta_evolucao": carta_evolucao}
+	_exibir_texto_flutuante("Selecione o animal que vai crescer", 2.0)
 
 
-func _acao_prender(carta: CardBaseResource) -> void:
-	print("📌 Ação: Prender/Presente em %s" % carta.name)
-	acao_jogador_solicitada.emit("prender", {"carta": carta})
+func _iniciar_selecao_fortalecer(carta_energia: EffectResource) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var indice_mao: int = jogador.mao.find(carta_energia)
+	if indice_mao == -1:
+		return
+
+	_selecao_alvo_ativa = true
+	_selecao_alvo_tipo = "fortalecer"
+	_selecao_alvo_dados = {"indice_mao": indice_mao, "carta": carta_energia}
+	_exibir_texto_flutuante("Selecione o animal que vai receber a energia", 2.0)
 
 
-func _acao_atacar(carta: CardBaseResource) -> void:
-	print("⚔️ Ação: Atacar com %s" % carta.name)
-	acao_jogador_solicitada.emit("atacar", {"carta": carta})
-	_animar_ataque(carta)
+func _iniciar_selecao_retroceder() -> void:
+	_selecao_alvo_ativa = true
+	_selecao_alvo_tipo = "retroceder"
+	_selecao_alvo_dados = {}
+	_exibir_texto_flutuante("Selecione o animal do Banco que vai substituir", 2.0)
+
+
+func _iniciar_selecao_alimentar() -> void:
+	_selecao_alvo_ativa = true
+	_selecao_alvo_tipo = "alimentar"
+	_selecao_alvo_dados = {}
+	_exibir_texto_flutuante("Selecione o animal que vai se alimentar", 2.0)
+
+
+func _cancelar_selecao_alvo() -> void:
+	if not _selecao_alvo_ativa:
+		return
+
+	_selecao_alvo_ativa = false
+	_selecao_alvo_tipo = ""
+	_selecao_alvo_dados = {}
+
+
+## Chamado quando o jogador clica num animal (Ativo ou Banco) enquanto
+## há uma seleção de alvo pendente. `instancia` é a AnimalInstance
+## clicada (null se o clique não foi num animal em campo — nesse
+## caso ignoramos, o jogador precisa clicar num animal de verdade ou
+## apertar ESC pra cancelar).
+func _tentar_completar_selecao_alvo(instancia: AnimalInstance, contexto: String) -> void:
+	if instancia == null or (contexto != "ativo" and contexto != "banco"):
+		return
+
+	match _selecao_alvo_tipo:
+		"crescer":
+			_acao_crescer(_selecao_alvo_dados["indice_mao"], _selecao_alvo_dados["carta_evolucao"], instancia)
+
+		"fortalecer":
+			_acao_fortalecer(_selecao_alvo_dados["indice_mao"], _selecao_alvo_dados["carta"], instancia)
+
+		"retroceder":
+			if contexto != "banco":
+				_exibir_texto_flutuante("Escolha um animal do Banco", 1.5)
+				return
+			_acao_retroceder(instancia)
+
+		"alimentar":
+			_abrir_popup_quantidade_alimento(instancia)
+			# Não fecha o modo de seleção aqui — o popup de quantidade
+			# é quem decide (confirmar ou cancelar), ver função abaixo.
+			return
+
+	_cancelar_selecao_alvo()
+
+
+## Popup simples de "quanto alimentar" — só depois de já ter um
+## animal-alvo escolhido. Usa +/- porque o pool é pequeno (poucos
+## pontos por turno), não precisa de um SpinBox genérico.
+func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var quantidade: int = 1
+	var maximo: int = jogador.comida_disponivel
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Alimentar",
+		"Pool disponível: %d" % maximo
+	)
+	var overlay: Control = refs["overlay"]
+	var vbox: VBoxContainer = refs["vbox"]
+
+	var label_quantidade := Label.new()
+	label_quantidade.text = str(quantidade)
+	label_quantidade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_quantidade.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(label_quantidade)
+
+	var linha_botoes := HBoxContainer.new()
+	linha_botoes.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(linha_botoes)
+
+	var botao_menos := Button.new()
+	botao_menos.text = "-"
+	linha_botoes.add_child(botao_menos)
+
+	var botao_mais := Button.new()
+	botao_mais.text = "+"
+	linha_botoes.add_child(botao_mais)
+
+	botao_menos.pressed.connect(func():
+		quantidade = maxi(1, quantidade - 1)
+		label_quantidade.text = str(quantidade)
+	)
+	botao_mais.pressed.connect(func():
+		quantidade = mini(maximo, quantidade + 1)
+		label_quantidade.text = str(quantidade)
+	)
+
+	var botao_confirmar := Button.new()
+	botao_confirmar.text = "Confirmar"
+	botao_confirmar.pressed.connect(func():
+		overlay.queue_free()
+		_cancelar_selecao_alvo()
+		_acao_alimentar(animal, quantidade)
+	)
+	vbox.add_child(botao_confirmar)
+
+	var botao_cancelar := Button.new()
+	botao_cancelar.text = "Cancelar"
+	botao_cancelar.pressed.connect(func():
+		overlay.queue_free()
+		_cancelar_selecao_alvo()
+	)
+	vbox.add_child(botao_cancelar)
+
+
+# ==============================================================================
+# AÇÕES — cada uma chama BattleManager.processar_acao diretamente
+# (é um autoload, acessível daqui), emite acao_jogador_solicitada pra
+# quem mais quiser escutar (log, futuro replay), e reage ao resultado:
+# sucesso -> refresca o tabuleiro; falha -> mostra o motivo.
+# ==============================================================================
+
+func _acao_reserva(carta: CardBaseResource) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var indice_mao: int = jogador.mao.find(carta)
+	if indice_mao == -1:
+		return
+
+	_resolver_acao("jogar_para_banco", {"indice_mao": indice_mao, "carta": carta})
+
+
+func _acao_crescer(indice_mao: int, carta_evolucao: CardResource, instancia: AnimalInstance) -> void:
+	_resolver_acao("crescer", {
+		"indice_mao": indice_mao,
+		"carta_evolucao": carta_evolucao,
+		"instancia": instancia,
+	})
+
+
+func _acao_fortalecer(indice_mao: int, carta: EffectResource, animal: AnimalInstance) -> void:
+	_resolver_acao("anexar_energia", {
+		"indice_mao": indice_mao,
+		"carta": carta,
+		"animal": animal,
+	})
+
+
+func _acao_retroceder(substituto: AnimalInstance) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var custo: int = jogador.ativo.card.cost_retreat if jogador.ativo != null else 0
+
+	if custo <= 0:
+		_resolver_acao("recuar", {"substituto": substituto, "energias_para_descarte": []})
+		return
+
+	# Custo > 0: precisa que o jogador escolha QUAIS energias
+	# descartar. Reaproveita a mesma ideia do menu genérico, mas com
+	# uma lista construída a partir de attached_energies.
+	_abrir_selecao_energias_para_recuo(substituto, custo)
+
+
+func _ao_alternar_selecao_energia(pressionado: bool, energia: EffectResource, selecionadas: Array) -> void:
+	if pressionado and not selecionadas.has(energia):
+		selecionadas.append(energia)
+	elif not pressionado and selecionadas.has(energia):
+		selecionadas.erase(energia)
+
+
+func _abrir_selecao_energias_para_recuo(substituto: AnimalInstance, custo: int) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var ativo: AnimalInstance = jogador.ativo
+
+	if ativo.attached_energies.size() < custo:
+		_exibir_texto_flutuante("Energia insuficiente pra recuar", 1.5)
+		return
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Pagar custo de recuo",
+		"Escolha %d energia(s) pra descartar" % custo
+	)
+	var overlay: Control = refs["overlay"]
+	var vbox: VBoxContainer = refs["vbox"]
+
+	var selecionadas: Array = []
+
+	for energia in ativo.attached_energies:
+		var botao := Button.new()
+		botao.text = str(energia.name)
+		botao.toggle_mode = true
+		botao.toggled.connect(_ao_alternar_selecao_energia.bindv([energia, selecionadas]))
+		vbox.add_child(botao)
+
+	var botao_confirmar := Button.new()
+	botao_confirmar.text = "Confirmar"
+	botao_confirmar.pressed.connect(func():
+		if selecionadas.size() != custo:
+			_exibir_texto_flutuante("Selecione exatamente %d energia(s)" % custo, 1.5)
+			return
+		overlay.queue_free()
+		_resolver_acao("recuar", {"substituto": substituto, "energias_para_descarte": selecionadas})
+	)
+	vbox.add_child(botao_confirmar)
+
+
+func _acao_alimentar(animal: AnimalInstance, quantidade: int) -> void:
+	_resolver_acao("distribuir_comida", {"animal": animal, "quantidade": quantidade})
+
+
+func _acao_atacar(carta: CardResource) -> void:
+	var resultado := _resolver_acao("atacar", {"ataque": carta}, false)
+	if resultado.get("sucesso", false):
+		_animar_ataque(carta)
 
 
 func _acao_usar_habilidade(carta: CardBaseResource) -> void:
-	print("✨ Ação: Usar habilidade de %s" % carta.name)
-	acao_jogador_solicitada.emit("usar_habilidade", {"carta": carta})
+	# Ainda não existe intérprete de AbilityResource/text_ui no
+	# projeto — fora do escopo do Turno 1. O botão aparece (porque a
+	# carta tem texto de habilidade), mas por enquanto só avisa.
+	_exibir_texto_flutuante("Habilidades: em breve", 1.5)
 
 
-func _acao_recuar(carta: CardBaseResource) -> void:
-	print("🔄 Ação: Recuar %s" % carta.name)
-	acao_jogador_solicitada.emit("recuar", {"carta": carta})
+func _acao_ativar_efeito(carta: EffectResource) -> void:
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var indice_mao: int = jogador.mao.find(carta)
+	if indice_mao == -1:
+		return
+
+	var tipo_acao: String
+	match carta.super_type:
+		"cataclismo": tipo_acao = "jogar_cataclismo"
+		"vestigio": tipo_acao = "jogar_vestigio"
+		"territorio": tipo_acao = "jogar_territorio"
+		_: return
+
+	# Território substitui o que já estiver ativo (é global, ver
+	# GameState.territorio_ativo) — confirmação antes de resolver.
+	if carta.super_type == "territorio" and GameState.territorio_ativo != null:
+		_confirmar_substituicao_territorio(indice_mao, carta, tipo_acao)
+		return
+
+	_resolver_acao(tipo_acao, {"indice_mao": indice_mao, "carta": carta})
+
+
+func _confirmar_substituicao_territorio(indice_mao: int, carta: EffectResource, tipo_acao: String) -> void:
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"Substituir Território?",
+		"Isso vai descartar o território ativo atual."
+	)
+	var overlay: Control = refs["overlay"]
+
+	var botao_confirmar := Button.new()
+	botao_confirmar.text = "Confirmar"
+	botao_confirmar.pressed.connect(func():
+		overlay.queue_free()
+		_resolver_acao(tipo_acao, {"indice_mao": indice_mao, "carta": carta})
+	)
+	refs["vbox"].add_child(botao_confirmar)
+
+	var botao_cancelar := Button.new()
+	botao_cancelar.text = "Cancelar"
+	botao_cancelar.pressed.connect(func(): overlay.queue_free())
+	refs["vbox"].add_child(botao_cancelar)
+
+
+## Ponto único de saída pra qualquer ação: chama o BattleManager,
+## emite o sinal público (observabilidade externa), e reage ao
+## resultado. `refrescar_automatico=false` é usado só por "atacar",
+## porque ele já dispara sua própria animação antes do refresh.
+func _resolver_acao(tipo_acao: String, dados: Dictionary, refrescar_automatico: bool = true) -> Dictionary:
+	var resultado: Dictionary = BattleManager.processar_acao(tipo_acao, dados)
+	acao_jogador_solicitada.emit(tipo_acao, dados)
+
+	if resultado.get("sucesso", false):
+		if refrescar_automatico:
+			_refrescar_tabuleiro()
+	else:
+		var motivo: String = resultado.get("motivo", "acao_invalida")
+		_exibir_texto_flutuante(_traduzir_motivo_falha(motivo), 1.5)
+
+	return resultado
+
+
+func _traduzir_motivo_falha(motivo: String) -> String:
+	match motivo:
+		"ainda_nao_implementado": return "Ainda não implementado"
+		"colocacao_invalida": return "Banco cheio ou carta inválida"
+		"evolucao_invalida": return "Evolução inválida"
+		"anexacao_invalida": return "Não é possível anexar aqui"
+		"distribuicao_invalida": return "Sem pool suficiente"
+		"recuo_invalido": return "Não é possível recuar agora"
+		"substituto_invalido": return "Alvo inválido"
+		"ataque_invalido": return "Ataque indisponível"
+		"paralisado_falhou": return "Paralisado! O ataque falhou"
+		_: return "Ação inválida"
+
+
+## Re-renderiza os dois lados do tabuleiro após qualquer ação bem
+## sucedida. Simples e sempre correto; otimizar (renderizar só o que
+## mudou) fica pra depois, quando performance virar problema de
+## verdade — não é ainda.
+func _refrescar_tabuleiro() -> void:
+	organizar_cartas_nas_zonas(0)
+	organizar_cartas_nas_zonas(1)
+	atualizar_visual_comida(0)
+	atualizar_visual_comida(1)
 
 # ==============================================================================
 # ANIMAÇÕES VISUAIS
@@ -1064,7 +1320,31 @@ func _atualizar_visual_contador_comida(jogador_id: int, pontos: int) -> void:
 		contador_panel.mouse_entered.connect(_ao_mouse_entrou_comida.bindv([jogador_id, pontos]))
 		contador_panel.mouse_exited.connect(_ao_mouse_saiu_comida)
 
+	# Só o pool do jogador humano é clicável — o pool do oponente é
+	# só informativo (mesma lógica de por que cartas do oponente não
+	# têm menu de ações).
+	if jogador_id == ID_JOGADOR_HUMANO and not contador_panel.is_connected("gui_input", Callable(self, "_ao_input_zona_comida")):
+		contador_panel.gui_input.connect(_ao_input_zona_comida)
+
 	print("🍖 Contador de comida atualizado: %d pontos (Jogador %d)" % [pontos, jogador_id])
+
+
+func _ao_input_zona_comida(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+
+	if _selecao_alvo_ativa:
+		return
+
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	if jogador.comida_disponivel <= 0:
+		_exibir_texto_flutuante("Sem pontos de comida no pool", 1.5)
+		return
+
+	_abrir_menu_generico(
+		jogador_contador_comida.global_position + Vector2(0, -60),
+		[{"texto": "Alimentar", "callback": _iniciar_selecao_alimentar}]
+	)
 
 
 func _ao_mouse_entrou_comida(jogador_id: int, pontos: int) -> void:
