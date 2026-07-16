@@ -1,12 +1,9 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://ctpn2duqc4cwi"]
 
-[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_4dg6p"]
+[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_4dg6p"]
 
 [resource]
 script = ExtResource("1_4dg6p")
-id = "A004"
-name = "Galimminu"
-super_type = "animal"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Jovem"
@@ -21,7 +18,6 @@ attack_name = "Chute fraco"
 attack_cost = "⚪"
 damage_base = 30
 damage_type = "fixo"
-text_ui = ""
 mec_trigger = ""
 mec_condition = "sempre"
 mec_action = ""
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A004"
+name = "Galimminu"
+super_type = "animal"
+text_ui = ""

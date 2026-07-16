@@ -213,7 +213,6 @@ layout_mode = 2
 custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
 theme_override_constants/separation = 50
-alignment = 1
 
 [node name="SlotBanco1" type="Panel" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow/BenchContainer"]
 custom_minimum_size = Vector2(100, 145)

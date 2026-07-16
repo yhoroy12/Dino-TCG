@@ -181,7 +181,7 @@ static func validate_bench_size(player: PlayerState) -> bool:
 ##
 ## Delega para EvolutionSystem.pode_crescer, que já cobre: não evoluir
 ## no turno em que entrou, não evoluir 2x no mesmo turno, e linhagem
-## correta (carta_evolucao.stage_from == instancia.card.card_id) —
+## correta (carta_evolucao.grow_from == instancia.card.card_id) —
 ## evita duas fontes de verdade pra mesma regra, mesmo padrão já usado
 ## em validate_deck (delega pro DeckRulesSystem).
 ##
@@ -200,7 +200,7 @@ static func validate_evolution_line(instancia: AnimalInstance, nova_carta: CardR
 	if instancia == null or nova_carta == null:
 		return false
 
-	return nova_carta.stage_from == instancia.card.card_id
+	return nova_carta.grow_from == instancia.card.id
 
 
 ## Valida requisito de comida.

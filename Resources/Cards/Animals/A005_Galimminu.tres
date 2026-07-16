@@ -1,12 +1,9 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://on1vth5pihyt"]
 
-[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_kq1pt"]
+[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_kq1pt"]
 
 [resource]
 script = ExtResource("1_kq1pt")
-id = "A005"
-name = "Galimminu"
-super_type = "animal"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Adulto"
@@ -21,7 +18,6 @@ attack_name = "Chute alto"
 attack_cost = "🟡⚪"
 damage_base = 80
 damage_type = "fixo"
-text_ui = "Jogue uma moeda, se sair cara cause 20 de dano a este dinossauro"
 mec_trigger = "ao_atacar"
 mec_condition = "moeda"
 mec_action = "causar_dano"
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A005"
+name = "Galimminu"
+super_type = "animal"
+text_ui = "Jogue uma moeda, se sair cara cause 20 de dano a este dinossauro"

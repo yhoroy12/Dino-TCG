@@ -1,12 +1,10 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://bqxdmcoctavf"]
 
-[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_kx3i4"]
+[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_kx3i4"]
 
 [resource]
 script = ExtResource("1_kx3i4")
-id = "A003"
-name = "Galimminu"
-super_type = "animal"
+card_id = "A003"
 sub_type = "Onivoro"
 color = "amarelo"
 stage = "Filhote"
@@ -21,7 +19,6 @@ attack_name = "Bicada"
 attack_cost = "⚪"
 damage_base = 10
 damage_type = "fixo"
-text_ui = ""
 mec_trigger = ""
 mec_condition = "sempre"
 mec_action = ""
@@ -35,3 +32,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A003"
+name = "Galimminu"
+super_type = "animal"
+text_ui = ""

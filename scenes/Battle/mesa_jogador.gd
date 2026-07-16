@@ -651,16 +651,24 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			if resultado.is_empty():
 				return
 			var card_visual = resultado["visual"]
+			
+			# Encontra o primeiro slot físico vazio da esquerda para a direita
+			var slot_disponivel: Control = null
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
-					slot.add_child(resultado["envelope"])
-					if jogador_id == ID_JOGADOR_HUMANO:
-						_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
-					
-					# Cartas no banco são públicas (suas e do oponente). Zoom via Hover ativo:
-					card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
-					card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
+					slot_disponivel = slot
 					break
+			
+			# Se encontrou um slot vazio, adiciona o envelope nele
+			if slot_disponivel != null:
+				slot_disponivel.add_child(resultado["envelope"])
+				
+				if jogador_id == ID_JOGADOR_HUMANO:
+					_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
+				
+				# Cartas no banco são públicas. Zoom via Hover ativo:
+				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
+				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"descarte":
 			pass  # Descarte é apenas visual (pilha), não instancia carta a carta.
@@ -1419,24 +1427,40 @@ func _obter_player_state(jogador_id: int) -> PlayerState:
 func _criar_carta_ui(carta: CardBaseResource, face_para_baixo: bool = false) -> Control:
 	return HelperUI.instanciar_carta(carta, face_para_baixo)
 
-
 func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 	var container: Control = null
 
 	match zona_nome:
 		"mao":
 			container = jogador_mao if jogador_id == 0 else oponente_mao
+			if container:
+				for child in container.get_children():
+					container.remove_child(child)
+					child.queue_free()
+		
 		"banco":
-			container = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
+			# Remove os filhos imediatamente da árvore para que o slot
+			# seja detectado como vazio no mesmo frame, depois libera a memória.
+			var slots_container = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
+			if slots_container:
+				for slot in slots_container.get_children():
+					for carta_no_slot in slot.get_children():
+						slot.remove_child(carta_no_slot)
+						carta_no_slot.queue_free()
+
 		"ativo":
 			container = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
+			if container:
+				for child in container.get_children():
+					container.remove_child(child)
+					child.queue_free()
+
 		"descarte":
 			container = jogador_zona_descarte if jogador_id == 0 else oponente_zona_descarte
-
-	if container:
-		for child in container.get_children():
-			child.queue_free()
-
+			if container:
+				for child in container.get_children():
+					container.remove_child(child)
+					child.queue_free()
 
 func _get_first_child_of_type(parent: Node, tipo: Object) -> Control:
 	for child in parent.get_children():
