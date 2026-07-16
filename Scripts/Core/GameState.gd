@@ -66,11 +66,8 @@ var jogador_2: PlayerState
 
 # Campo Global
 
-# BUG CORRIGIDO: território é super_type == "territorio", ou seja,
-# EffectResource pela divisão CardResource/EffectResource do projeto
-# — não CardResource.
 var territorio_ativo: EffectResource = null
-
+var jogador_sem_ativo: int = -1
 
 # Vitória
 

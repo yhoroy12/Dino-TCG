@@ -553,9 +553,9 @@ static func validate_retreat_target(player: PlayerState, replacement: AnimalInst
 ## sair menor do que deveria (bug silencioso).
 const MAPA_EMOJI_COR := {
 	"🟢": "verde",
-	"🔴": "vermelha",
+	"🔴": "vermelho",
 	"🔵": "azul",
-	"🟡": "amarela",
+	"🟡": "amarelo",
 	"🟤": "marrom",
 	"⚪": "incolor",
 }

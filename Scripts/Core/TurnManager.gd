@@ -97,13 +97,18 @@ func fase_ataque() -> void:
 
 func fase_final() -> void:
 	GameState.fase_atual = GameState.Fase.FINAL
-
+	
+	if GameState.jogador_sem_ativo != -1:
+		# Emitimos um sinal de aviso para a UI ou apenas travamos a execução.
+		# O jogador precisará mandar a ação "promover_ativo" para destravar o TurnManager.
+		return
+	# Se ninguém ficou sem ativo, segue o fluxo normal de encerramento	
 	_processar_fim_de_turno_dos_animais()
 
-	# Emitido ANTES de trocar o jogador ativo: turno_encerrado deve
-	# informar quem estava terminando o turno, não quem está começando.
+	
+func _encerrar_fase_final_e_passar_turno() -> void:
 	turno_encerrado.emit(GameState.jogador_ativo)
-
+	_passar_turno()
 	_passar_turno()
 
 
@@ -137,6 +142,13 @@ func _resetar_flags_turno() -> void:
 	for animal in GameState.get_jogador_atual().animais_em_campo():
 		animal.evoluiu_este_turno = false
 
+func atualizar_sistema_de_nocautes(player: PlayerState, player_id: int) -> void:
+	# Executa a limpeza física das cartas nocauteadas
+	var nocauteados = KnockoutSystem.processar_todos_nocautes(player)
+	
+	# Se o ativo foi nocauteado e há animais no banco para substituir:
+	if player.ativo == null and not player.banco.is_empty():
+		GameState.jogador_sem_ativo = player_id
 
 ## Processa fim de turno de TODOS os animais em campo (ativo +
 ## banco) dos DOIS jogadores: condições especiais (ConditionSystem)
@@ -178,4 +190,4 @@ func _processar_fim_de_turno_dos_animais() -> void:
 	# Nocautes por dano de combate já são resolvidos na hora do
 	# ataque, pelo BattleManager — esta chamada aqui cobre
 	# especificamente o gatilho de fim de turno.
-	KnockoutSystem.processar_todos_nocautes(jogador_da_vez)
+	atualizar_sistema_de_nocautes(jogador_da_vez, GameState.jogador_ativo)

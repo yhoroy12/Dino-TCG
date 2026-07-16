@@ -782,10 +782,13 @@ func _construir_opcoes_menu(carta: CardBaseResource, contexto: String, instancia
 			"energia":
 				if contexto == "mao" and not GameState.energia_anexada_neste_turno:
 					opcoes.append({"texto": "Fortalecer", "callback": _iniciar_selecao_fortalecer.bind(carta)})
-
-			"cataclismo", "vestigio", "territorio":
+			"vestigio", "territorio":
 				if contexto == "mao":
 					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
+			"cataclismo":
+				if contexto == "mao" and not GameState.cataclismo_jogado_neste_turno:
+					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
+					
 
 	return opcoes
 

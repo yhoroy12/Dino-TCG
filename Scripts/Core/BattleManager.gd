@@ -241,8 +241,8 @@ func _recuar(dados: Dictionary) -> Dictionary:
 
 ## dados: {"jogador_id": int, "substituto": AnimalInstance}
 func _promover_ativo(dados: Dictionary) -> Dictionary:
-	var jogador_id: int = dados.get("jogador_id", -1)
-	var substituto: AnimalInstance = dados.get("substituto")
+	var jogador_id: int = dados.get("jogador_id", -1)# Quem está promovendo
+	var substituto: AnimalInstance = dados.get("substituto")# Qual animal do banco está subindo
 
 	if jogador_id != 0 and jogador_id != 1:
 		return {"sucesso": false, "motivo": "jogador_invalido"}
@@ -257,7 +257,9 @@ func _promover_ativo(dados: Dictionary) -> Dictionary:
 
 	jogador.banco.erase(substituto)
 	jogador.ativo = substituto
-
+	if GameState.fase_atual == GameState.Fase.ATAQUE:
+		TurnManager.fase_final()
+	
 	return {"sucesso": true, "motivo": ""}
 
 
@@ -295,7 +297,22 @@ func _atacar(dados: Dictionary) -> Dictionary:
 
 	DamageSystem.aplicar_dano(defensor, dano)
 	KnockoutSystem.processar_todos_nocautes(adversario)
+	
+	# 1. Processa nocautes para ambos os jogadores após o combate
+	TurnManager.atualizar_sistema_de_nocautes(GameState.jogador_ativo, GameState.id_jogador_ativo)
+	TurnManager.atualizar_sistema_de_nocautes(GameState.jogador_defensor, GameState.id_jogador_defensor)
 
+	# 2. Se o DEFENSOR perdeu o ativo e tem banco, o jogo entra em estado de bloqueio.
+	# O ataque termina, mas o turno NÃO PODE passar ainda.
+	if GameState.jogador_sem_ativo != -1:
+		# Não chamamos TurnManager.fase_final() aqui! 
+		# O jogo fica travado aguardando o jogador resolver o 'jogador_sem_ativo'
+		return {
+			"sucesso": true, 
+			"status": "aguardando_promocao", 
+			"jogador_bloqueado": GameState.jogador_sem_ativo
+		}
+		
 	TurnManager.fase_final()
 
 	return {"sucesso": true, "motivo": "", "dano_causado": dano}
