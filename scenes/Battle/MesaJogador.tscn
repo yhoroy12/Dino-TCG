@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://ny6i18slc4m1"]
+[gd_scene load_steps=9 format=3 uid="uid://ny6i18slc4m1"]
 
 [ext_resource type="Script" uid="uid://86ujk6b3n2gl" path="res://Scenes/Battle/mesa_jogador.gd" id="1_brl4g"]
+[ext_resource type="Script" uid="uid://06llchuvqacg" path="res://Scripts/UI/CardPreviewPanel.gd" id="2_qvof3"]
 
 [sub_resource type="Gradient" id="Gradient_brl4g"]
 offsets = PackedFloat32Array(0, 0.00983607, 1)
@@ -85,7 +86,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="CombatRow" type="HBoxContainer" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow"]
 custom_minimum_size = Vector2(0, 154)
@@ -112,7 +113,7 @@ size_flags_vertical = 0
 custom_minimum_size = Vector2(0, 145)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 15
+theme_override_constants/separation = 80
 alignment = 1
 
 [node name="ZonaDescarte" type="Panel" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/BoardRow"]
@@ -122,7 +123,7 @@ layout_mode = 2
 [node name="BenchContainer" type="HBoxContainer" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/BoardRow"]
 custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 50
 alignment = 1
 
 [node name="SlotBanco1" type="Panel" parent="MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/BoardRow/BenchContainer"]
@@ -174,7 +175,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 9
+theme_override_constants/separation = 10
 
 [node name="CombatRow" type="HBoxContainer" parent="MesaContainer/LadoJogador/JogadorFlow"]
 custom_minimum_size = Vector2(0, 154)
@@ -201,7 +202,7 @@ size_flags_vertical = 0
 custom_minimum_size = Vector2(0, 145)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 15
+theme_override_constants/separation = 80
 alignment = 1
 
 [node name="ZonaDescarte" type="Panel" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow"]
@@ -211,7 +212,7 @@ layout_mode = 2
 [node name="BenchContainer" type="HBoxContainer" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow"]
 custom_minimum_size = Vector2(100, 145)
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 50
 alignment = 1
 
 [node name="SlotBanco1" type="Panel" parent="MesaContainer/LadoJogador/JogadorFlow/BoardRow/BenchContainer"]
@@ -259,12 +260,20 @@ one_shot = true
 
 [node name="Progessbar" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 2.0
-offset_top = 527.0
-offset_right = 206.0
-offset_bottom = 551.0
+offset_left = 4.0
+offset_top = 13.0
+offset_right = 208.0
+offset_bottom = 37.0
 fill_mode = 4
 texture_under = SubResource("GradientTexture2D_1dr4q")
 texture_over = SubResource("GradientTexture2D_wnd34")
 texture_progress = SubResource("GradientTexture2D_0ga8h")
 texture_progress_offset = Vector2(2, 2)
+
+[node name="zoom_slot" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 34.0
+offset_top = 172.0
+offset_right = 484.0
+offset_bottom = 872.0
+script = ExtResource("2_qvof3")

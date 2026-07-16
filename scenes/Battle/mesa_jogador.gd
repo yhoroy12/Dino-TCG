@@ -63,6 +63,7 @@ const ID_JOGADOR_HUMANO := 0
 @onready var botao_passar_turno: Button = $Button
 @onready var timer_turno: Timer = $TimerTurno
 @onready var progresso_turno: TextureProgressBar = $Progessbar
+@onready var painel_zoom: CardPreviewPanel = $zoom_slot  # Ajuste o caminho conforme sua árvore
 
 # ==============================================================================
 # VARIÁVEIS INTERNAS
@@ -607,26 +608,23 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 	var eh_ativo_inicial_escondido: bool = (zona_nome == "ativo" and _setup_em_andamento)
 	var face_para_baixo: bool = eh_mao_do_oponente or eh_ativo_inicial_escondido
 
-	# Padrão do envelope (mesmo do deck_builder.gd, agora centralizado
-	# em HelperUI.instanciar_carta_escalada): o Container/Panel-pai só
-	# enxerga um Control vazio com custom_minimum_size já correto; a
-	# carta real fica livre dentro dele, sem brigar por tamanho com
-	# ninguém. Isso elimina a necessidade de call_deferred — a escala
-	# é calculada matematicamente, não depende do _ready() da carta
-	# nem do sort do Container.
 	match zona_nome:
 		"mao":
 			var mao_container: HBoxContainer = jogador_mao if jogador_id == 0 else oponente_mao
 			var resultado := HelperUI.instanciar_carta_escalada(carta, Vector2(9999, ALTURA_MAO), face_para_baixo)
 			if resultado.is_empty():
 				return
+			var card_visual = resultado["visual"]
 			mao_container.add_child(resultado["envelope"])
 
 			# Carta da mão do oponente fica escondida (verso). Não
-			# conectamos input nela: nem clique nem zoom devem expor
-			# o que é.
+			# conectamos input nela: nem clique nem zoom devem expor o que é.
 			if jogador_id == ID_JOGADOR_HUMANO:
-				_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "mao", null)
+				_configurar_inputs_carta(card_visual, carta, jogador_id, "mao", null)
+				
+				# Injeta o Hover para a própria mão do jogador humano
+				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
+				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
@@ -634,30 +632,38 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			if resultado.is_empty():
 				return
 			var envelope: Control = resultado["envelope"]
+			var card_visual = resultado["visual"]
 			campo_ativo.add_child(envelope)
 			_centralizar_envelope_no_painel(envelope)
 
-			# Ativo do oponente é só visual (sem menu de ações) — mas
-			# ainda pode ser alvo de zoom (mantido sem guarda aqui,
-			# já era assim antes).
 			if jogador_id == ID_JOGADOR_HUMANO:
-				_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "ativo", instancia)
+				_configurar_inputs_carta(card_visual, carta, jogador_id, "ativo", instancia)
+			
+			# O Ativo é sempre público (exceto no setup inicial face para baixo)
+			# Permitimos ler as cartas tanto suas quanto do oponente ao passar o mouse
+			if not face_para_baixo:
+				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
+				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
 			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
 			if resultado.is_empty():
 				return
+			var card_visual = resultado["visual"]
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
 					slot.add_child(resultado["envelope"])
 					if jogador_id == ID_JOGADOR_HUMANO:
-						_configurar_inputs_carta(resultado["visual"], carta, jogador_id, "banco", instancia)
+						_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
+					
+					# Cartas no banco são públicas (suas e do oponente). Zoom via Hover ativo:
+					card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
+					card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 					break
 
 		"descarte":
 			pass  # Descarte é apenas visual (pilha), não instancia carta a carta.
-
 
 ## Centraliza um envelope (já com custom_minimum_size correto) dentro
 ## do Panel pai via anchors — substitui o antigo
@@ -808,13 +814,14 @@ func _existe_alvo_de_crescimento(carta_evolucao: CardResource, jogador: PlayerSt
 # SISTEMA DE ZOOM E MENU CONTEXTUAL
 # ==============================================================================
 
-func _abrir_zoom_leitura(carta_visual: Control, carta_resource: CardBaseResource) -> void:
-	if card_zoom_manager == null:
-		print("⚠️ CardZoomManager não disponível")
-		return
+func _abrir_zoom_leitura(_carta_visual: Control, carta_resource: CardBaseResource) -> void:
+	if painel_zoom:
+		# Passamos o recurso direto. O painel se adapta se for CardResource ou EffectResource
+		painel_zoom.exibir_preview(carta_resource, false)
 
-	card_zoom_manager.exibir_zoom_carta(carta_visual, carta_resource)
-
+func _fechar_zoom_leitura() -> void:
+	if painel_zoom:
+		painel_zoom.esconder_preview()
 
 func _abrir_menu_generico(posicao_global: Vector2, opcoes: Array[Dictionary]) -> void:
 	_fechar_menu_contextual()
@@ -1157,11 +1164,19 @@ func _resolver_acao(tipo_acao: String, dados: Dictionary, refrescar_automatico: 
 	acao_jogador_solicitada.emit(tipo_acao, dados)
 
 	if resultado.get("sucesso", false):
-		if refrescar_automatico:
+		# VERIFICAÇÃO DE BLOQUEIO: Se o ataque nocauteou alguém e exige promoção
+		if resultado.get("status") == "aguardando_promocao":
+			var jogador_bloqueado_id: int = resultado.get("jogador_bloqueado")
+			exibir_popup_promocao_obrigatoria(jogador_bloqueado_id)
+		
+		# Fluxo normal sem mortes/bloqueios
+		elif refrescar_automatico:
 			_refrescar_tabuleiro()
 	else:
 		var motivo: String = resultado.get("motivo", "acao_invalida")
 		_exibir_texto_flutuante(_traduzir_motivo_falha(motivo), 1.5)
+
+	return resultado
 
 	return resultado
 
@@ -1429,6 +1444,59 @@ func _get_first_child_of_type(parent: Node, tipo: Object) -> Control:
 			return child as Control
 	return null
 
+# =============================================================================
+# FLUXO DE PROMOÇÃO OBRIGATÓRIA (NOCAUTES)
+# =============================================================================
+
+## Abre o pop-up temporário exigindo que o jogador escolha um substituto do banco.
+func exibir_popup_promocao_obrigatoria(jogador_id: int) -> void:
+	# 1. Recupera o jogador que precisa promover do GameState
+	var jogador_alvo = GameState.jogador_1 if jogador_id == 0 else GameState.jogador_2
+	
+	# Desativa o botão de passar turno para impedir que o jogo prossiga travado
+	botao_passar_turno.disabled = true
+	
+	# 2. Como você não tem as artes prontas, criamos um Pop-up simples via código
+	var popup = ConfirmationDialog.new()
+	popup.title = "PROMOÇÃO OBRIGATÓRIA"
+	popup.dialog_text = "Seu animal ativo foi nocauteado! Escolha um substituto do seu Banco:"
+	
+	# Remove os botões padrão de OK/Cancel para não deixar fechar sem escolher
+	popup.get_cancel_button().visible = false
+	popup.get_ok_button().visible = false
+	
+	# Container para listar os animais disponíveis no banco
+	var container_botoes = VBoxContainer.new()
+	popup.add_child(container_botoes)
+	
+	# 3. Cria um botão para cada animal que está no banco do jogador
+	for animal in jogador_alvo.banco:
+		var botao_animal = Button.new()
+		# Exibe o nome do animal e sua vida restante
+		botao_animal.text = "%s (HP: %d/%d)" % [animal.card.name, animal.current_hp, animal.card.hp]
+		
+		# Quando clicado, envia a ação de promoção e fecha o popup
+		botao_animal.pressed.connect(func():
+			_confirmar_promocao(jogador_id, animal)
+			popup.queue_free()
+		)
+		container_botoes.add_child(botao_animal)
+		
+	# Adiciona o popup na mesa e o exibe centralizado
+	add_child(popup)
+	popup.popup_centered(Vector2i(400, 200))
+
+## Dispara o sinal que o BattleManager está esperando para realizar a promoção física
+func _confirmar_promocao(jogador_id: int, substituto: AnimalInstance) -> void:
+	# Reabilita o botão de passar turno
+	botao_passar_turno.disabled = false
+	
+	# Envia a ação para o gerenciador de batalha
+	acao_jogador_solicitada.emit("promover_ativo", {
+		"jogador_id": jogador_id,
+		"substituto": substituto
+	})
+
 # ==============================================================================
 # CLEANUP
 # ==============================================================================
@@ -1442,7 +1510,6 @@ func _exit_tree() -> void:
 		TurnManager.turno_iniciado.disconnect(_ao_turno_iniciado)
 	if TurnManager and TurnManager.turno_encerrado.is_connected(_ao_turno_encerrado):
 		TurnManager.turno_encerrado.disconnect(_ao_turno_encerrado)
-
 # ==============================================================================
 # FIM DO SCRIPT
 # ==============================================================================

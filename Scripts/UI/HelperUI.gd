@@ -57,8 +57,8 @@
 class_name HelperUI
 extends RefCounted
 
-const CAMINHO_TEXTURA_VERSO := "res://Assets/Cards/verso_nome.jpg"
-const TAMANHO_ORIGINAL_CARTA := Vector2(150, 233)
+const CAMINHO_TEXTURA_VERSO := "res://Assets/Cards/verso_nome.png"
+const TAMANHO_ORIGINAL_CARTA := Vector2(450, 700)
 
 
 ## Instancia a cena de carta correta pro tipo do recurso, aplicando a
@@ -113,7 +113,7 @@ static func instanciar_carta(carta: CardBaseResource, face_para_baixo: bool = fa
 ## Cria um Control só com a arte de verso, sem nenhum CardBaseResource
 ## anexado — usado pra pilha do deck (nunca deve expor qual carta é
 ## qual).
-static func criar_verso_generico(tamanho: Vector2 = TAMANHO_ORIGINAL_CARTA) -> Control:
+static func criar_verso_generico(tamanho: Vector2 = Vector2(100, 145)) -> Control:
 	var textura_rect := TextureRect.new()
 	textura_rect.custom_minimum_size = tamanho
 	textura_rect.size = tamanho
