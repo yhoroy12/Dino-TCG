@@ -39,7 +39,7 @@ static func pode_crescer(
 		return false
 
 	# Verifica se a evolução corresponde ao estágio atual
-	if carta_evolucao.stage_from != instancia.card.card_id:
+	if carta_evolucao.grow_from != instancia.card.card_id:
 		return false
 
 	return true

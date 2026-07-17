@@ -600,10 +600,6 @@ func organizar_cartas_nas_zonas(jogador_id: int) -> void:
 
 
 func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource, instancia: AnimalInstance = null) -> void:
-	# Convenção de TCG: só a mão é informação escondida — mas o Animal
-	# Ativo inicial também fica virado pra baixo enquanto o setup
-	# ainda está rolando (os dois viram juntos em _ao_setup_concluido).
-	# Fora do setup, ativo/banco/descarte são sempre públicos, de frente.
 	var eh_mao_do_oponente: bool = (zona_nome == "mao" and jogador_id != ID_JOGADOR_HUMANO)
 	var eh_ativo_inicial_escondido: bool = (zona_nome == "ativo" and _setup_em_andamento)
 	var face_para_baixo: bool = eh_mao_do_oponente or eh_ativo_inicial_escondido
@@ -617,61 +613,128 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			var card_visual = resultado["visual"]
 			mao_container.add_child(resultado["envelope"])
 
-			# Carta da mão do oponente fica escondida (verso). Não
-			# conectamos input nela: nem clique nem zoom devem expor o que é.
 			if jogador_id == ID_JOGADOR_HUMANO:
 				_configurar_inputs_carta(card_visual, carta, jogador_id, "mao", null)
-				
-				# Injeta o Hover para a própria mão do jogador humano
 				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
 				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
+			
+			var grupo_cartas := Control.new()
+			grupo_cartas.name = "GrupoAtivo"
+			grupo_cartas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			campo_ativo.add_child(grupo_cartas)
+
+			var deslocamento_x : float = 0.0
+			var deslocamento_y : float = 0.0
+			var passo_x : float = 10.0
+			var passo_y : float = 12.0
+
+			# 1. Instancia as energias PRIMEIRO (Ficam atrás na árvore de nós)
+			if instancia is AnimalInstance:
+				for energia_carta in instancia.attached_energies:
+					deslocamento_x += passo_x
+					deslocamento_y += passo_y
+					
+					var res_energia := HelperUI.instanciar_carta_escalada(energia_carta, TAMANHO_SLOT_ATIVO, false)
+					if not res_energia.is_empty():
+						var env_energia: Control = res_energia["envelope"]
+						var vis_energia = res_energia["visual"]
+						
+						grupo_cartas.add_child(env_energia)
+						_centralizar_envelope_no_painel(env_energia)
+						
+						# Aplica a cascata diagonal apenas nas energias
+						env_energia.offset_left += deslocamento_x
+						env_energia.offset_right += deslocamento_x
+						env_energia.offset_top += deslocamento_y
+						env_energia.offset_bottom += deslocamento_y
+						
+						vis_energia.mouse_entered.connect(func(): _abrir_zoom_leitura(vis_energia, energia_carta))
+						vis_energia.mouse_exited.connect(func(): _fechar_zoom_leitura())
+
+			# 2. Instancia o Animal POR ÚLTIMO (Fica na frente de todas as energias)
 			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_ATIVO, face_para_baixo)
 			if resultado.is_empty():
 				return
 			var envelope: Control = resultado["envelope"]
 			var card_visual = resultado["visual"]
-			campo_ativo.add_child(envelope)
+			
+			grupo_cartas.add_child(envelope)
 			_centralizar_envelope_no_painel(envelope)
+			
+			# Animal NÃO recebe deslocamento (Fica na origem exata do slot)
 
 			if jogador_id == ID_JOGADOR_HUMANO:
 				_configurar_inputs_carta(card_visual, carta, jogador_id, "ativo", instancia)
 			
-			# O Ativo é sempre público (exceto no setup inicial face para baixo)
-			# Permitimos ler as cartas tanto suas quanto do oponente ao passar o mouse
 			if not face_para_baixo:
 				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
 				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
-			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
-			if resultado.is_empty():
-				return
-			var card_visual = resultado["visual"]
 			
-			# Encontra o primeiro slot físico vazio da esquerda para a direita
 			var slot_disponivel: Control = null
 			for slot in slots_banco.get_children():
 				if slot.get_child_count() == 0:
 					slot_disponivel = slot
 					break
 			
-			# Se encontrou um slot vazio, adiciona o envelope nele
 			if slot_disponivel != null:
-				slot_disponivel.add_child(resultado["envelope"])
+				var grupo_cartas := Control.new()
+				grupo_cartas.name = "GrupoBanco"
+				grupo_cartas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				slot_disponivel.add_child(grupo_cartas)
+
+				var deslocamento_x : float = 0.0
+				var deslocamento_y : float = 0.0
+				var passo_x : float = 10.0
+				var passo_y : float = 12.0
+
+				# 1. Instancia as energias PRIMEIRO
+				if instancia is AnimalInstance:
+					for energia_carta in instancia.attached_energies:
+						deslocamento_x += passo_x
+						deslocamento_y += passo_y
+						
+						var res_energia := HelperUI.instanciar_carta_escalada(energia_carta, TAMANHO_SLOT_BANCO, false)
+						if not res_energia.is_empty():
+							var env_energia: Control = res_energia["envelope"]
+							var vis_energia = res_energia["visual"]
+							
+							grupo_cartas.add_child(env_energia)
+							_centralizar_envelope_no_painel(env_energia)
+							
+							env_energia.offset_left += deslocamento_x
+							env_energia.offset_right += deslocamento_x
+							env_energia.offset_top += deslocamento_y
+							env_energia.offset_bottom += deslocamento_y
+							
+							vis_energia.mouse_entered.connect(func(): _abrir_zoom_leitura(vis_energia, energia_carta))
+							vis_energia.mouse_exited.connect(func(): _fechar_zoom_leitura())
+
+				# 2. Instancia o Animal POR ÚLTIMO
+				var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
+				if resultado.is_empty():
+					return
+				var card_visual = resultado["visual"]
+				var envelope: Control = resultado["envelope"]
 				
+				grupo_cartas.add_child(envelope)
+				_centralizar_envelope_no_painel(envelope)
+				
+				# Animal NÃO recebe deslocamento
+
 				if jogador_id == ID_JOGADOR_HUMANO:
 					_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
 				
-				# Cartas no banco são públicas. Zoom via Hover ativo:
 				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
 				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
 
 		"descarte":
-			pass  # Descarte é apenas visual (pilha), não instancia carta a carta.
+			pass
 
 ## Centraliza um envelope (já com custom_minimum_size correto) dentro
 ## do Panel pai via anchors — substitui o antigo
@@ -1186,7 +1249,6 @@ func _resolver_acao(tipo_acao: String, dados: Dictionary, refrescar_automatico: 
 
 	return resultado
 
-	return resultado
 
 
 func _traduzir_motivo_falha(motivo: String) -> String:
