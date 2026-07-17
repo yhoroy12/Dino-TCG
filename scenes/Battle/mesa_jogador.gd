@@ -397,8 +397,14 @@ func _fechar_popup_setup() -> void:
 # ==============================================================================
 # CALLBACKS — TURNOS E FASES (TurnManager)
 # ==============================================================================
-
 func _ao_turno_iniciado(jogador_id: int) -> void:
+	# === ADICIONE ESTAS 4 LINHAS AQUI ===
+	var p0 := _obter_player_state(0)
+	var p1 := _obter_player_state(1)
+	_atualizar_visual_contador_comida(0, p0.comida_disponivel)
+	_atualizar_visual_contador_comida(1, p1.comida_disponivel)
+	# ====================================
+
 	jogador_ativo_id = jogador_id
 	turno_em_progresso = true
 	tempo_restante_turno = timer_turno.wait_time
@@ -1014,12 +1020,9 @@ func _tentar_completar_selecao_alvo(instancia: AnimalInstance, contexto: String)
 	_cancelar_selecao_alvo()
 
 
-## Popup simples de "quanto alimentar" — só depois de já ter um
-## animal-alvo escolhido. Usa +/- porque o pool é pequeno (poucos
-## pontos por turno), não precisa de um SpinBox genérico.
+## Popup simples de "quanto alimentar"
 func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
-	var quantidade: int = 1
 	var maximo: int = jogador.comida_disponivel
 
 	var refs := HelperUI.criar_popup_base(
@@ -1030,8 +1033,14 @@ func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	var overlay: Control = refs["overlay"]
 	var vbox: VBoxContainer = refs["vbox"]
 
+	# Criamos um dicionário para garantir que o escopo da variável 
+	# seja compartilhado corretamente entre as lambdas (passagem por referência)
+	var estado_popup := {
+		"quantidade": 1
+	}
+
 	var label_quantidade := Label.new()
-	label_quantidade.text = str(quantidade)
+	label_quantidade.text = str(estado_popup["quantidade"])
 	label_quantidade.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label_quantidade.add_theme_font_size_override("font_size", 28)
 	vbox.add_child(label_quantidade)
@@ -1049,20 +1058,22 @@ func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	linha_botoes.add_child(botao_mais)
 
 	botao_menos.pressed.connect(func():
-		quantidade = maxi(1, quantidade - 1)
-		label_quantidade.text = str(quantidade)
+		estado_popup["quantidade"] = maxi(1, estado_popup["quantidade"] - 1)
+		label_quantidade.text = str(estado_popup["quantidade"])
 	)
+	
 	botao_mais.pressed.connect(func():
-		quantidade = mini(maximo, quantidade + 1)
-		label_quantidade.text = str(quantidade)
+		estado_popup["quantidade"] = mini(maximo, estado_popup["quantidade"] + 1)
+		label_quantidade.text = str(estado_popup["quantidade"])
 	)
 
 	var botao_confirmar := Button.new()
 	botao_confirmar.text = "Confirmar"
 	botao_confirmar.pressed.connect(func():
+		var quant_final: int = estado_popup["quantidade"]
 		overlay.queue_free()
 		_cancelar_selecao_alvo()
-		_acao_alimentar(animal, quantidade)
+		_acao_alimentar(animal, quant_final)
 	)
 	vbox.add_child(botao_confirmar)
 
@@ -1405,7 +1416,7 @@ func _atualizar_visual_contador_comida(jogador_id: int, pontos: int) -> void:
 	contador_panel.add_child(label_comida)
 
 	if not contador_panel.is_connected("mouse_entered", Callable(self, "_ao_mouse_entrou_comida")):
-		contador_panel.mouse_entered.connect(_ao_mouse_entrou_comida.bindv([jogador_id, pontos]))
+		contador_panel.mouse_entered.connect(_ao_mouse_entrou_comida.bind(jogador_id))
 		contador_panel.mouse_exited.connect(_ao_mouse_saiu_comida)
 
 	# Só o pool do jogador humano é clicável — o pool do oponente é
@@ -1435,8 +1446,9 @@ func _ao_input_zona_comida(event: InputEvent) -> void:
 	)
 
 
-func _ao_mouse_entrou_comida(jogador_id: int, pontos: int) -> void:
-	print("ℹ️ Hover em contador de comida: %d pontos" % pontos)
+func _ao_mouse_entrou_comida(jogador_id: int) -> void:
+	var jogador := _obter_player_state(jogador_id)
+	print("ℹ️ Hover em contador de comida: %d pontos" % jogador.comida_disponivel)
 
 
 func _ao_mouse_saiu_comida() -> void:

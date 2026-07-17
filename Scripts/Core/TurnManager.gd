@@ -39,9 +39,9 @@ func iniciar_turno() -> void:
 
 	_resetar_flags_turno()
 
-	turno_iniciado.emit(GameState.jogador_ativo)
-
 	fase_compra()
+	
+	turno_iniciado.emit(GameState.jogador_ativo)
 
 
 func fase_compra() -> void:
