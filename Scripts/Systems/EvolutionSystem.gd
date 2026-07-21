@@ -1,45 +1,29 @@
 class_name EvolutionSystem
 
 # ==================================================
-# EVOLUTION SYSTEM
-# Responsável por:
-# - Verificar Crescimento
-# - Executar Crescimento
-#
-# BUG CORRIGIDO: class_name estava como "GrowSystem", divergindo do
-# nome do arquivo (EvolutionSystem.gd) — padronizado pra bater com o
-# arquivo. Também havia uma segunda implementação de crescer(), morta
-# (depois de um `return true`), que nunca executava e ainda por cima
-# tinha um bug nela (calculava dano_sofrido usando instancia.card.hp
-# depois que instancia.card já tinha sido reatribuído pra carta
-# evoluída, então o cálculo de HP dava errado). Removida.
+# EVOLUTION SYSTEM (Estático Puro)
+# Valida e executa a evolução. Não emite sinais.
 # ==================================================
 
-
-## Regra confirmada com o time: um animal que cresceu neste turno
-## PODE atacar no mesmo turno (só não pode evoluir de novo, nem pode
-## evoluir se acabou de entrar em campo).
 static func pode_crescer(
 	instancia: AnimalInstance,
-	carta_evolucao: CardResource
+	carta_evolucao: CardResource,
+	permite_no_turno_inicial: bool = false
 ) -> bool:
 
-	if instancia == null:
+	if instancia == null or carta_evolucao == null:
 		return false
 
-	if carta_evolucao == null:
+	if instancia.entrou_este_turno or instancia.evoluiu_este_turno:
 		return false
 
-	# Não pode evoluir no turno em que entrou
-	if instancia.entrou_este_turno:
-		return false
-
-	# Não pode evoluir duas vezes no mesmo turno
-	if instancia.evoluiu_este_turno:
-		return false
-
-	# Verifica se a evolução corresponde ao estágio atual
 	if carta_evolucao.grow_from != instancia.card.card_id:
+		return false
+
+	if GameState.turno_atual <= 1 and not permite_no_turno_inicial:
+		return false
+
+	if not FoodSystem.pode_pagar_crescimento(instancia):
 		return false
 
 	return true
@@ -47,29 +31,22 @@ static func pode_crescer(
 
 static func crescer(
 	instancia: AnimalInstance,
-	carta_evolucao: CardResource
+	carta_evolucao: CardResource,
+	permite_no_turno_inicial: bool = false
 ) -> bool:
 
-	if not pode_crescer(instancia, carta_evolucao):
+	if not pode_crescer(instancia, carta_evolucao, permite_no_turno_inicial):
 		return false
 
 	var carta_antiga: CardResource = instancia.card
-	var hp_atual: int = instancia.current_hp
 
-	# A carta do estágio anterior NÃO é descartada — vai "por baixo"
-	# da nova (padrão Pokémon/Digimon TCG, confirmado com o time). Só
-	# é descartada de fato se o animal for nocauteado (ver
-	# KnockoutSystem.processar_nocaute).
+	FoodSystem.consumir_para_crescimento(instancia)
+
 	instancia.pilha_evolucao.append(carta_antiga)
-
 	instancia.card = carta_evolucao
+	instancia.current_hp = min(instancia.current_hp, carta_evolucao.hp)
 
-	var dano_sofrido: int = carta_antiga.hp - hp_atual
-
-	instancia.current_hp = max(
-		1,
-		carta_evolucao.hp - dano_sofrido
-	)
+	ConditionSystem.limpar_todas_as_condicoes(instancia)
 
 	instancia.evoluiu_este_turno = true
 

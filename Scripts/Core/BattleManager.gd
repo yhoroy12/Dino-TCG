@@ -31,7 +31,8 @@ extends Node
 ## A UI escuta isso pra re-renderizar zonas e/ou mostrar feedback de
 ## erro (ex: texto flutuante "Banco cheio").
 signal acao_resolvida(tipo_acao: String, sucesso: bool, motivo: String, dados: Dictionary)
-
+signal ataque_executado(atacante: AnimalInstance, defensor: AnimalInstance, ataque: CardResource, dano: int)
+signal ataque_falhou_paralisia(atacante: AnimalInstance)
 
 # ==================================================
 # API PÚBLICA — FUNIL ÚNICO
@@ -107,10 +108,10 @@ func _jogar_para_banco(dados: Dictionary) -> Dictionary:
 	jogador.mao.remove_at(indice_mao)
 
 	var instancia := AnimalInstance.new(carta)
+	instancia.entrou_este_turno = true # Marcação interna para a regra do EvolutionSystem
 	jogador.banco.append(instancia)
 
 	return {"sucesso": true, "motivo": ""}
-
 
 # ==================================================
 # CRESCIMENTO — evoluir um animal em campo
@@ -289,45 +290,43 @@ func _atacar(dados: Dictionary) -> Dictionary:
 	var ataque: CardResource = dados.get("ataque")
 
 	if not RuleValidator.validate_attack(atacante, ataque):
-		# Ataque nem chegou a ser declarado de forma válida — turno
-		# NÃO é consumido, o jogador pode tentar outra coisa.
 		return {"sucesso": false, "motivo": "ataque_invalido"}
 
-	# A partir daqui o ataque foi validamente declarado — o turno
-	# será encerrado ao final desta função, aconteça o que acontecer
-	# (regra do jogador: "Ataque causará o fim do seu turno").
+	# Transição de Fase
 	TurnManager.fase_ataque()
 
-	# Paralisia: moeda decide se o ataque de fato conecta. A validação
-	# acima (RuleValidator.validate_attack) já não bloqueia por
-	# paralisia de propósito — é resolvido aqui, por sorteio.
+	# Checagem de Paralisia
 	if not ConditionSystem.rodar_moeda_paralisia(atacante):
+		# Emite o sinal do PRÓPRIO BattleManager para a mesa tocar o som/animação de erro
+		ataque_falhou_paralisia.emit(atacante)
 		TurnManager.fase_final()
-		return {"sucesso": false, "motivo": "paralisado_falhou"}
+		return {"sucesso": true, "motivo": "paralisado_falhou", "dano_causado": 0}
 
 	var defensor: AnimalInstance = adversario.ativo
 	var dano: int = CombatSystem.calcular_dano(atacante, defensor, ataque)
 
+	# Aplicação de dano e emissão do sinal do PRÓPRIO BattleManager
 	DamageSystem.aplicar_dano(defensor, dano)
-	# Identifica os IDs numéricos (0 ou 1) de cada jogador para passar ao TurnManager
+	ataque_executado.emit(atacante, defensor, ataque, dano)
+
 	var id_jogador_atual: int = GameState.jogador_ativo
 	var id_adversario: int = 1 if id_jogador_atual == 0 else 0
 
-	# Roda o processamento de nocautes para ambos (pode ser que o atacante morra por recuo)
+	# Processa nocautes
 	TurnManager.atualizar_sistema_de_nocautes(jogador, id_jogador_atual)
 	TurnManager.atualizar_sistema_de_nocautes(adversario, id_adversario)
 
-	# Se alguém ficou sem ativo e tem banco, o jogo entra em estado de bloqueio.
-	# Retornamos o status de bloqueio e NÃO chamamos TurnManager.fase_final() ainda.
+	# Trava do jogo se alguém precisar promover um ativo do banco
 	if GameState.jogador_sem_ativo != -1:
 		return {
 			"sucesso": true, 
+			"motivo": "",
 			"status": "aguardando_promocao", 
 			"jogador_bloqueado": GameState.jogador_sem_ativo,
 			"dano_causado": dano
 		}
 		
-	# Se ninguém ficou sem ativo, encerra o turno normalmente
+	# Encerramento limpo do turno
 	TurnManager.fase_final()
 
 	return {"sucesso": true, "motivo": "", "dano_causado": dano}

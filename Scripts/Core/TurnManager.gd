@@ -109,7 +109,6 @@ func fase_final() -> void:
 func _encerrar_fase_final_e_passar_turno() -> void:
 	turno_encerrado.emit(GameState.jogador_ativo)
 	_passar_turno()
-	_passar_turno()
 
 
 # ==================================================

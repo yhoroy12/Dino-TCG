@@ -102,3 +102,20 @@ static func aplicar_reducao_passiva(player: PlayerState) -> void:
 		return
 
 	consumir_comida(player.ativo, REDUCAO_PASSIVA_ATIVO)
+## Mínimo necessário pra crescer: metade (arred. pra cima) do
+## food_points do estágio ATUAL do animal.
+static func _minimo_para_crescimento(instancia: AnimalInstance) -> int:
+	return ceili(instancia.card.food_points / 2.0)
+
+
+## Retorna true se a comida atualmente investida no animal (do
+## estágio atual, antes de evoluir) atinge o mínimo pra crescer.
+static func pode_pagar_crescimento(instancia: AnimalInstance) -> bool:
+	return instancia.current_food >= _minimo_para_crescimento(instancia)
+
+
+## Consome o mínimo necessário do current_food do animal.
+## Sobra (crédito acima do mínimo) permanece acumulada — NÃO zera
+## current_food inteiro. [Opção A — confirmar se é isso mesmo.]
+static func consumir_para_crescimento(instancia: AnimalInstance) -> void:
+	instancia.current_food -= _minimo_para_crescimento(instancia)

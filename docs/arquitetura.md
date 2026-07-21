@@ -1,117 +1,52 @@
-## Modelo de Dados
-O Dino TCG utiliza dois tipos principais de Resources:
+O Mapeamento da sua Arquitetura
+  ┌─────────────────────────────────────────────────────────┐
+  │                        UI / UX                          │
+  │   (Mesa, Animações, Drag&Drop, Botões, Renderização)   │
+  └────────────────────────────┬────────────────────────────┘
+							   │ 1. Jogador tenta uma ação
+							   ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │                    MANAGERS (O Juiz)                    │
+  │    (BattleManager, TurnManager, SetupManager, etc.)    │
+  └──────────────┬──────────────────────────┬───────────────┘
+				 │ 2. Pergunta / Alica      │ 3. Atualiza
+				 ▼                          ▼
+  ┌───────────────────────────┐  ┌──────────────────────────┐
+  │    SYSTEMS (Calculadora)  │  │   STATE (Ficha do Jogo)  │
+  │  (Combat, Effect, Draw)   │  │ (GameState, PlayerState) │
+  └───────────────────────────┘  └──────────────────────────┘
+1. State (A Ficha do Jogo / Fonte da Verdade)
+O que é: Os dados puros, sem nenhuma inteligência de código. É o equivalente aos papéis, marcadores de vida e contadores impressos na mesa física.
 
+Comportamento: PlayerState, GameState, AnimalInstance, CardResource.
 
-## Resources Principais
+Regra de Ouro: Não contêm regras de negócio complexas. Guardam apenas números, listas (mao, deck, campo), strings e enumerações.
 
-### CardResource
+2. Systems (A Calculadora / Livro de Regras)
+O que é: As ferramentas que o Juiz consulta. São métodos estáticos e puros (static func).
 
-Representa qualquer carta do jogo.
+Comportamento: CombatSystem, EffectSystem, DrawSystem, ConditionSystem.
 
-Tipos suportados:
+Regra de Ouro: Não guardam estado (não têm variáveis globais de saldo/vida) e não alteram fluxo de jogo por conta própria. Eles recebem um dado, fazem a conta/validação e devolvem uma resposta ou alteram a propriedade do dado recebido.
 
-- animal
-- vestigio
-- cataclismo
-- territorio
-- energia
+3. Managers (O Juiz de Mesa)
+O que é: O cérebro orquestrador. É o juiz físico que fica ao lado da mesa olhando tudo.
 
-### AbilityResource
+Comportamento: BattleManager, TurnManager, SetupManager.
 
-Representa habilidades reutilizáveis.
+Como trabalha:
 
-Cada habilidade define:
+O jogador (UI) diz: "Quero atacar o Animal X com o Animal Y usando este Ataque".
 
-- gatilho (trigger)
-- condição (condition)
-- ação (action)
-- alvo (target)
-- quantidade (quantity)
+O Juiz (BattleManager) checa o State (É o turno dele? Tem energia? Está dormindo?).
 
-As habilidades são interpretadas pelo BattleManager durante a partida.
+O Juiz consulta os Systems (CombatSystem.calcular_dano(), ConditionSystem.rodar_moeda()).
 
----
+O Juiz aplica o dano no State (DamageSystem.aplicar_dano()).
 
-## Fluxo de Execução
+O Juiz avisa a UI pelo EventBus ou resposta direta: "Ação validada! Toca a animação de ataque e atualiza o HP na tela".
 
-CardResource
-↓
-AbilityResource
-↓
-GameState
-↓
-BattleManager
-↓
-Resultado da partida
+4. UI/UX (A Mesa Visual e a Mão do Jogador)
+O que é: A camada visual que o jogador humano interage (Cartas na tela, Drag & Drop, Botão de Passar Turno, Animações de Dano).
 
----
-
-## Sistema Data Driven
-
-As habilidades são definidas por parâmetros e não por scripts individuais.
-
-Exemplo:
-
-ao_sofrer_dano
-↓
-causar_dano
-↓
-20
-↓
-adversario ativo
-
-O BattleManager interpreta esses dados durante a partida.
-
-Isso permite criar novas habilidades sem escrever código.
-
----
-
-## Responsabilidades
-
-### CardDatabase
-
-Responsável por:
-
-* Carregar cartas
-* Carregar habilidades
-* Indexar recursos
-* Fornecer acesso global aos dados
-
-### DeckManager
-
-Responsável por:
-
-* Criar decks
-* Salvar decks
-* Carregar decks
-* Validar regras de construção
-
-### GameState
-
-Responsável por:
-
-* Estado da partida
-* Jogadores
-* Turnos
-* Campo
-* Pilhas
-* Condições de vitória
-
-### BattleManager
-
-Responsável por:
-
-* Resolver ataques
-* Aplicar dano
-* Aplicar condições
-* Processar efeitos
-
----
-
-## Princípios
-
-* Single Source of Truth (GameState)
-* Data Driven Design
-* Separação entre Dados e Regras
-* Interface sem lógica de jogo
-* Reutilização de habilidades através de Resources
+Regra de Ouro: A UI nunca altera o State diretamente e nunca aplica dano. Ela só envia intenções de ação para o BattleManager e escuta eventos (EventBus) para desenhar na tela o que o BattleManager aprovou.

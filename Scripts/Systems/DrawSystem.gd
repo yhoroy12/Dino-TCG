@@ -1,17 +1,23 @@
 class_name DrawSystem
-#SISTEMA DE COMPRA E BUSCA DE CARTAS NO DECK
 
-#compra a carta do topo do deck
+# ==================================================
+# DRAW SYSTEM
+# Responsável exclusivamente pela movimentação de cartas
+# entre o Deck e a Mão do jogador.
+# ==================================================
+
+## Compra a carta do topo do deck e adiciona na mão.
 static func comprar_carta(player: PlayerState) -> CardBaseResource:
-	if player.deck.is_empty():
+	if player == null or player.deck.is_empty():
 		return null
+		
 	var carta: CardBaseResource = player.deck.pop_front()
 	player.mao.append(carta)
 	return carta
 
-# Procura uma carta no deck (funciona pra CardResource E EffectResource,
-# já que ambos herdam de CardBaseResource — quem quiser só Animais ou
-# só Efeitos filtra isso dentro do Callable `filtro`, ex:
+
+## Busca cartas no deck via filtro, REMOVE do deck, ADICIONA na mão
+## e EMBARALHA o deck em seguida.
 static func buscar_cartas(
 	player: PlayerState,
 	filtro: Callable,
@@ -19,17 +25,28 @@ static func buscar_cartas(
 ) -> Array[CardBaseResource]:
 
 	var resultado: Array[CardBaseResource] = []
+	if player == null or player.deck.is_empty() or quantidade <= 0:
+		return resultado
 
-	for carta in player.deck:
+	# Iteramos de trás para frente para poder remover do Array sem quebrar os índices
+	for i in range(player.deck.size() - 1, -1, -1):
+		var carta: CardBaseResource = player.deck[i]
 
 		if filtro.call(carta):
 			resultado.append(carta)
+			player.deck.remove_at(i) # Remove do deck
+			player.mao.append(carta) # Adiciona na mão
 
 			if resultado.size() >= quantidade:
 				break
 
+	# Regra essencial de TCG: buscou no deck = embaralha
+	embaralhar_deck(player)
+
 	return resultado
 
-# Embaralha as cartas do deck
-static func embaralhar_deck(player: PlayerState):
-	player.deck.shuffle()
+
+## Embaralha as cartas do deck.
+static func embaralhar_deck(player: PlayerState) -> void:
+	if player != null and not player.deck.is_empty():
+		player.deck.shuffle()
