@@ -34,7 +34,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_card_layout/plugin.cfg")
+enabled=PackedStringArray()
 
 [importer_defaults]
 

@@ -50,3 +50,26 @@ O Juiz avisa a UI pelo EventBus ou resposta direta: "Ação validada! Toca a ani
 O que é: A camada visual que o jogador humano interage (Cartas na tela, Drag & Drop, Botão de Passar Turno, Animações de Dano).
 
 Regra de Ouro: A UI nunca altera o State diretamente e nunca aplica dano. Ela só envia intenções de ação para o BattleManager e escuta eventos (EventBus) para desenhar na tela o que o BattleManager aprovou.
+
+
+ARQUITETURA DA MESA
+
+					┌─────────────────────────┐
+					│     MesaDoTabuleiro     │
+					│   (Interface / Visual)  │
+					└────────────▲────────────┘
+								 │
+				   Notifica Mudanças / Renderiza
+								 │
+					┌────────────┴────────────┘
+					│      BattleManager      │
+					│     (Regras / Juiz)     │
+					└▲───────────────────────▲┘
+					 │                       │
+	  Ações do Jogador 0           Ações do Jogador 1
+					 │                       │
+		   ┌─────────┴─────────┐   ┌─────────┴─────────┐
+		   │  Jogador Humano   │   │  Fonte do Input:  │
+		   │     (Mouse UI)    │   │ 🤖 AIBrain (IA)   │
+		   └───────────────────┘   │        OU         │
+								   │ 🌐 Peer (Network) │

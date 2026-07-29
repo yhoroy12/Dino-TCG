@@ -1,48 +1,40 @@
+# ==================================================
+# Nome: PlayerState
+# Categoria: Core
+# Responsável por armazenar os dados PRIVADOS e métricas do jogador.
+#
+# Contém:
+# - Mão (privada)
+# - Deck (pilha fechada)
+# - Pontos de comida disponíveis (recurso)
+# - Status de vitória/derrota
+# ==================================================
 class_name PlayerState
 extends RefCounted
 
-var id : int
+var id: int
 
-# Deck
-# CardBaseResource (não CardResource) porque deck/mão/descarte podem
-# conter Animal (CardResource) e Energia/Vestígio/Cataclismo/Território
-# (EffectResource) ao mesmo tempo.
-
-var deck : Array[CardBaseResource] = []
-var mao : Array[CardBaseResource] = []
-var descarte : Array[CardBaseResource] = []
-
-# Campo
-
-var ativo : AnimalInstance = null
-
-var banco : Array[AnimalInstance] = []
+# Deck e Mão
+# CardBaseResource permite armazenar Animais e Efeitos misturados.
+var deck: Array[CardBaseResource] = []
+var mao: Array[CardBaseResource] = []
 
 # Recursos
-
-var comida_disponivel : int = 0
+var comida_disponivel: int = 0
 
 # Controle
-
 var venceu := false
 var derrotado := false
 
-
 # ==================================================
-# CONSULTAS
+# CONSULTAS LOCAIS
 # ==================================================
 
-## Retorna todos os animais em campo deste jogador (ativo + banco).
-## Centraliza essa consulta aqui para que TurnManager, EffectSystem,
-## ConditionSystem e (em breve) BattleManager não precisem repetir
-## a lógica de "ativo != null ? [ativo] + banco : banco" cada um
-## com sua própria variação.
-func animais_em_campo() -> Array[AnimalInstance]:
-	var animais: Array[AnimalInstance] = []
-
-	if ativo != null:
-		animais.append(ativo)
-
-	animais.append_array(banco)
-
-	return animais
+## Procura o índice da mão que contém o primeiro animal do estágio Filhote.
+## Retorna -1 se não encontrar.
+func obter_indice_primeiro_filhote() -> int:
+	for i in mao.size():
+		var carta = mao[i]
+		if carta is CardResource and carta.super_type == "animal" and carta.stage == "Filhote":
+			return i
+	return -1

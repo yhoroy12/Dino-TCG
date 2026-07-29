@@ -97,11 +97,22 @@ static func verificar_fome(
 ## Não decide nocaute aqui — só reduz o valor. Quem verifica se isso
 ## resultou em nocaute é o KnockoutSystem (via RuleValidator.validate_starvation
 ## ou esta_nocauteado), chamado logo em seguida pelo TurnManager/BattleManager.
+# No FoodSystem.gd
+# No FoodSystem.gd
+# No FoodSystem.gd
 static func aplicar_reducao_passiva(player: PlayerState) -> void:
-	if player == null or player.ativo == null:
+	var ativo = GameState.obter_ativo(player.id)
+	if ativo == null:
 		return
 
-	consumir_comida(player.ativo, REDUCAO_PASSIVA_ATIVO)
+	if ativo.current_food > 0:
+		ativo.current_food -= 1
+		print("🍖 [FoodSystem] %s consumiu 1 de comida. Comida restante: %d" % [ativo.card.name, ativo.current_food])
+	else:
+		# Zerar o HP força o KnockoutSystem a nocautear o animal neste mesmo turno
+		ativo.current_hp = 0
+		print("💀 [FoodSystem] %s MORREU DE FOME por falta de alimento!" % ativo.card.name)
+
 ## Mínimo necessário pra crescer: metade (arred. pra cima) do
 ## food_points do estágio ATUAL do animal.
 static func _minimo_para_crescimento(instancia: AnimalInstance) -> int:

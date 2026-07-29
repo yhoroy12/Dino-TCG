@@ -84,26 +84,44 @@ func _on_start_pressed() -> void:
 		print("[ModoTreino] ❌ Adversário ou dificuldade não selecionados.")
 		return
 
-	var deck_ativo := DeckManager.obter_deck_ativo()
-	if deck_ativo == "":
-		print("[ModoTreino] ❌ Nenhum deck ativo encontrado. Defina um deck ativo no gerenciador.")
+	var deck_jogador := DeckManager.obter_deck_ativo()
+	if deck_jogador == "":
+		print("[ModoTreino] ❌ Nenhum deck ativo encontrado para o jogador.")
 		return
 
-	print("[ModoTreino] Iniciando treino — adversário: %s | dificuldade: %s | deck: %s" % [
-		_adversario_selecionado.name,
-		_dificuldade,
-		deck_ativo
-	])
+	var nome_adversario: String = _adversario_selecionado.name
+	var deck_ia: String = ""
 
-	# Treino hoje é espelho do próprio deck do jogador — quando existir
-	# um deck específico por adversário (Rex/Trike/Raptor), troca o
-	# primeiro argumento por ele em vez de reusar deck_ativo.
-	if not MatchData.preparar_partida_vs_ia(deck_ativo, _dificuldade, _adversario_selecionado.name):
-		print("[ModoTreino] ❌ Falha ao preparar a partida.")
+	# Mapeamento do Deck da IA por Adversário e Dificuldade
+	match nome_adversario:
+		"Trike":
+			match _dificuldade:
+				"Facil":
+					# Aponta para o arquivo do Trike no user://decks/
+					# (substitua 'deck_trike.json' pelo nome exato do arquivo que está lá)
+					deck_ia = "user://decks/Trike-Deck.json"
+				"Medio":
+					deck_ia = "user://decks/Trike-Deck.json"
+				"Dificil":
+					deck_ia = "user://decks/Trike-Deck.json"
+		"Rex":
+			deck_ia = deck_jogador # Exemplo: fallback temporário (espelho)
+		"Raptor":
+			deck_ia = deck_jogador # Exemplo: fallback temporário (espelho)
+		_:
+			deck_ia = deck_jogador
+
+	print("[ModoTreino] Iniciando Treino:")
+	print("   - Jogador Humano (Deck): ", deck_jogador)
+	print("   - Oponente: %s (%s)" % [nome_adversario, _dificuldade])
+	print("   - IA (Deck): ", deck_ia)
+
+	# Passa exatamente os 3 parâmetros esperados pelo seu MatchData
+	if not MatchData.preparar_partida_vs_ia(deck_ia, _dificuldade, nome_adversario):
+		print("[ModoTreino] ❌ Falha ao preparar a partida no MatchData.")
 		return
 
 	get_tree().change_scene_to_file(CENA_BATALHA)
-
 # -----------------------------------------------------------------------------
 # SELEÇÃO DE ADVERSÁRIO
 # -----------------------------------------------------------------------------

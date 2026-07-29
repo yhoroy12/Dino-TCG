@@ -25,7 +25,7 @@ var conditions : Array = [] #Estatus de condiçao especial
 var entrou_este_turno := true #verifica se foi colocado nesse turno ou nao.
 var evoluiu_este_turno := false# verifica se ele evoluiu nesse turno ou nao.
 var temporary_effects : Array = []
-
+var ja_atacou_este_turno := false # Impede múltiplos ataques no mesmo turno
 # NOVO: pilha de evolução (padrão Pokémon/Digimon TCG). Quando o
 # animal cresce, a carta do estágio anterior NÃO é descartada — ela
 # fica "por baixo" da carta nova, guardada aqui. Regra confirmada
@@ -76,3 +76,8 @@ func tem_energias_suficientes(custo: Dictionary) -> bool:
 	# Valida incolores com o que sobrou
 	if total_disponivel < incolores_necessarios: return false
 	return true
+## Verifica se o animal possui as energias necessárias anexadas para realizar este ataque.
+func pode_usar_ataque(ataque: CardResource) -> bool:
+	if ataque == null:
+		return false
+	return tem_energias_suficientes(ataque.obter_custo_ataque_dict())

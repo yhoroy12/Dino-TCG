@@ -2,43 +2,27 @@
 # Nome: TurnManager
 # Categoria: Managers
 # Responsável pelo fluxo dos turnos.
-#
-# Deve controlar:
-# - Início do turno
-# - Fim do turno
-# - Mudança de jogador
-# - Mudança de fases
-# - Efeitos de início de turno
-# - Efeitos de fim de turno
-#
-# Não deve resolver combates.
-#
-# Autoload (singleton), assim como GameState. NÃO guarda estado
-# próprio de turno/fase — toda essa informação mora em GameState
-# (única fonte da verdade). TurnManager só sabe COMO avançar
-# esse estado, nunca é ele mesmo a fonte da verdade sobre o
-# estado atual.
 # ==================================================
 extends Node
 
-
 # ==================================================
 # SINAIS
-# Fluxo puro, sem carregar dado além do necessário pra UI
-# saber "o que" e "de quem". TurnManager continua sem
-# guardar estado próprio — quem quiser saber a fase ou o
-# turno atual lê em GameState, como sempre.
 # ==================================================
-
 signal turno_iniciado(jogador_id: int)
 signal turno_encerrado(jogador_id: int)
+signal partida_encerrada(vencedor_id: int, motivo: String) 
+signal substituicao_ativo_solicitada(jogador_id: int) # 👈 NOVO: Notifica a UI/IA que precisa escolher um substituto do banco
 
+
+# ==================================================
+# FASES DO TURNO
+# ==================================================
 
 func iniciar_turno() -> void:
 	GameState.fase_atual = GameState.Fase.INICIO
+	print("🟢 [TurnManager] Iniciando Turno %d | Jogador Ativo: %d" % [GameState.turno_atual, GameState.jogador_ativo])
 
 	_resetar_flags_turno()
-
 	fase_compra()
 	
 	turno_iniciado.emit(GameState.jogador_ativo)
@@ -46,80 +30,83 @@ func iniciar_turno() -> void:
 
 func fase_compra() -> void:
 	GameState.fase_atual = GameState.Fase.COMPRA
+	print("🎴 [TurnManager] Entrou na fase_compra (Jogador %d)." % GameState.jogador_ativo)
+
+	# Checa se o jogador da vez perdeu por falta de deck
+	var res_deck = WinConditionSystem.checar_vitoria_por_deckout(GameState.jogador_ativo)
+	if _verificar_e_notificar_fim_de_jogo(res_deck, "Jogador sem cartas no baralho no início do turno!"):
+		return # Interrompe o turno, o jogo acabou.
 
 	DrawSystem.comprar_carta(GameState.get_jogador_atual())
-
 	fase_comida()
 
 
 func fase_comida() -> void:
 	GameState.fase_atual = GameState.Fase.COMIDA
-
-	# Modelo B (confirmado com o time): o jogador ganha pontos no
-	# POOL (comida_disponivel), cumulativos — a distribuição pros
-	# animais é manual, feita pelo jogador na Fase Principal via
-	# BattleManager.processar_acao("distribuir_comida", ...).
+	print("🥩 [TurnManager] Entrou na fase_comida (Jogador %d)." % GameState.jogador_ativo)
+	
 	FoodSystem.ganhar_pool_comida(GameState.get_jogador_atual())
-
 	fase_principal()
 
 
 func fase_principal() -> void:
 	GameState.fase_atual = GameState.Fase.PRINCIPAL
-
-	# Nesta fase o jogador controla o jogo.
-	#
-	# Pode:
-	# - Alimentar
-	# - Energizar
-	# - Crescer
-	# - Recuar
-	# - Usar Habilidades
-	# - Jogar Vestígios
-	# - Jogar Territórios
-	# - Jogar Cataclismos
-	#
-	# O TurnManager não executa nada aqui.
-	# Apenas informa que a fase atual é PRINCIPAL.
+	print("⚙️ [TurnManager] Entrou na fase_principal (Jogador %d)." % GameState.jogador_ativo)
 
 
-## Chamado quando o jogador decide atacar (via BattleManager/UI).
-##
-## IMPORTANTE: esta função NÃO encerra o turno sozinha. O ataque
-## ainda precisa ser resolvido pelo BattleManager (CombatSystem +
-## DamageSystem + KnockoutSystem); só DEPOIS dessa resolução o
-## BattleManager deve chamar TurnManager.fase_final() explicitamente.
 func fase_ataque() -> void:
 	GameState.fase_atual = GameState.Fase.ATAQUE
-	# A partir daqui, o BattleManager assume o controle da
-	# resolução do ataque. O TurnManager espera ser chamado de volta.
+	print("⚔️ [TurnManager] Entrou na fase_ataque (Jogador %d)." % GameState.jogador_ativo)
 
 
 func fase_final() -> void:
 	GameState.fase_atual = GameState.Fase.FINAL
-	
-	if GameState.jogador_sem_ativo != -1:
-		# Emitimos um sinal de aviso para a UI ou apenas travamos a execução.
-		# O jogador precisará mandar a ação "promover_ativo" para destravar o TurnManager.
-		return
-	# Se ninguém ficou sem ativo, segue o fluxo normal de encerramento	
+	print("🔍 [TurnManager] Entrou na fase_final (Jogador %d)." % GameState.jogador_ativo)
+
+	print("➡️ [TurnManager] Processando efeitos e fome de fim de turno...")
 	_processar_fim_de_turno_dos_animais()
+
+	# Avalia se a fome/efeitos causaram nocaute que deixou alguém sem campo (Vitória)
+	var res_campo = WinConditionSystem.checar_vitoria_por_campo_vazio()
+	
+	# Se houve fim de jogo, processa APENAS AQUI e interrompe o fluxo imediatamente
+	if _verificar_e_notificar_fim_de_jogo(res_campo, "Sem animais no banco para substituir o ativo!"):
+		return
+
+	# 👈 CORRIGIDO: Se alguém está sem ativo, emite sinal e interrompe até a substituição ser concluída
+	if GameState.jogador_sem_ativo != -1:
+		var id_pendente: int = GameState.jogador_sem_ativo
+		print("⚠️ [TurnManager] Travado: Jogador %d está sem ativo! Solicitando substituição..." % id_pendente)
+		substituicao_ativo_solicitada.emit(id_pendente)
+		return
+
+	print("🔄 [TurnManager] Fim de turno validado. Avançando para o próximo turno!")
+	_encerrar_fase_final_e_passar_turno()
+
+
+## 👈 NOVO: Chamado externamente (via BattleManager ou MesaUI) assim que a substituição do ativo for concluída.
+func notificar_ativo_substituido(jogador_id: int) -> void:
+	if GameState.jogador_sem_ativo == jogador_id and GameState.obter_ativo(jogador_id) != null:
+		print("✅ [TurnManager] Ativo do Jogador %d foi promovido com sucesso! Retomando validação do turno..." % jogador_id)
+		GameState.jogador_sem_ativo = -1
+		fase_final() # Reavalia a fase final para concluir o turno
+	else:
+		push_error("❌ [TurnManager] Erro ao tentar validar substituição para o Jogador %d." % jogador_id)
 
 	
 func _encerrar_fase_final_e_passar_turno() -> void:
+	print("🏁 [TurnManager] Finalizando turno do Jogador %d." % GameState.jogador_ativo)
 	turno_encerrado.emit(GameState.jogador_ativo)
 	_passar_turno()
 
-
 # ==================================================
-# FUNÇÕES PRIVADAS
+# FUNÇÕES PRIVADAS E SISTEMAS
 # ==================================================
 
 func _passar_turno() -> void:
 	_trocar_jogador()
-
 	GameState.turno_atual += 1
-
+	print("🔀 [TurnManager] Alternando turno. Novo Jogador Ativo: %d | Novo Turno: %d" % [GameState.jogador_ativo, GameState.turno_atual])
 	iniciar_turno()
 
 
@@ -128,65 +115,53 @@ func _trocar_jogador() -> void:
 
 
 func _resetar_flags_turno() -> void:
+	print("🧹 [TurnManager] Resetando flags do turno do Jogador %d..." % GameState.jogador_ativo)
 	GameState.energia_anexada_neste_turno = false
 	GameState.recuo_realizado_neste_turno = false
 	GameState.cataclismo_jogado_neste_turno = false
 
-	# BUG CORRIGIDO: evoluiu_este_turno nunca era resetado depois de
-	# setado true em EvolutionSystem.crescer() — na prática, um animal
-	# que evoluísse uma vez nunca mais poderia evoluir de novo no
-	# resto da partida. Reseta pros animais do jogador cujo turno está
-	# começando agora (GameState.jogador_ativo já foi trocado por
-	# _trocar_jogador antes desta função rodar).
-	for animal in GameState.get_jogador_atual().animais_em_campo():
+	for animal in GameState.obter_animais_em_campo(GameState.jogador_ativo):
 		animal.evoluiu_este_turno = false
 
+
 func atualizar_sistema_de_nocautes(player: PlayerState, player_id: int) -> void:
-	# Executa a limpeza física das cartas nocauteadas
+	print("💥 [TurnManager] Checando nocautes para o Jogador %d..." % player_id)
 	var nocauteados = KnockoutSystem.processar_todos_nocautes(player)
 	
-	# Se o ativo foi nocauteado e há animais no banco para substituir:
-	if player.ativo == null and not player.banco.is_empty():
+	if GameState.obter_ativo(player_id) == null and not GameState.obter_banco(player_id).is_empty():
 		GameState.jogador_sem_ativo = player_id
+		print("⚠️ [TurnManager] Jogador %d ficou sem animal ativo, mas possui reserva no banco." % player_id)
 
-## Processa fim de turno de TODOS os animais em campo (ativo +
-## banco) dos DOIS jogadores: condições especiais (ConditionSystem)
-## e efeitos temporários (EffectSystem).
-##
-## Precisa rodar para os dois jogadores, não só para o jogador da
-## vez, porque um animal do adversário também pode estar contando
-## turnos de uma condição ou de um efeito com Escopo.TURNO_ATUAL.
-##
-## era_turno_do_dono diferencia os dois grupos: para os animais do
-## jogador cujo turno está terminando agora, passamos true (conta
-## para efeitos com Escopo.TURNOS_DO_DONO); para os animais do
-## adversário, passamos false.
+
 func _processar_fim_de_turno_dos_animais() -> void:
-	var jogador_da_vez: PlayerState = GameState.get_jogador_atual()
-	var jogador_adversario: PlayerState = GameState.get_jogador_adversario()
+	var id_da_vez: int = GameState.jogador_ativo
+	var id_adversario: int = 1 if id_da_vez == 0 else 0
 
-	for animal in jogador_da_vez.animais_em_campo():
+	for animal in GameState.obter_animais_em_campo(id_da_vez):
 		ConditionSystem.processar_fim_de_turno(animal)
 		EffectSystem.processar_fim_de_turno(animal, true)
-
-		# A partir daqui o animal deixa de ser "recém-entrado": ele
-		# sobreviveu a uma troca de turno completa do próprio dono.
-		# RuleValidator.validate_attack depende disso para liberar o
-		# ataque em turnos seguintes.
 		animal.entrou_este_turno = false
 
-	for animal in jogador_adversario.animais_em_campo():
+	for animal in GameState.obter_animais_em_campo(id_adversario):
 		ConditionSystem.processar_fim_de_turno(animal)
 		EffectSystem.processar_fim_de_turno(animal, false)
 
-	# Regra confirmada com o time: a redução passiva de 1 ponto de
-	# comida por turno só se aplica ao Animal ATIVO do jogador cujo
-	# turno está terminando — o Banco Reserva nunca perde comida
-	# passivamente (só por efeito de carta/habilidade explícito).
-	FoodSystem.aplicar_reducao_passiva(jogador_da_vez)
+	FoodSystem.aplicar_reducao_passiva(GameState.get_jogador_atual())
+	atualizar_sistema_de_nocautes(GameState.get_jogador_atual(), id_da_vez)
 
-	# Checa nocautes causados pela redução de comida acima (fome).
-	# Nocautes por dano de combate já são resolvidos na hora do
-	# ataque, pelo BattleManager — esta chamada aqui cobre
-	# especificamente o gatilho de fim de turno.
-	atualizar_sistema_de_nocautes(jogador_da_vez, GameState.jogador_ativo)
+
+## Função auxiliar interna no TurnManager.gd para validar vitórias:
+func _verificar_e_notificar_fim_de_jogo(resultado: WinConditionSystem.Resultado, motivo: String) -> bool:
+	if resultado == WinConditionSystem.Resultado.NENHUM:
+		return false
+
+	# 1. Atualiza GameState
+	WinConditionSystem.processar_resultado(resultado, motivo)
+
+	# 2. Pega o ID numérico correto (0, 1 ou -1)
+	var vencedor_id: int = WinConditionSystem.obter_vencedor_id(resultado)
+
+	# 3. Emite o sinal UMA ÚNICA VEZ
+	print("📢 [TurnManager] EMITINDO SINAL: partida_encerrada(Vencedor: %d, Motivo: '%s')" % [vencedor_id, motivo])
+	partida_encerrada.emit(vencedor_id, motivo)
+	return true
