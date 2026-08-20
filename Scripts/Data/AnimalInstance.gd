@@ -26,19 +26,6 @@ var entrou_este_turno := true #verifica se foi colocado nesse turno ou nao.
 var evoluiu_este_turno := false# verifica se ele evoluiu nesse turno ou nao.
 var temporary_effects : Array = []
 var ja_atacou_este_turno := false # Impede múltiplos ataques no mesmo turno
-# NOVO: pilha de evolução (padrão Pokémon/Digimon TCG). Quando o
-# animal cresce, a carta do estágio anterior NÃO é descartada — ela
-# fica "por baixo" da carta nova, guardada aqui. Regra confirmada
-# com o time:
-# - Só vai pra pilha de descarte do dono quando o animal é
-#   nocauteado (KnockoutSystem.processar_nocaute descarta tudo que
-#   está aqui, junto com a carta atual e as energias anexadas).
-# - Se a carta de cima (a atual, `card`) for devolvida pra mão do
-#   jogador por algum efeito (nenhuma carta faz isso ainda —
-#   Vestígio/Cataclismo são prioridades futuras), as cartas
-#   empilhadas aqui vão pro descarte também, NÃO voltam pra mão junto
-#   — só a carta do topo retorna. Ainda não há gatilho implementado
-#   pra esse caso (não existe carta com esse efeito no projeto hoje).
 var pilha_evolucao : Array[CardResource] = []
 
 func _init(card_resource : CardResource):
@@ -56,27 +43,55 @@ func _init(card_resource : CardResource):
 func contar_energias_por_cor() -> Dictionary:
 	var contagem := {}
 	for energia in attached_energies:
-		var cor: String = energia.mec_filter_color
-		contagem[cor] = contagem.get(cor, 0) + 1
+		if energia == null:
+			continue
+		
+		var cor_raw: String = ""
+		
+		# Duck Typing: Funciona independente da classe da carta (CardResource, EffectResource, etc)
+		if "mec_filter_color" in energia and not str(energia.mec_filter_color).strip_edges().is_empty():
+			cor_raw = str(energia.mec_filter_color)
+		elif "color" in energia:
+			cor_raw = str(energia.color)
+
+		var cor: String = cor_raw.strip_edges().to_lower()
+		if not cor.is_empty():
+			contagem[cor] = contagem.get(cor, 0) + 1
+
 	return contagem
-
+	
 func tem_energias_suficientes(custo: Dictionary) -> bool:
-	var disponivel := contar_energias_por_cor()
-	var total_disponivel := attached_energies.size()
-	var incolores_necessarios := custo.get("incolor", 0) as int
+	if custo.is_empty():
+		return true
 
-	# Valida cores obrigatórias primeiro
-	for cor in custo:
-		if cor == "incolor": continue
+	# Clona a contagem para podermos abater conforme validamos
+	var disponiveis := contar_energias_por_cor()
+
+	# PASSO 1: Valida e abate os custos de cores específicas (ex: "azul", "amarelo")
+	for cor in custo.keys():
+		if cor == "incolor":
+			continue
+
 		var necessario: int = custo[cor]
-		var tem: int = disponivel.get(cor, 0)
-		if tem < necessario: return false
-		total_disponivel -= necessario
+		var possui: int = disponiveis.get(cor, 0)
 
-	# Valida incolores com o que sobrou
-	if total_disponivel < incolores_necessarios: return false
+		if possui < necessario:
+			return false # Faltou energia da cor exata exigida
+
+		disponiveis[cor] -= necessario
+
+	# PASSO 2: Soma todas as energias sobrantes de qualquer cor para pagar o custo 'incolor'
+	var incolor_necessario: int = custo.get("incolor", 0)
+	if incolor_necessario > 0:
+		var total_sobra: int = 0
+		for cor in disponiveis.keys():
+			total_sobra += disponiveis[cor]
+
+		if total_sobra < incolor_necessario:
+			return false # Não sobrou energia suficiente para o custo incolor
+
 	return true
-## Verifica se o animal possui as energias necessárias anexadas para realizar este ataque.
+	
 func pode_usar_ataque(ataque: CardResource) -> bool:
 	if ataque == null:
 		return false

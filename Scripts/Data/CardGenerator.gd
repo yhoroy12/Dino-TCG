@@ -20,9 +20,9 @@ extends Node
 #    funciona num build exportado do jogo. É ferramenta de dev.
 # ==================================================
 
-const CSV_ANIMAIS := "B:/GameDev/DINO TCG GAME/Dinogame/Prehistoric TCG/animais_profissional.csv"
-const CSV_EFEITOS := "B:/GameDev/DINO TCG GAME/Dinogame/Prehistoric TCG/efeitos_profissional.csv"
-const CSV_HABILIDADES := "B:/GameDev/DINO TCG GAME/Dinogame/Prehistoric TCG/habilidade_profissional.csv"
+const CSV_ANIMAIS := "C:/Gamedev/animais_profissional.csv"
+const CSV_EFEITOS := "C:/Gamedev/efeitos_profissional.csv"
+const CSV_HABILIDADES := "C:/Gamedev/habilidade_profissional.csv"
 
 const BASE_CARDS_PATH := "res://Resources/Cards/"
 const PATH_HABILIDADES := "res://Resources/Abilities/"

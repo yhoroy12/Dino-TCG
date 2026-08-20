@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_467gi")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "CURAR"
+mec_resource = "HP"
+mec_target_player = "DONO"
+mec_target_zone = "ATIVO_BANCO"
+mec_quantity = 20
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = ""
 id = "A149"
 name = "Cicatrização Acelerada"
 super_type = "vestigio"
-text_ui = "Cure 20 de dano de um monstro"
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "curar"
-mec_resource = "hp"
-mec_target_player = "dono"
-mec_target_zone = "escolha_campo"
-mec_quantity = 2
-mec_status_name = ""
-mec_filter_color = "marrom"
-mec_filter_stage = ""
-mec_origin_zone = "deck"
-mec_duration = 0
-mec_custom_json = "{\"custo_descarte\": 1}"
+text_ui = "Cure 20 pontos de dano de 1 dos seus dinossauros."

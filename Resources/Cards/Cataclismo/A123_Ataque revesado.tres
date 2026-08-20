@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_umjmr")
+mec_trigger = "AO_JOGAR"
+mec_condition = "NO_BANCO"
+mec_action = "ENERGIZAR"
+mec_resource = "ENERGIA"
+mec_target_player = "DONO"
+mec_target_zone = "ATIVO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "BANCO"
+mec_duration = 0
+mec_custom_json = ""
 id = "A123"
 name = "Ataque revesado"
 super_type = "cataclismo"
-text_ui = "Mova uma energia dos seus dinossauros para o dinossauro ativo."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "energia"
-mec_target_player = "dono"
-mec_target_zone = "ativo"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = "escolha_banco_dono"
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Mova 1 Energia de 1 dos seus dinossauros no Banco para o seu Dinossauro Ativo."

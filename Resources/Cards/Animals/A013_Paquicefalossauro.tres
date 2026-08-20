@@ -1,12 +1,9 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://d1h4eosejbsm4"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_ve7c4"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_ve7c4"]
 
 [resource]
 script = ExtResource("1_ve7c4")
-id = "A013"
-name = "Paquicefalossauro"
-super_type = "animal"
 sub_type = "Herbivoro"
 color = "amarelo"
 stage = "Jovem"
@@ -20,10 +17,9 @@ ability_name = ""
 attack_name = "Cabeçada"
 attack_cost = "🟡🟡"
 damage_base = 50
-damage_type = "fixo"
-text_ui = ""
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A013"
+name = "Paquicefalossauro"
+super_type = "animal"
+text_ui = ""

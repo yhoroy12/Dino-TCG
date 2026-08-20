@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_iovgv")
+mec_trigger = "PASSIVAMENTE"
+mec_condition = "SEMPRE"
+mec_action = "MODIFICAR_CUSTO"
+mec_resource = "CUSTO_RECUO"
+mec_target_player = "AMBOS"
+mec_target_zone = "TERRITORIO"
+mec_quantity = 0
+mec_status_name = "NENHUM"
+mec_filter_color = "AMARELO"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"zerar_custo\": true}"
 id = "A153"
 name = "Planicies douradas"
 super_type = "territorio"
-text_ui = "Os dinossauros amarelos não tem custo de recuo"
-mec_trigger = "passivamente"
-mec_condition = "sempre"
-mec_action = "zerar_custo"
-mec_resource = "recuo"
-mec_target_player = "todos_jogadores"
-mec_target_zone = "todos_campo"
-mec_quantity = 0
-mec_status_name = ""
-mec_filter_color = "amarelo"
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Os dinossauros Amarelos não têm Custo de Recuo."

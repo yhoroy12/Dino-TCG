@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://on1vth5pihyt"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_kq1pt"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_kq1pt"]
 
 [resource]
 script = ExtResource("1_kq1pt")
@@ -17,13 +17,13 @@ ability_name = "Pernas Rápidas"
 attack_name = "Chute alto"
 attack_cost = "🟡⚪"
 damage_base = 80
-damage_type = "fixo"
-mec_trigger = "ao_atacar"
-mec_condition = "moeda"
-mec_action = "causar_dano"
-mec_resource = "hp"
-mec_target_player = "dono"
-mec_target_zone = "ativo"
+damage_type = "FIXO"
+mec_trigger = "AO_ATACAR"
+mec_condition = "MOEDA"
+mec_action = "CAUSAR_DANO"
+mec_resource = "HP"
+mec_target_player = "DONO"
+mec_target_zone = "ATIVO"
 mec_quantity = 20
 mec_status_name = ""
 mec_filter_color = ""

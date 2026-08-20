@@ -7,6 +7,14 @@ extends CardBaseResource
 # id, name, super_type e text_ui vêm de CardBaseResource — não
 # duplicar esses campos aqui.
 # ==================================================
+const MAPA_EMOJIS := {
+	"🔵": "azul",
+	"🟢": "verde",
+	"🔴": "vermelho",
+	"🟡": "amarelo",
+	"🟤": "marrom",
+	"⚪": "incolor"
+}
 
 @export_group("Identificadores")
 @export var sub_type: String = ""
@@ -50,28 +58,54 @@ func _init() -> void:
 ## Aceita formatos como "amarelo:1, incolor:2", "azul:2" ou vazio.
 func obter_custo_ataque_dict() -> Dictionary:
 	var custo := {}
-	var texto_limpo := attack_cost.strip_edges()
-	
-	if texto_limpo.is_empty():
+	var texto := attack_cost.strip_edges()
+
+	if texto.is_empty():
 		return custo
 
-	# Separa múltiplos custos por vírgula
-	var partes := texto_limpo.split(",")
-	for parte in partes:
-		var item := parte.strip_edges()
-		if item.is_empty():
-			continue
-		
-		# Processa chave:valor (ex: "amarelo:1")
-		if ":" in item:
-			var sub := item.split(":")
-			var cor := sub[0].strip_edges().to_lower()
-			var qtd := sub[1].strip_edges().to_int()
-			if qtd > 0:
-				custo[cor] = custo.get(cor, 0) + qtd
-		else:
-			# Caso venha apenas a cor sem quantidade definida, assume 1
-			var cor := item.to_lower()
-			custo[cor] = custo.get(cor, 0) + 1
+	# Caso 1: Custo escrito com vírgula ou dois pontos (ex: "azul:1, incolor:1" ou "🔵:1, ⚪:1")
+	if "," in texto or ":" in texto:
+		var partes := texto.split(",")
+		for parte in partes:
+			var item := parte.strip_edges()
+			if item.is_empty(): continue
+
+			var cor_raw := item
+			var qtd := 1
+			if ":" in item:
+				var sub := item.split(":")
+				cor_raw = sub[0].strip_edges()
+				qtd = sub[1].strip_edges().to_int()
+
+			var cor_norm := _normalizar_cor(cor_raw)
+			if qtd > 0 and not cor_norm.is_empty():
+				custo[cor_norm] = custo.get(cor_norm, 0) + qtd
+
+	# Caso 2: Custo escrito como sequência de emojis colados (ex: "🔵⚪" ou "🔵🔵🟡")
+	else:
+		for caracter in texto:
+			var c_str := str(caracter).strip_edges()
+			if c_str.is_empty(): continue
+			var cor_norm := _normalizar_cor(c_str)
+			if not cor_norm.is_empty():
+				custo[cor_norm] = custo.get(cor_norm, 0) + 1
 
 	return custo
+
+
+func _normalizar_cor(valor: String) -> String:
+	valor = valor.strip_edges().to_lower()
+	
+	# Se for um emoji conhecido, retorna o texto correspondente
+	if MAPA_EMOJIS.has(valor):
+		return MAPA_EMOJIS[valor]
+
+	# Fallbacks para textos equivalentes
+	match valor:
+		"blue", "azul": return "azul"
+		"green", "verde": return "verde"
+		"red", "vermelho": return "vermelho"
+		"yellow", "amarelo": return "amarelo"
+		"brown", "marrom": return "marrom"
+		"colorless", "incolor", "cinza", "sem_cor": return "incolor"
+		_: return valor

@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_rwst8")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "BUSCAR"
+mec_resource = "CARTA"
+mec_target_player = "DONO"
+mec_target_zone = "MAO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "VERDE"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "DECK"
+mec_duration = 0
+mec_custom_json = "{\"condicao_topo\": {\"cor\": \"VERDE\",falha: \"fundo_deck\"}"
 id = "A140"
 name = "Ninho verde"
 super_type = "vestigio"
-text_ui = "Olhe a primeira carta do seu baralho se for um dinossauro verde coloque em sua mão, se não coloque embaixo do baralho."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "carta"
-mec_target_player = "dono"
-mec_target_zone = "mao"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = "filhote"
-mec_origin_zone = "zona_fossil"
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Olhe a carta do topo do seu baralho. Se for um dinossauro Verde coloque-a na sua mão. Caso contrário coloque-a no fundo do seu baralho."

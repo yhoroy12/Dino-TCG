@@ -15,8 +15,10 @@
 #
 # Fluxo esperado:
 # BattleManager -> CombatSystem.calcular_dano()
+#                -> AttackEffectResolver.calcular_dano_ataque() (dano base + mecânicas)
 #                -> DamageSystem.aplicar_dano() (aplica o int retornado)
-#                -> KnockoutSystem.verificar_nocaute()
+#                -> AttackEffectResolver.processar_efeito_pos_ataque() (status/efeitos colaterais)
+#                -> TurnManager.atualizar_sistema_de_nocautes()
 #
 # Regra de Data Driven:
 # Nenhuma função aqui deve comparar "card.name". Toda regra deve
@@ -62,7 +64,10 @@ static func calcular_dano(
 	if atacante == null or defensor == null or ataque == null:
 		return 0
 
-	var dano: int = _obter_dano_base(ataque)
+	# 🔴 CORREÇÃO/NOVO: Substitui a leitura direta de ataque.damage_base 
+	# pelo cálculo do AttackEffectResolver, que processa mecânicas e condições!
+	var id_atacante: int = GameState.jogador_ativo
+	var dano: int = AttackEffectResolver.calcular_dano_ataque(ataque, atacante, defensor, id_atacante)
 
 	dano = _aplicar_fraqueza(dano, atacante, defensor)
 	dano = _aplicar_resistencia(dano, atacante, defensor)
@@ -72,21 +77,10 @@ static func calcular_dano(
 
 	return _validar_dano_final(dano)
 
-
 # ==================================================
 # ETAPAS DO CÁLCULO (privadas)
 # Cada função representa UMA regra do rulebook.
 # ==================================================
-
-## Extrai o dano base definido na carta/ataque.
-## Ponto único de leitura do dado bruto, isolando o resto
-## do sistema de onde o dano_base realmente é armazenado.
-static func _obter_dano_base(
-	ataque: CardResource
-) -> int:
-
-	return max(0, ataque.damage_base)
-
 
 ## Aplica a regra de Fraqueza.
 ## Se a cor do atacante corresponde à fraqueza do defensor,

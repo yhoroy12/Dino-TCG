@@ -283,3 +283,105 @@ static func criar_popup_base(parent: Node, titulo: String, subtitulo: String) ->
 	parent.add_child(overlay)
 
 	return {"overlay": overlay, "painel": painel, "vbox": vbox}
+
+static func adicionar_indicador_vida_e_dano(envelope: Control, instancia: RefCounted) -> void:
+	if envelope == null or instancia == null:
+		return
+
+	# Pega o recurso da carta dentro da instância
+	var carta: CardBaseResource = instancia.get("card") if "card" in instancia else null
+	if carta == null:
+		return
+
+	# Garante que não duplique a badge ao redesenhar a mesa
+	var badge_antiga := envelope.get_node_or_null("BadgeHP")
+	if badge_antiga:
+		badge_antiga.queue_free()
+
+	var hp_maximo: int = int(carta.get("hp")) if "hp" in carta else 0
+	var hp_atual: int = int(instancia.get("current_hp")) if "current_hp" in instancia else hp_maximo
+	var dano_sofrido: int = max(0, hp_maximo - hp_atual)
+
+	# Se a carta não possui HP válido (ex: 0 de HP máximo), cancela a criação
+	if hp_maximo <= 0:
+		return
+
+	# Container principal da badge (alinhado no topo do envelope)
+	var badge := PanelContainer.new()
+	badge.name = "BadgeHP"
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	badge.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	badge.offset_top = -24.0
+	badge.offset_bottom = 0.0
+
+	# Estilização do fundo da badge
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.1, 0.88)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	badge.add_theme_stylebox_override("panel", style)
+
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_child(hbox)
+
+	# Label de HP (Ex: "HP: 60/100")
+	var label_hp := Label.new()
+	label_hp.text = "HP: %d/%d" % [hp_atual, hp_maximo]
+	label_hp.add_theme_font_size_override("font_size", 12)
+	label_hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Indicador de cor por estado de vida (Verde -> Normal / Laranja-Vermelho -> Crítico)
+	var pct_vida := float(hp_atual) / float(hp_maximo) if hp_maximo > 0 else 0.0
+	if pct_vida <= 0.3:
+		label_hp.add_theme_color_override("font_color", Color.ORANGE_RED)
+	else:
+		label_hp.add_theme_color_override("font_color", Color.GREEN)
+
+	hbox.add_child(label_hp)
+
+	# Marcador de dano recebido em destaque (Ex: "(-40)")
+	if dano_sofrido > 0:
+		var label_dano := Label.new()
+		label_dano.text = " (-%d)" % dano_sofrido
+		label_dano.add_theme_font_size_override("font_size", 12)
+		label_dano.add_theme_color_override("font_color", Color.RED)
+		label_dano.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hbox.add_child(label_dano)
+
+	envelope.add_child(badge)
+
+## Exibe um texto flutuante temporário com animação de subida e fade-out.
+## parent: O nó (Control/Node) onde o texto será inserido temporariamente.
+static func exibir_texto_flutuante(parent: Node, texto: String, duracao: float = 1.5) -> void:
+	if parent == null or not is_instance_valid(parent):
+		return
+
+	var label := Label.new()
+	label.text = texto
+	label.add_theme_font_size_override("font_size", 48)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	parent.add_child(label)
+
+	var tween: Tween = parent.create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_CUBIC)
+
+	var posicao_inicial := label.position
+	tween.parallel().tween_property(label, "modulate", Color.TRANSPARENT, duracao)
+	tween.parallel().tween_property(label, "position", posicao_inicial + Vector2(0, -30), duracao)
+
+	tween.tween_callback(func():
+		if is_instance_valid(label):
+			label.queue_free()
+	)

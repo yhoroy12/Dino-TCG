@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_pucty")
+mec_trigger = "UMA_VEZ_POR_TURNO"
+mec_condition = "SEMPRE"
+mec_action = "COMPRAR"
+mec_resource = "CARTA"
+mec_target_player = "AMBOS"
+mec_target_zone = "MAO"
+mec_quantity = 2
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "DECK"
+mec_duration = 0
+mec_custom_json = "{\"custo_descarte\": 1, \"cor\":\"VERMELHO OU MARROM\"}"
 id = "A150"
 name = "Terra Abrasada"
 super_type = "territorio"
-text_ui = "Uma vez durante o turno de cada jogador, ele pode descarte uma energia vermelha ou marrom e compre 2 cartas"
-mec_trigger = "uma_vez_por_turno"
-mec_condition = "sempre"
-mec_action = "comprar"
-mec_resource = "carta"
-mec_target_player = "todos_jogadores"
-mec_target_zone = "mao"
-mec_quantity = 2
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = "{\"custo_descarte\": 1, \"cores_permitidas\": [\"vermelha\", \"marrom\"]}"
+text_ui = "Uma vez durante o turno de cada jogador, esse jogador pode descartar 1 Energia Vermelha ou Marrom da mão dele. Se fizer isso, o jogador compra 2 cartas."

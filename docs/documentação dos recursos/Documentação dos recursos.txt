@@ -1,0 +1,319 @@
+# Arquitetura de Resources — Dino TCG
+
+Documento de referência sobre como os dados e os Resources do jogo estão organizados, do CSV bruto até o `GameState` em runtime. Serve como guia para criar novas cartas, novos tipos de Resource, e como checklist de revisão.
+
+## Índice
+
+1. [Dicionário das mecânicas](#1-dicionário-das-mecânicas)[cite: 2]
+2. [Modelo padrão dos arquivos](#2-modelo-padrão-dos-arquivos)[cite: 2]
+3. [Estrutura dos Resources principais](#3-estrutura-dos-resources-principais)[cite: 2]
+4. [Fluxo de dados (CSV → Resource → GameState)](#4-fluxo-de-dados-csv--resource--gamestate)[cite: 2]
+5. [Convenções, nomenclatura e checklist de revisão](#5-convenções-nomenclatura-e-checklist-de-revisão)[cite: 2]
+6. [Achados da auditoria de dependências (grafo real)](#6-achados-da-auditoria-de-dependências-grafo-real)[cite: 2]
+
+---
+
+## 1. Dicionário das mecânicas
+
+Esta seção documenta os campos `mec_*` do CSV — a "linguagem" que o `BattleManager` interpreta para resolver efeitos de qualquer carta, sem precisar de código específico por carta.
+
+### 1.1 `mec_trigger` — momento de ativação
+
+| Valor | Em uso hoje? | Descrição |
+|---|---|---|
+| `ao_atacar` | ✅ Sim (único valor usado no dataset atual) | Dispara quando a carta ataca |
+
+**📌 Planejado para as próximas fases** (reservar no enum agora para não exigir migração de dados depois):
+
+| Valor proposto | Fase que provavelmente vai usar | Descrição |
+|---|---|---|
+| `ao_entrar` | Vestígios / Cataclismos | Dispara quando a carta entra em campo (ativo ou banco) |
+| `ao_ser_nocauteado` | Condições especiais | Dispara quando a carta é eliminada |
+| `inicio_turno` | Territórios / Cataclismos | Dispara no início do turno do dono |
+| `fim_turno` | Territórios / Cataclismos | Dispara no fim do turno do dono |
+| `ao_evoluir` | Validação das mecânicas centrais | Dispara quando a carta evolui via `grow_from` |
+| `ao_recuar` | Condições especiais | Dispara quando a carta recua |
+| `passivo_continuo` | Vestígios | Efeito ativo constantemente enquanto a carta está em campo — não é um "disparo" pontual, precisa de tratamento diferente no `BattleManager` (registro/desregistro de efeito persistente, não execução única) |
+| `ao_ativar_cataclismo` | Cataclismos | Dispara quando uma carta de Cataclismo é resolvida |
+
+> **Decisão em aberto:** avaliar se esses triggers cabem no mesmo `mec_trigger` genérico de `CardResource`/`AbilityResource`, ou se Territórios e Cataclismos merecem Resources próprios (`TerritoryResource`, `CataclysmResource`) com seu próprio conjunto de triggers — ver seção 3.
+
+### 1.2 `mec_condition` — condição para o efeito
+
+| Valor | Descrição |
+|---|---|
+| `sempre` | Sem condição, efeito sempre ocorre |
+| `moeda` | Depende do resultado de um lançamento de moeda (detalhes em `mec_custom_json`: `quantidade_moedas`, `caras_necessarias`, `tipo_teste`) |
+| `status` | Depende de um status já aplicado (`mec_custom_json.status_inimigo`) |
+| `estagio` | Depende do estágio de outra carta em campo (`mec_filter_stage`) |
+
+### 1.3 `mec_action` — o que o efeito faz
+
+| Valor | Descrição | `mec_resource` esperado |
+|---|---|---|
+| `causar_dano` | Aplica dano de HP | `hp` |
+| `curar` | Remove dano acumulado | `hp` |
+| `aplicar_status` | Aplica uma condição (ver 1.6) | `status` |
+| `bloquear_acao` | Impede uma ação futura (atacar/recuar) | `atacar` ou `recuo` |
+| `modificar_dano_causado` | Buff/debuff temporário de dano causado | `atacar`[cite: 2] |
+| `modificar_dano_recebido` | Buff/debuff temporário de dano recebido[cite: 2] | `hp`[cite: 2] |
+| `descartar` | Remove carta/energia de uma zona[cite: 2] | `carta` ou `energia`[cite: 2] |
+| `comprar` | Compra carta do deck[cite: 2] | `carta`[cite: 2] |
+| `puxar` | Busca carta específica (deck → mão/banco/campo)[cite: 2] | `carta` ou `energia`[cite: 2] |
+| `forcar_recuo` | Força a troca do ativo do oponente[cite: 2] | — |
+
+### 1.4 `mec_resource` — recurso afetado[cite: 2]
+
+Valores em uso: `atacar`, `carta`, `energia`, `hp`, `recuo`, `status`[cite: 2].
+
+### 1.5 `mec_target_player` / `mec_target_zone`[cite: 2]
+
+| Campo | Valores válidos | Observação |
+|---|---|---|
+| `mec_target_player` | `dono`, `adversario`, `ambos`[cite: 2] | Nunca usar sintaxe tipo `{"a","b"}` diretamente neste campo — não é enum válido nem JSON válido[cite: 2]. Se o efeito afeta os dois jogadores, o valor correto é `ambos`[cite: 2]. É resolvido dinamicamente via `player_id`[cite: 2]. |
+| `mec_target_zone` | `ativo`, `banco`, `deck`, `mao`, `todos_campo`, `escolha_campo`[cite: 2] | `escolha_campo` implica que o jogador escolhe o alvo específico dentro da zona — o `BattleManager` precisa expor essa escolha à UI (a UI só pergunta, nunca decide)[cite: 2] |
+
+### 1.6 `mec_status_name` — estados aplicáveis[cite: 2]
+
+Valores em uso: `adormecido`, `condenado`, `envenenado`, `paralisado`, `preso`, `protegido`, `recarregando`, `sangrando`[cite: 2].
+
+> Ao adicionar um novo status, documentar aqui: nome, efeito, duração padrão, e se é removido ao trocar de ativo[cite: 2].
+
+### 1.7 `mec_filter_color` / `mec_filter_stage`[cite: 2]
+
+Filtros usados para restringir `puxar`/`causar_dano`/`curar` a um subconjunto de cartas por cor ou estágio[cite: 2]. Seguem os mesmos enums de `color`/`stage`, porém sempre em minúsculo (`filhote`, `adulto`, `vermelha`)[cite: 2].
+
+### 1.8 `mec_origin_zone` / `mec_duration`[cite: 2]
+
+- `mec_origin_zone`: de onde a carta/recurso é puxado (ex.: `deck`)[cite: 2].
+- `mec_duration`: número de turnos que o efeito persiste[cite: 2]. Vazio = efeito instantâneo/permanente conforme o `mec_action`[cite: 2].
+
+### 1.9 `mec_custom_json` — parâmetros livres[cite: 2]
+
+Campo de escape para parâmetros que não cabem no schema fixo[cite: 2].
+
+| Chave | Uso | Atenção |
+|---|---|---|
+| `multiplicador` | Base de contagem de um dano `Nx` (`por_dino_banco_dono`, `por_cara`, `por_energia_alvo`)[cite: 2] | — |
+| `quantidade_moedas` | Número de moedas lançadas[cite: 2] | Pode ser int ou string (`"ate_sair_coroa"`)[cite: 2] |
+| `caras_necessarias` / `tipo_teste` | Regra de sucesso do teste de moeda[cite: 2] | — |
+| `excedente` | Quantidade de energia extra necessária para bônus[cite: 2] | — |
+| `status_inimigo` | Status que precisa estar presente no alvo para o bônus condicional disparar[cite: 2] | — |
+| `tipo_duracao` | Quando o efeito temporário expira (`proximo_turno_dono`, `proximo_turno_adversario`)[cite: 2] | — |
+| **`nome`** | Nome literal de espécie usado como filtro[cite: 2] | 🚫 **Proibido a partir de agora** — viola o princípio de não usar nomes de carta na lógica. Migrar para a coluna `species_family` (seção 2.5)[cite: 2] |
+
+---
+
+## 2. Modelo padrão dos arquivos[cite: 2]
+
+Schema oficial do CSV de cartas — a fonte de dados que o `CardDatabase` importa para gerar instâncias de `CardResource`[cite: 2].
+
+### 2.1 Identificação e dados básicos[cite: 2]
+
+| Coluna | Tipo | Obrigatório | Regras de validação |
+|---|---|---|---|
+| `id` | string (`A###`)[cite: 2] | Sim | Único no arquivo inteiro[cite: 2] |
+| `name` | string[cite: 2] | Sim | Igual entre estágios da mesma espécie. **Uso estritamente visual na UI.** Nunca usado para resolver lógica de ataque/combate[cite: 2]. |
+| `super_type` | enum[cite: 2] | Sim | `animal` hoje — expandir quando existirem cartas de Território/Vestígio/Cataclismo[cite: 2] |
+| `sub_type` | enum[cite: 2] | Sim | `Herbivoro`, `Carnivoro`, `Onivoro`, `Psivoro`, ou combinações[cite: 2] |
+| `color` | enum[cite: 2] | Sim | `amarelo`, `marrom`, `azul`, `verde`, `vermelho`[cite: 2] |
+| `stage` | enum[cite: 2] | Sim | `Filhote`, `Jovem`, `Adulto`[cite: 2] |
+| `grow_from` | id ou vazio[cite: 2] | Condicional | Obrigatório se `stage != Filhote`; deve apontar para `id` existente do mesmo `name`, estágio anterior; **nunca** igual ao próprio `id`[cite: 2] |
+
+### 2.2 Atributos numéricos[cite: 2]
+
+| Coluna | Tipo | Regras |
+|---|---|---|
+| `hp` | int[cite: 2] | `food_points` deve ser sempre `hp / 10`[cite: 2] |
+| `food_points` | int[cite: 2] | Ver regra acima[cite: 2] |
+| `weakness` | enum (cor)[cite: 2] | Uma das 5 cores; nunca igual a `resistance`[cite: 2] |
+| `resistance` | enum (cor)[cite: 2] | Uma das 5 cores; nunca igual a `weakness`[cite: 2] |
+| `cost_retreat` | int (≥0)[cite: 2] | — |
+
+### 2.3 Ataque e dano[cite: 2]
+
+| Coluna | Tipo | Regras |
+|---|---|---|
+| `ability_name` | string[cite: 2] | Opcional[cite: 2] |
+| `attack_name` | string[cite: 2] | Obrigatório[cite: 2] |
+| `attack_cost` | emoji[cite: 2] | Deve conter o símbolo da `color` da carta, ou ser só ⚪ para ataques básicos de baixo custo (padrão intencional)[cite: 2] |
+| `damage_base` | int ou enum especial[cite: 2] | Ver tabela 2.3.1[cite: 2] |
+| `damage_type` | enum[cite: 2] | Deve refletir o formato de `damage_base` — ver 2.3.1[cite: 2] |
+
+#### 2.3.1 Combinações válidas de `damage_base` × `damage_type`[cite: 2]
+
+| Formato de `damage_base` | `damage_type` | Significado |
+|---|---|---|
+| Número inteiro (`80`)[cite: 2] | `fixo`[cite: 2] | Dano fixo[cite: 2] |
+| `Nx` (`30x`)[cite: 2] | `multiplicador`[cite: 2] | Dano = N × contagem em `mec_custom_json.multiplicador`[cite: 2] |
+| `N+` (`40+`)[cite: 2] | `condicional`[cite: 2] | Bônus condicional a `mec_condition`[cite: 2] |
+| `sem dano` (sempre minúsculo)[cite: 2] | `suporte` ou `efeito`[cite: 2] | Sem dano de HP, só executa `mec_action`[cite: 2] |
+
+⚠️ Se `mec_action = causar_dano`, `damage_base` nunca pode ser `sem dano`[cite: 2].
+
+### 2.4 Texto de interface[cite: 2]
+
+| Coluna | Regras |
+|---|---|
+| `text_ui` | Obrigatório sempre que houver `mec_action`. Deve descrever exatamente o efeito codificado nos `mec_*` — nem mais, nem menos. Dano base "fixo" normal não precisa aparecer no texto (já aparece no badge); o texto descreve só efeitos secundários/condicionais[cite: 2] |
+
+### 2.5 Coluna futura recomendada: `species_family`[cite: 2]
+
+Ainda não existe no CSV atual, mas deve ser criada **antes da próxima leva de cartas**, para substituir o uso de `"nome"` dentro de `mec_custom_json` (ver 1.9)[cite: 2]. Toda carta que pertence a uma família/gênero (ex.: todos os Nodossaurídeos, todos os Velociraptor) preenche esse campo com uma tag padronizada (`nodossauro`, `velociraptor`), e os filtros de `BattleManager` passam a comparar por essa coluna estruturada, nunca pelo `name`[cite: 2].
+
+---
+
+## 3. Estrutura dos Resources principais[cite: 2]
+
+### 3.1 Camada de Dados (Resources)[cite: 2]
+
+| Resource | Responsabilidade | Não deve fazer |
+|---|---|---|
+| `CardBaseResource` | Resource-base do qual outros Resources de carta herdam (`CardResource`, `DeckData`, `EffectResource` herdam dele)[cite: 2]. Concentra os campos comuns[cite: 2]. | Não deve virar um "resource genérico" onde qualquer coisa é pendurada — se um campo só serve para carta jogável, pertence a `CardResource`[cite: 2]. |
+| `CardResource` (extends `CardBaseResource`) | Dados estáticos de **uma carta jogável** (colunas 2.1–2.4 do CSV)[cite: 2]. | Não guarda estado de partida (dano atual, status) — isso é runtime, mora no `GameState`/`AnimalInstance`[cite: 2]. |
+| `EffectResource` (extends `CardBaseResource`) | Unidade atômica de efeito — equivalente a um bloco `mec_*` do CSV[cite: 2]. É o Resource mais usado no projeto: referenciado por `BattleManager`, `GameState`, `RuleValidator`, `AIController`, `EnergySystem`, `CardDatabase`, `card_effect.gd`, entre outros[cite: 2]. | Não executa nada sozinho — é só dado, interpretado pelos Systems[cite: 2]. |
+| `AbilityResource` | Representação de habilidades especiais atreladas às cartas[cite: 2]. | Não processa a regra por conta própria[cite: 2]. |
+| `DeckData` (extends `CardBaseResource`) | Composição de um deck (lista de ids + regras)[cite: 2]. | Não resolve combate, não conhece o estado da partida em andamento[cite: 2]. |
+
+### 3.2 Camada de Banco de Dados[cite: 2]
+
+| Componente | Responsabilidade |
+|---|---|
+| `CardDatabase.gd` | Carrega o CSV e indexa `CardResource`, `EffectResource`, `AbilityResource` e `CardBaseResource` por `id`[cite: 2]. Ponto único de consulta "qual é o dado dessa carta?"[cite: 2] |
+| `DeckManager.gd` | Gerencia `DeckData` — montagem e validação de deck de um jogador[cite: 2] |
+
+### 3.3 Camada de Estado Runtime[cite: 2]
+
+| Componente | Responsabilidade | Não deve fazer |
+|---|---|---|
+| `GameState.gd` | **Única fonte da verdade.** Referencia `CardBaseResource`, `AnimalInstance`, `PlayerState`, `Fase` (enum de fase de turno) e `EffectResource`[cite: 2]. | Não contém regra de como os efeitos são resolvidos — só guarda o resultado[cite: 2]. |
+| `PlayerState` | Estado runtime de **um jogador** (mão, banco, energia disponível etc.) — referencia `CardResource` e `CardBaseResource`[cite: 2]. | Não resolve regra sozinho[cite: 2]. |
+| `AnimalInstance` | Instância runtime de **uma carta em campo** — referencia `CardResource`[cite: 2]. Possui identificador de instância único (`instance_id`) para diferenciar duas cartas com a mesma espécie/nome no tabuleiro. | Não deve duplicar dados que já existem em `CardResource`[cite: 2]. |
+
+### 3.4 Camada de Orquestração de Partida[cite: 2]
+
+| Componente | Responsabilidade | Mapeamento com o roadmap |
+|---|---|---|
+| `SetupManager.gd` | Monta o setup inicial (`PlayerState`, `DeckData`, `CardResource`, `CardBaseResource`)[cite: 2] | Prioridade #1 — Setup oficial da partida[cite: 2] |
+| `TurnManager.gd` | Controla ordem/transições de turno (`PlayerState`, `WinConditionSystem`)[cite: 2] | Prioridade #2 — Validação das mecânicas centrais[cite: 2] |
+| `BattleManager.gd` | Orquestra a resolução de ações de batalha. Referencia `CardBaseResource`, `AnimalInstance`, `PlayerState`, `CardResource`, `WinConditionSystem`, `EffectResource` — mas **delega o trabalho especializado para os Systems da seção 3.5**, não resolve tudo sozinho[cite: 2]. Usa referências diretas de instâncias, proibido buscar alvos pelo `name`[cite: 2]. | Prioridade #2/#3[cite: 2] |
+| `RuleValidator` | Camada de validação cross-cutting — responde "isso é permitido agora?" antes de uma ação ser executada[cite: 2]. Valida permissão comparando `player_id` do dono do turno e do alvo, nunca por igualdade de nomes de cartas[cite: 2]. | Separar validação de execução é uma boa prática: mantém o `BattleManager` focado em "o que aconteceu", não em "isso pode acontecer?"[cite: 2] |
+
+### 3.5 Camada de Systems especializados (chamados pelo `BattleManager`)[cite: 2]
+
+Cada System resolve **uma responsabilidade única** sobre `AnimalInstance`/`PlayerState`[cite: 2]:
+
+| System | Resolve |
+|---|---|
+| `CombatSystem` | Confronto entre dois `AnimalInstance`[cite: 2] |
+| `DamageSystem` | Aplicação de dano a um `AnimalInstance`[cite: 2] |
+| `ConditionSystem` | Aplicação/consulta de status (usa enum `Tipo`)[cite: 2] |
+| `EffectSystem` | Resolução de efeitos genéricos (usa enum `Escopo`)[cite: 2] |
+| `EnergySystem` | Energia ligada aos animais (referencia `EffectResource`)[cite: 2] |
+| `EvolutionSystem` | Evolução (`grow_from`) de um `AnimalInstance`[cite: 2] |
+| `FoodSystem` | Custo/consumo de comida[cite: 2] |
+| `KnockoutSystem` | Nocaute/eliminação de `AnimalInstance`[cite: 2] |
+| `DrawSystem` | Compra de cartas[cite: 2] |
+| `DeckRulesSystem` | Validação de regras de deck-building[cite: 2] |
+| `WinConditionSystem` | Avaliação de condição de vitória (produz enum `Resultado`) — Prioridade #3 do roadmap[cite: 2] |
+
+### 3.6 Camada de IA[cite: 2]
+
+| Componente | Responsabilidade |
+|---|---|
+| `AIController` | Referencia `AnimalInstance`, `PlayerState`, `EffectResource`, `CardResource`[cite: 2]. Mantido isolado para não acoplar regras da IA ao `BattleManager`[cite: 2]. |
+
+### 3.7 Camada de UI[cite: 2]
+
+| Componente | Responsabilidade | Observação |
+|---|---|---|
+| `CardPreviewPanel`, `HelperUI` | Renderizam dado a partir de `CardBaseResource`[cite: 2] | ✅ Padrão correto: só leitura de dado, sem regra[cite: 2] |
+| `card.gd` | Script de cena de uma carta genérica em jogo (`Modo`, `CardResource`)[cite: 2] | ✅ Genérico, não é por-carta[cite: 2] |
+| `card_effect.gd` | Renderiza texto/ícone do efeito (`Modo`, `EffectResource`)[cite: 2] | Nome corrigido (sem typo)[cite: 2] |
+| `mesa_jogador.gd` | Tela principal da partida — referencia `CardBaseResource`, `ConditionSystem`, `AnimalInstance`, `PlayerState`, `CardResource`, `EffectResource`, `CardPreviewPanel`[cite: 2] | ⚠️ **Revisar**: A interface envia apenas o `player_id` e zonas ativas para a solicitação de ações. Nunca envia nomes de cartas como critério de alvo[cite: 2]. |
+| `CardForcaPrimordial.gd`, `CardTerritorio.gd` | Scripts de cena para estruturar visualmente uma carta a partir de cor/energia[cite: 2] | 🚫 **Achado de arquitetura — ver seção 6.1.** Substituir por um único `CardView.gd` genérico[cite: 2]. |
+| `deck_builder.gd` | Ferramenta de montagem de deck (`CardBaseResource`)[cite: 2] | — |
+
+### Relação entre as camadas[cite: 2]
+
+```text
+CSV ──► CardDatabase.gd ──► CardResource / EffectResource / AbilityResource / CardBaseResource
+									   │
+					┌──────────────────┴───────────────────┐
+					▼                                       ▼
+			 DeckManager.gd ──► DeckData          SetupManager.gd ──► PlayerState / AnimalInstance
+															  │
+															  ▼
+												   GameState.gd (única fonte da verdade)
+															  ▲
+							  ┌───────────────────────────────┼───────────────────────────────┐
+							  ▼                                ▼                                ▼
+					RuleValidator (permite?)          BattleManager.gd (orquestra)      TurnManager.gd (turnos)
+															  │
+							  ┌───────────────┬───────────────┼───────────────┬───────────────┐
+							  ▼               ▼               ▼               ▼               ▼
+					   CombatSystem   DamageSystem   ConditionSystem   EffectSystem    (+ EnergySystem,
+																						EvolutionSystem,
+																						FoodSystem,
+																						KnockoutSystem,
+																						DrawSystem,
+																						DeckRulesSystem,
+																						WinConditionSystem)
+															  │
+															  ▼
+											  UI (mesa_jogador.gd, CardPreviewPanel, HelperUI...)
+											  observa GameState, nunca decide regra
+
+## 4. Fluxo de dados (CSV → Resource → GameState)
+
+1. **Design:** a carta é definida como uma linha no CSV (seções 1 e 2 deste documento).
+2. **Importação:** o `CardDatabase.gd` lê o CSV e gera uma instância de `CardResource` por linha, com um `EffectResource` para cada bloco de `mec_*` preenchido. Nesse passo é o momento certo de rodar a validação da seção 5.
+3. **Montagem de deck:** o `DeckManager.gd` referencia cartas pelo `id`, consultando o `CardDatabase.gd` — nunca duplica dados da carta dentro do `DeckData`. `DeckRulesSystem` valida os limites de deck-building.
+4. **Início de partida:** `SetupManager.gd` inicializa `PlayerState` e `AnimalInstance` a partir dos decks, e monta o `GameState.gd` — a partir daqui, o `GameState` é a única fonte da verdade sobre o que existe em campo, mão, HP, status etc. `TurnManager.gd` assume o controle da ordem de turnos.
+5. **Resolução de uma ação:** a UI captura a intenção do jogador (ex.: atacar) e chama o `BattleManager.gd`. O `RuleValidator` confirma se a ação é permitida no estado atual; em seguida o `BattleManager.gd` delega para o System especializado (`CombatSystem`, `DamageSystem`, `ConditionSystem`, `EffectSystem` etc. — seção 3.5), que interpreta o `EffectResource` correspondente e aplica a mutação ao `GameState`.
+6. **Atualização de tela:** a UI reage às mudanças do `GameState` (sinais) e redesenha — sem nunca decidir sozinha se algo é permitido ou qual o resultado de um efeito.
+
+> Regra de ouro do fluxo: **dado nunca pula etapa.** Uma carta nova não deve nunca ser codificada direto em GDScript "hardcoded" — sempre entra pelo CSV → `CardResource`/`EffectResource` → interpretado pelos Systems via `BattleManager`.
+
+---
+
+## 5. Convenções, nomenclatura e checklist de revisão
+
+### 5.1 Convenções de nomenclatura
+
+- Todos os valores de enum em `mec_*` e nos filtros: `snake_case`, minúsculo, sem acento (ex.: `causar_dano`, `envenenado`, `filhote`).
+- Exceção: `name`, `stage`, `color` e `sub_type` das colunas 2.1 mantêm capitalização de exibição (`Filhote`, `Herbivoro`) porque alimentam texto de UI diretamente — mas seus equivalentes usados como **filtro** (`mec_filter_stage`, `mec_filter_color`) sempre em minúsculo.
+- `damage_base = "sem dano"` sempre em minúsculo — nunca `Sem dano`.
+- Nenhuma chave nova `"nome"` em `mec_custom_json` — usar `species_family` (seção 2.5) assim que a coluna existir.
+
+### 5.2 Checklist rápido de revisão (usar em toda nova leva de cartas)
+
+1. **Tipagem:** `hp`, `food_points`, `cost_retreat` são inteiros? `damage_base` segue um dos formatos da tabela 2.3.1?
+2. **Consistência hp/food:** `food_points == hp // 10`?
+3. **Cores válidas:** `color`, `weakness`, `resistance` são uma das 5 cores? `weakness != resistance`?
+4. **Cadeia evolutiva:** se `stage != Filhote`, `grow_from` existe, aponta pro mesmo `name`, estágio anterior, e não é igual ao próprio `id`?
+5. **`damage_type` coerente com `damage_base`:** sufixo `x` → `multiplicador`; sufixo `+` → `condicional`; `sem dano` → `suporte`/`efeito`; caso contrário → `fixo`?
+6. **Se `mec_action = causar_dano`:** `damage_base` não pode ser `sem dano`?
+7. **Enums padronizados:** minúsculo, sem acento incorreto, sem variação de capitalização?
+8. **`mec_target_player`:** só `dono`, `adversario` ou `ambos` — nunca sintaxe de lista/JSON solta no campo?
+9. **Sem lógica por nome:** nenhuma chave `"nome"` nova em `mec_custom_json`?
+10. **`text_ui` reflete exatamente os `mec_*`:** target, quantidade e condição batem com o que está escrito?
+
+---
+
+## 6. Achados da auditoria de dependências (grafo real)
+
+Esta seção registra desvios encontrados ao comparar a arquitetura documentada com o grafo real de dependências do código (`grafico.mmd`). Diferente das seções 1–5 (que são normativas — "como deve ser"), esta seção é um **log de pendências** — itens a corrigir ou decidir, com status.
+
+| # | Achado | Severidade | Status |
+|---|---|---|---|
+| 6.1 | `CardForcaPrimordial.gd` é um script de cena dedicado a **uma carta específica** ("Força Primordial"), usado para estruturar a carta com base em cor/energia. Mesmo não contendo regra de jogo, o padrão "um `.gd` por carta" não escala e viola "novas cartas devem ser criadas por dados, não por código específico". **Recomendação:** consolidar em um `CardView.gd` genérico, parametrizado pelos campos de `CardResource`/`CardBaseResource` (cor, energia, `super_type` etc.), reutilizável por qualquer carta atual ou futura | 🔴 Alta | Aberto |
+| 6.2 | `CardTerritorio.gd` segue o mesmo padrão de script de cena dedicado, aparentemente por **supertype** (`Território`) em vez de por carta individual — menos grave que 6.1, mas o mesmo problema se repete se cada supertype futuro (Vestígio, Cataclismo) ganhar seu próprio `.gd` | 🟡 Média | Aberto — confirmar se é por supertype mesmo, e migrar junto com 6.1 |
+| 6.3 | Relação entre `AbilityResource` e `EffectResource` ainda não está documentada — confirmado que são Resources distintos, mas falta a definição de responsabilidade de cada um para completar a seção 3.1 | 🟡 Média | **Aguardando descrição do time** |
+| 6.4 | `mesa_jogador.gd` é a única View que depende diretamente de um System (`ConditionSystem`), em vez de só observar `GameState`. Pode ser leitura de estado (ok) ou decisão de regra na UI (violação) | 🟡 Média | Aberto — revisar o uso real no arquivo |
+| 6.5 | `mesa_jogador_backup.gd` é uma cópia idêntica de `mesa_jogador.gd` (mesmas dependências) — arquivo de backup solto no repositório | 🟢 Baixa | Recomendado remover do projeto (usar histórico do Git) — não documentado |
+| 6.6 | `card_effecct.gd` tem typo no nome do arquivo (deveria ser `card_effect.gd`) | 🟢 Baixa | Aberto — rename simples |
+
+---
+
+*Documento vivo — atualizar sempre que um novo Resource, coluna ou valor de enum for introduzido na arquitetura, e sempre que um achado da seção 6 for resolvido (mover para changelog ou remover).*

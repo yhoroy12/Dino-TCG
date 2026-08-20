@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_upoup")
+mec_trigger = "UMA_VEZ_POR_TURNO"
+mec_condition = "SEMPRE"
+mec_action = "CURAR"
+mec_resource = "HP"
+mec_target_player = "AMBOS"
+mec_target_zone = "ATIVO_BANCO"
+mec_quantity = 30
+mec_status_name = "NENHUM"
+mec_filter_color = "AZUL"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = ""
+mec_duration = 0
+mec_custom_json = "{\"alvo_adicional\": \"banco\"}"
 id = "A151"
 name = "Mares Bravos"
 super_type = "territorio"
-text_ui = "Uma vez durante o turno de cada jogador, ele pode curar 30 pontos de dano de seus dinossauros azuis"
-mec_trigger = "uma_vez_por_turno"
-mec_condition = "sempre"
-mec_action = "curar"
-mec_resource = "hp"
-mec_target_player = "todos_jogadores"
-mec_target_zone = "todos_campo"
-mec_quantity = 30
-mec_status_name = ""
-mec_filter_color = "azul"
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Uma vez durante o turno de cada jogador esse jogador pode curar 30 pontos de dano de um dos dinossauros Azuis dele."

@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_1xodm")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "MODIFICAR_CUSTO"
+mec_resource = "CUSTO_RECUO"
+mec_target_player = "DONO"
+mec_target_zone = "ATIVO"
+mec_quantity = -1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = ""
+mec_duration = 1
+mec_custom_json = ""
 id = "A133"
 name = "Movimento veloz"
 super_type = "vestigio"
-text_ui = "Diminua o custo de recuo do seu dinossauro ativo em 1 até o final deste turno."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "zerar_custo"
-mec_resource = "recuo"
-mec_target_player = "dono"
-mec_target_zone = "ativo"
-mec_quantity = 40
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = "{\"custo_comida\": -2}"
+text_ui = "O Custo de Recuo do seu Dinossauro Ativo é reduzido em 1 até o final deste turno."

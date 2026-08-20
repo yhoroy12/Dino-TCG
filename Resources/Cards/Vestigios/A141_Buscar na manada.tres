@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_qbn5u")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "BUSCAR"
+mec_resource = "CARTA"
+mec_target_player = "DONO"
+mec_target_zone = "MAO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "DECK"
+mec_duration = 0
+mec_custom_json = "{\"custo_descarte\": {\"tipo\": \"dinossauro\",\"mesma_cor: true\",\"embaralhar_apos: true\"}"
 id = "A141"
 name = "Buscar na manada"
 super_type = "vestigio"
-text_ui = "Descarte um dinossauro da sua mão e busque um dinossauro no seu deck da mesma cor."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "carta"
-mec_target_player = "dono"
-mec_target_zone = "mao"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = "{\"condicao_topo\": {\"cor\": \"verde\"}, \"falha\": \"fundo_deck\"}"
+text_ui = "Descarte 1 dinossauro da sua mão. Se fizer isso procure por 1 dinossauro da mesma cor no seu baralho revele-o e coloque-o na sua mão. Em seguida embaralhe o seu baralho."

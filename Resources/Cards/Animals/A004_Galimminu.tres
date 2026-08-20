@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://ctpn2duqc4cwi"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_4dg6p"]
+[ext_resource type="Script" path="res://Scripts/Data/CardResource.gd" id="1_4dg6p"]
 
 [resource]
 script = ExtResource("1_4dg6p")
@@ -17,9 +17,9 @@ ability_name = ""
 attack_name = "Chute fraco"
 attack_cost = "⚪"
 damage_base = 30
-damage_type = "fixo"
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""

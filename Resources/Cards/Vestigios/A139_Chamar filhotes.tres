@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_5vxye")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "PUXAR"
+mec_resource = "CARTA"
+mec_target_player = "ADVERSARIO"
+mec_target_zone = "BANCO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "FILHOTE"
+mec_origin_zone = "DESCARTE"
+mec_duration = 0
+mec_custom_json = ""
 id = "A139"
 name = "Chamar filhotes"
 super_type = "vestigio"
-text_ui = "Pegue um dinossauro bebe no cemiterio do seu oponente e coloque na linha e reserva dele."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "carta"
-mec_target_player = "adversario"
-mec_target_zone = "banco"
-mec_quantity = 4
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = "{\"resetar_mao_antes\": true}"
+text_ui = "Coloque 1 dinossauro Bebê da Pilha de Descarte do seu oponente no Banco dele."

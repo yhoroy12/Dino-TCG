@@ -34,7 +34,7 @@ func fase_compra() -> void:
 
 	# Checa se o jogador da vez perdeu por falta de deck
 	var res_deck = WinConditionSystem.checar_vitoria_por_deckout(GameState.jogador_ativo)
-	if _verificar_e_notificar_fim_de_jogo(res_deck, "Jogador sem cartas no baralho no início do turno!"):
+	if verificar_e_notificar_fim_de_jogo(res_deck, "Jogador sem cartas no baralho no início do turno!"):
 		return # Interrompe o turno, o jogo acabou.
 
 	DrawSystem.comprar_carta(GameState.get_jogador_atual())
@@ -70,14 +70,14 @@ func fase_final() -> void:
 	var res_campo = WinConditionSystem.checar_vitoria_por_campo_vazio()
 	
 	# Se houve fim de jogo, processa APENAS AQUI e interrompe o fluxo imediatamente
-	if _verificar_e_notificar_fim_de_jogo(res_campo, "Sem animais no banco para substituir o ativo!"):
+	if verificar_e_notificar_fim_de_jogo(res_campo, "Sem animais no banco para substituir o ativo!"):
 		return
 
 	# 👈 CORRIGIDO: Se alguém está sem ativo, emite sinal e interrompe até a substituição ser concluída
 	if GameState.jogador_sem_ativo != -1:
 		var id_pendente: int = GameState.jogador_sem_ativo
 		print("⚠️ [TurnManager] Travado: Jogador %d está sem ativo! Solicitando substituição..." % id_pendente)
-		substituicao_ativo_solicitada.emit(id_pendente)
+		BattleManager.resolver_promocao_pendente(id_pendente)
 		return
 
 	print("🔄 [TurnManager] Fim de turno validado. Avançando para o próximo turno!")
@@ -122,7 +122,7 @@ func _resetar_flags_turno() -> void:
 
 	for animal in GameState.obter_animais_em_campo(GameState.jogador_ativo):
 		animal.evoluiu_este_turno = false
-
+		animal.ja_atacou_este_turno = false
 
 func atualizar_sistema_de_nocautes(player: PlayerState, player_id: int) -> void:
 	print("💥 [TurnManager] Checando nocautes para o Jogador %d..." % player_id)
@@ -151,7 +151,7 @@ func _processar_fim_de_turno_dos_animais() -> void:
 
 
 ## Função auxiliar interna no TurnManager.gd para validar vitórias:
-func _verificar_e_notificar_fim_de_jogo(resultado: WinConditionSystem.Resultado, motivo: String) -> bool:
+func verificar_e_notificar_fim_de_jogo(resultado: WinConditionSystem.Resultado, motivo: String) -> bool:
 	if resultado == WinConditionSystem.Resultado.NENHUM:
 		return false
 

@@ -7,7 +7,7 @@
 # Ações do jogador que exigem validação de regra (jogar carta, atacar, usar
 # habilidade, recuar) NÃO são executadas aqui. A UI apenas emite
 # `acao_jogador_solicitada` — quem decide se a ação é válida e a aplica é o
-# BattleManager (ainda esqueleto na nova arquitetura; ver TODOs abaixo).
+# BattleManager.
 #
 # Requer os seguintes autoloads: GameState, PlayerState (classe, não autoload),
 # SetupManager, TurnManager, MatchData, RuleValidator, ConditionSystem.
@@ -63,7 +63,7 @@ const ID_JOGADOR_HUMANO := 0
 @onready var botao_passar_turno: Button = $Button
 @onready var timer_turno: Timer = $TimerTurno
 @onready var progresso_turno: TextureProgressBar = $Progessbar
-@onready var painel_zoom: CardPreviewPanel = $zoom_slot  # Ajuste o caminho conforme sua árvore
+@onready var painel_zoom: CardPreviewPanel = $zoom_slot
 
 # ==============================================================================
 # VARIÁVEIS INTERNAS
@@ -87,19 +87,10 @@ var _popup_setup_ativo: Control = null
 # frente juntos, quando _ao_setup_concluido roda).
 var _setup_em_andamento: bool = true
 
-# Controle de seleção de alvo (Crescer, Fortalecer, Retroceder,
-# Alimentar) — substitui o antigo sistema de arrasto (drag-and-drop),
-# removido por gerar bug de estado: clicar numa segunda carta enquanto
-# a primeira estava "grudada" no mouse sobrescrevia a variável de
-# controle sem soltar a primeira, deixando-a órfã na árvore.
-#
-# Fluxo novo: clique na carta de origem -> menu contextual -> opção
-# que precisa de alvo entra em "modo seleção" -> próximo clique num
-# animal válido em campo completa a ação. ESC cancela a qualquer
-# momento (ver _input).
+# Controle de seleção de alvo (Crescer, Fortalecer, Retroceder, Alimentar)
 var _selecao_alvo_ativa: bool = false
 var _selecao_alvo_tipo: String = ""       # "crescer" | "fortalecer" | "retroceder" | "alimentar"
-var _selecao_alvo_dados: Dictionary = {}  # dados extra da ação (indice_mao, carta, quantidade, etc)
+var _selecao_alvo_dados: Dictionary = {}  # dados extra da ação
 
 # Animações
 var dicionario_tweens_cartas: Dictionary = {}  # { CardUI: Tween }
@@ -113,30 +104,42 @@ var menu_contextual_ativo: Control = null
 # ==============================================================================
 
 func _ready() -> void:
+	print("[MesaUI] Iniciando ciclo _ready()...")
 	_validar_referencias()
 	_conectar_sinais_setup_manager()
 	_conectar_sinais_turn_manager()
 	_configurar_interface_inicial()
 
-	print("✓ MesaDoTabuleiro inicializada com sucesso")
+	# 1. Instancia o Cérebro da IA se a partida for Modo Treino / Vs IA
+	_configurar_ia_se_necessario()
 
-	# MatchData é só o "envelope" de transição entre a tela de seleção
-	# de deck e esta cena — ver MatchData.gd. Quem de fato inicia a
-	# partida é o SetupManager, não o GameState.
+	print("[MesaUI] ✓ MesaDoTabuleiro inicializada com sucesso")
+
 	SetupManager.iniciar_partida(MatchData.deck_pendente_j0, MatchData.deck_pendente_j1)
 	MatchData.limpar()
 
+func _configurar_ia_se_necessario() -> void:
+	if MatchData.adversario_ia_id != "":
+		var adversario: String = MatchData.adversario_ia_id
+		var dificuldade: String = MatchData.dificuldade_ia
+
+		if adversario == "Trike" and dificuldade == "Facil":
+			var ai_brain := AIController.new()
+			ai_brain.name = "AIBrain_Trike_Facil"
+			add_child(ai_brain)
+			ai_brain.inicializar(BattleManager)
+			print("[MesaUI] 🤖 IA Trike (Fácil) inicializada com sucesso!")
 
 func _process(delta: float) -> void:
 	if turno_em_progresso:
 		_atualizar_contador_turno(delta)
-
 
 func _input(event: InputEvent) -> void:
 	if not get_tree().root.is_ancestor_of(self):
 		return
 
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		print("[MesaUI] Tecla ESC pressionada. Cancelando seleções e menus.")
 		_cancelar_selecao_alvo()
 		_fechar_menu_contextual()
 		get_tree().root.set_input_as_handled()
@@ -146,63 +149,76 @@ func _input(event: InputEvent) -> void:
 # ==============================================================================
 
 func _validar_referencias() -> void:
-	var nodos_criticos: Array[String] = [
-		"MesaContainer/LadoJogador/JogadorFlow/CombatRow/CampoAtivo",
-		"MesaContainer/LadoOponente/OponenteRotator/OponenteFlow/CombatRow/CampoAtivo",
-		"Button",
-		"TimerTurno",
-		"Progessbar"
-	]
+	var nos_para_validar: Dictionary = {
+		"botao_passar_turno": botao_passar_turno,
+		"timer_turno": timer_turno,
+		"progresso_turno": progresso_turno,
+		"jogador_campo_ativo": jogador_campo_ativo,
+		"oponente_campo_ativo": oponente_campo_ativo
+	}
 
-	for caminho_nodo in nodos_criticos:
-		if not has_node(caminho_nodo):
-			push_error("❌ Nó crítico não encontrado: " + caminho_nodo)
+	for nome_no in nos_para_validar:
+		if nos_para_validar[nome_no] == null:
+			push_error("❌ ERRO CRÍTICO: Nó @onready não encontrado -> %s" % nome_no)
 
 	card_zoom_manager = get_tree().root.find_child("CardZoomManager", true, false)
-
+	if card_zoom_manager == null:
+		push_warning("⚠️ CardZoomManager não foi encontrado na árvore de nós.")
 
 func _conectar_sinais_setup_manager() -> void:
-	"""Conecta os sinais de SetupManager — todos existem hoje, mapeiam
-	1:1 pras etapas oficiais de preparação da partida."""
 	if not SetupManager:
 		push_error("❌ SetupManager (Autoload) não está disponível!")
 		return
 
-	SetupManager.solicitar_lancamento_moeda.connect(_ao_solicitar_lancamento_moeda)
-	SetupManager.sorteio_realizado.connect(_ao_sorteio_realizado)
-	SetupManager.solicitar_escolha_ordem.connect(_ao_solicitar_escolha_ordem)
-	SetupManager.mulligan_necessario.connect(_ao_mulligan_necessario)
-	SetupManager.mulligan_realizado.connect(_ao_mulligan_realizado)
-	SetupManager.solicitar_escolha_ativo.connect(_ao_solicitar_escolha_ativo)
-	SetupManager.setup_concluido.connect(_ao_setup_concluido)
-
+	_conectar_sinal_seguro(SetupManager.solicitar_lancamento_moeda, _ao_solicitar_lancamento_moeda)
+	_conectar_sinal_seguro(SetupManager.sorteio_realizado, _ao_sorteio_realizado)
+	_conectar_sinal_seguro(SetupManager.solicitar_escolha_ordem, _ao_solicitar_escolha_ordem)
+	_conectar_sinal_seguro(SetupManager.mulligan_necessario, _ao_mulligan_necessario)
+	_conectar_sinal_seguro(SetupManager.mulligan_realizado, _ao_mulligan_realizado)
+	_conectar_sinal_seguro(SetupManager.solicitar_escolha_ativo, _ao_solicitar_escolha_ativo)
+	_conectar_sinal_seguro(SetupManager.setup_concluido, _ao_setup_concluido)
 
 func _conectar_sinais_turn_manager() -> void:
-	"""Requer o patch que adiciona turno_iniciado/turno_encerrado ao
-	TurnManager — sem isso a UI não sabe quando os turnos mudam."""
 	if not TurnManager:
 		push_error("❌ TurnManager (Autoload) não está disponível!")
 		return
+	_conectar_sinal_seguro(TurnManager.turno_iniciado, _ao_turno_iniciado)
+	_conectar_sinal_seguro(TurnManager.turno_encerrado, _ao_turno_encerrado)
+	_conectar_sinal_seguro(TurnManager.partida_encerrada, _ao_partida_encerrada) # 🟢 Garantido
+	
+	# Escuta a solicitação de substituição de ativo por nocaute/fome
+	if TurnManager.has_signal("substituicao_ativo_solicitada"):
+		_conectar_sinal_seguro(TurnManager.substituicao_ativo_solicitada, _ao_substituicao_ativo_solicitada)
+	
+	# Escuta o fim de partida
+	if TurnManager.has_signal("partida_encerrada"):
+		_conectar_sinal_seguro(TurnManager.partida_encerrada, _ao_partida_encerrada)
 
-	TurnManager.turno_iniciado.connect(_ao_turno_iniciado)
-	TurnManager.turno_encerrado.connect(_ao_turno_encerrado)
+	if botao_passar_turno and not botao_passar_turno.pressed.is_connected(_ao_botao_passar_turno_pressionado):
+		botao_passar_turno.pressed.connect(_ao_botao_passar_turno_pressionado)
 
-	botao_passar_turno.pressed.connect(_ao_botao_passar_turno_pressionado)
-	timer_turno.timeout.connect(_ao_timer_turno_expirado)
-
+	if timer_turno and not timer_turno.timeout.is_connected(_ao_timer_turno_expirado):
+		timer_turno.timeout.connect(_ao_timer_turno_expirado)
 
 func _configurar_interface_inicial() -> void:
-	botao_passar_turno.disabled = true
-	progresso_turno.value = 0
+	if botao_passar_turno:
+		botao_passar_turno.disabled = true
+	if progresso_turno:
+		progresso_turno.value = 0
+		
 	turno_em_progresso = false
+	tempo_restante_turno = 0.0
+
+func _conectar_sinal_seguro(sinal: Signal, metodo: Callable) -> void:
+	if not sinal.is_connected(metodo):
+		sinal.connect(metodo)
 
 # ==============================================================================
 # CALLBACKS — SETUP DA PARTIDA (SetupManager)
 # ==============================================================================
 
 func _ao_solicitar_lancamento_moeda() -> void:
-	"""Só o jogador humano vê esse botão — o sorteio é aleatório de
-	qualquer forma, não faz sentido pedir pro oponente 'clicar' nele."""
+	print("[Setup] Pop-up exibido: Lançamento de Moeda.")
 	_fechar_popup_setup()
 
 	var refs := HelperUI.criar_popup_base(
@@ -212,37 +228,30 @@ func _ao_solicitar_lancamento_moeda() -> void:
 	)
 	var botao := Button.new()
 	botao.text = "Lançar Moeda"
-	botao.pressed.connect(func():
-		_fechar_popup_setup()
-		SetupManager.lancar_moeda()
-	)
+	botao.pressed.connect(_on_botao_lancar_moeda_pressed)
 	refs["vbox"].add_child(botao)
 
 	_popup_setup_ativo = refs["overlay"]
 
+func _on_botao_lancar_moeda_pressed() -> void:
+	print("[Setup] Botão Lançar Moeda pressionado pelo jogador.")
+	_fechar_popup_setup()
+	SetupManager.lancar_moeda()
 
 func _ao_sorteio_realizado(vencedor_id: int) -> void:
-	print("🪙 Jogador %d venceu o sorteio." % vencedor_id)
-	# O resultado é anunciado junto com o pop-up de escolha de ordem
-	# (_ao_solicitar_escolha_ordem, emitido em seguida pelo SetupManager)
-	# — não duplicamos aviso aqui.
-
+	print("[Setup] 🪙 Sorteio realizado! Vencedor: Jogador %d." % vencedor_id)
 
 func _ao_solicitar_escolha_ordem(vencedor_id: int) -> void:
+	print("[Setup] Solicitando escolha de ordem. Vencedor do sorteio: %d" % vencedor_id)
 	if vencedor_id == ID_JOGADOR_HUMANO:
 		_exibir_popup_escolha_ordem(vencedor_id)
 	else:
-		# TODO(IA): enquanto não existe IA de verdade, o oponente
-		# sempre decide jogar primeiro. Quando a IA existir, essa
-		# decisão deve vir dela em vez de um valor fixo aqui.
 		_exibir_popup_resultado_sorteio(vencedor_id)
 		SetupManager.confirmar_escolha_ordem(vencedor_id, true)
 
-
 func _ao_mulligan_necessario(jogador_id: int) -> void:
+	print("[Setup] Mulligan necessário para Jogador %d." % jogador_id)
 	if jogador_id != ID_JOGADOR_HUMANO:
-		# Sem IA de verdade ainda: o oponente confirma na hora, sem
-		# popup nem espera.
 		SetupManager.confirmar_mulligan(jogador_id)
 		return
 
@@ -257,70 +266,57 @@ func _ao_mulligan_necessario(jogador_id: int) -> void:
 
 	var botao := Button.new()
 	botao.text = "Confirmar"
-	botao.pressed.connect(func(): _confirmar_mulligan_visual(jogador_id, overlay))
+	botao.pressed.connect(_confirmar_mulligan_visual.bind(jogador_id, overlay))
 	refs["vbox"].add_child(botao)
 
 	_popup_setup_ativo = overlay
 
-	await get_tree().create_timer(DURACAO_POPUP_ORDEM).timeout
-	# Guarda igual aos outros pop-ups de setup: se o jogador já
-	# confirmou por clique antes do timeout, _popup_setup_ativo já foi
-	# pra null (ou trocou de popup) e overlay já foi queue_free()ado —
-	# sem essa checagem, o timeout tentaria chamar a função passando
-	# um Control já destruído, o que crasha o jogo.
-	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == overlay:
-		_confirmar_mulligan_visual(jogador_id, overlay)
-
+	var timer := get_tree().create_timer(DURACAO_POPUP_ORDEM)
+	timer.timeout.connect(func():
+		if is_instance_valid(overlay) and _popup_setup_ativo == overlay:
+			print("[Setup] Timeout do Mulligan atingido. Forçando confirmação.")
+			_confirmar_mulligan_visual(jogador_id, overlay)
+	)
 
 func _confirmar_mulligan_visual(jogador_id: int, popup_de_origem: Control) -> void:
-	# Evita confirmar duas vezes (clique + timeout chegando quase
-	# juntos, ou popup já fechado por outra etapa).
 	if _popup_setup_ativo != popup_de_origem:
 		return
 
+	print("[Setup] Mulligan confirmado pelo jogador %d." % jogador_id)
 	_fechar_popup_setup()
 	SetupManager.confirmar_mulligan(jogador_id)
 
-
 func _ao_mulligan_realizado(jogador_id: int, quantidade: int) -> void:
-	# Notificação pós-fato, só log — a confirmação de verdade já
-	# aconteceu em _ao_mulligan_necessario / _confirmar_mulligan_visual.
-	print("🔀 Jogador %d fez %d mulligan(s)." % [jogador_id, quantidade])
-
+	print("[Setup] 🔀 Jogador %d concluiu mulligan (Total acumulado: %d)." % [jogador_id, quantidade])
 
 func _ao_solicitar_escolha_ativo(jogador_id: int) -> void:
+	print("[Setup] 🦖 Aguardando escolha de Animal Ativo inicial do Jogador %d." % jogador_id)
 	if jogador_id == ID_JOGADOR_HUMANO:
-		print("🦖 Jogador %d deve escolher o Animal Ativo inicial (clique num Filhote na mão)." % jogador_id)
 		_jogador_aguardando_escolha_ativo = jogador_id
 		organizar_cartas_nas_zonas(jogador_id)
 		_exibir_texto_flutuante("Selecione um Animal Ativo", 2.0)
-		# TODO(UI): destacar visualmente os Filhotes elegíveis na mão.
 	else:
-		# TODO(IA): sem IA real ainda, o oponente escolhe sozinho o
-		# primeiro Filhote que aparecer na mão — só pra não travar o
-		# setup em teste. Trocar por decisão de verdade quando a IA
-		# existir.
 		_auto_escolher_ativo_oponente(jogador_id)
-
 
 func _auto_escolher_ativo_oponente(jogador_id: int) -> void:
 	var jogador := _obter_player_state(jogador_id)
+	var idx_filhote = jogador.obter_indice_primeiro_filhote() if jogador.has_method("obter_indice_primeiro_filhote") else _buscar_primeiro_filhote_fallback(jogador)
 
+	if idx_filhote != -1:
+		print("[Setup] Oponente auto-selecionou o filhote no índice: %d" % idx_filhote)
+		SetupManager.confirmar_animal_ativo(jogador_id, idx_filhote)
+	else:
+		push_error("❌ Oponente (Jogador %d) não tem Filhote na mão!" % jogador_id)
+
+func _buscar_primeiro_filhote_fallback(jogador: Object) -> int:
 	for i in jogador.mao.size():
-		var carta := jogador.mao[i]
+		var carta = jogador.mao[i]
 		if carta is CardResource and carta.super_type == "animal" and carta.stage == "Filhote":
-			SetupManager.confirmar_animal_ativo(jogador_id, i)
-			return
-
-	push_error("Oponente (Jogador %d) não tem Filhote na mão — mulligan deveria ter garantido isso." % jogador_id)
-
+			return i
+	return -1
 
 func _ao_setup_concluido() -> void:
-	print("✅ Setup concluído. Partida iniciada!")
-
-	# Os dois Animais Ativos iniciais nascem virados pra baixo durante
-	# o setup (ver _adicionar_carta_na_zona) — aqui é onde eles viram
-	# de frente, os dois "ao mesmo tempo" (mesmo frame).
+	print("[Setup] ✅ Setup concluído! Revelando cartas e iniciando o jogo.")
 	_setup_em_andamento = false
 
 	organizar_cartas_nas_zonas(0)
@@ -335,11 +331,7 @@ func _ao_setup_concluido() -> void:
 # ==============================================================================
 
 func _exibir_popup_escolha_ordem(vencedor_id: int) -> void:
-	"""Pop-up com escolha real: o jogador humano venceu o sorteio e
-	decide se joga primeiro ou deixa o oponente começar. Se ele não
-	decidir a tempo, o pop-up fecha sozinho aplicando o padrão (jogar
-	primeiro) — mesmo padrão de timeout já usado no menu contextual
-	de cartas (_abrir_menu_generico)."""
+	print("[Setup] Pop-up exibido: Escolha de ordem de turno.")
 	_fechar_popup_setup()
 
 	var refs := HelperUI.criar_popup_base(
@@ -364,12 +356,11 @@ func _exibir_popup_escolha_ordem(vencedor_id: int) -> void:
 
 	await get_tree().create_timer(DURACAO_POPUP_ORDEM).timeout
 	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == overlay:
+		print("[Setup] Timeout na escolha de ordem! Aplicando padrão: Jogar Primeiro.")
 		_confirmar_ordem_escolhida(vencedor_id, true)
 
-
 func _exibir_popup_resultado_sorteio(vencedor_id: int) -> void:
-	"""Pop-up só informativo — usado quando quem venceu o sorteio não
-	é o jogador humano, então não há escolha pra fazer aqui, só aviso."""
+	print("[Setup] Pop-up exibido: Oponente venceu o sorteio.")
 	_fechar_popup_setup()
 
 	var refs := HelperUI.criar_popup_base(
@@ -383,11 +374,10 @@ func _exibir_popup_resultado_sorteio(vencedor_id: int) -> void:
 	if is_instance_valid(_popup_setup_ativo) and _popup_setup_ativo == refs["overlay"]:
 		_fechar_popup_setup()
 
-
 func _confirmar_ordem_escolhida(vencedor_id: int, quer_jogar_primeiro: bool) -> void:
+	print("[Setup] Ordem confirmada pelo jogador %d: Quer jogar primeiro? %s" % [vencedor_id, str(quer_jogar_primeiro)])
 	_fechar_popup_setup()
 	SetupManager.confirmar_escolha_ordem(vencedor_id, quer_jogar_primeiro)
-
 
 func _fechar_popup_setup() -> void:
 	if is_instance_valid(_popup_setup_ativo):
@@ -397,14 +387,8 @@ func _fechar_popup_setup() -> void:
 # ==============================================================================
 # CALLBACKS — TURNOS E FASES (TurnManager)
 # ==============================================================================
-func _ao_turno_iniciado(jogador_id: int) -> void:
-	# === ADICIONE ESTAS 4 LINHAS AQUI ===
-	var p0 := _obter_player_state(0)
-	var p1 := _obter_player_state(1)
-	_atualizar_visual_contador_comida(0, p0.comida_disponivel)
-	_atualizar_visual_contador_comida(1, p1.comida_disponivel)
-	# ====================================
 
+func _ao_turno_iniciado(jogador_id: int) -> void:
 	jogador_ativo_id = jogador_id
 	turno_em_progresso = true
 	tempo_restante_turno = timer_turno.wait_time
@@ -414,14 +398,18 @@ func _ao_turno_iniciado(jogador_id: int) -> void:
 	if timer_turno.is_stopped():
 		timer_turno.start()
 
-	print("🟢 Turno iniciado! Jogador: %d | Tempo: %.1fs" % [jogador_id, tempo_restante_turno])
+	atualizar_visual_comida(0)
+	atualizar_visual_comida(1)
+	organizar_cartas_nas_zonas(0)
+	organizar_cartas_nas_zonas(1)
+
+	print("🟢 Turno iniciado! Jogador Ativo: %d | Tempo: %.1fs" % [jogador_id, tempo_restante_turno])
 
 	turno_visual_atualizado.emit({
 		"jogador_id": jogador_id,
 		"fase": GameState.fase_atual,
 		"turno_numero": GameState.turno_atual
 	})
-
 
 func _ao_turno_encerrado(jogador_id: int) -> void:
 	turno_em_progresso = false
@@ -430,93 +418,69 @@ func _ao_turno_encerrado(jogador_id: int) -> void:
 
 	print("🔴 Turno encerrado! Jogador: %d" % jogador_id)
 
+func _ao_substituicao_ativo_solicitada(jogador_id: int) -> void:
+	if jogador_id == ID_JOGADOR_HUMANO:
+		print("⚠️ [MesaUI] Exibindo interface de promoção para o Jogador Humano.")
+		exibir_popup_promocao_obrigatoria(jogador_id)
+	else:
+		# A UI NÃO decide nada. Fica apenas aguardando o AIController (ou a Rede no PvP) responder.
+		print("⏳ [MesaUI] Aguardando Jogador %d escolher o novo ativo..." % jogador_id)
 
 func _atualizar_contador_turno(delta: float) -> void:
+	if not turno_em_progresso:
+		return
+
 	tempo_restante_turno = maxf(tempo_restante_turno - delta, 0.0)
 	progresso_turno.value = (1.0 - (tempo_restante_turno / timer_turno.wait_time)) * 100
 
-	if fmod(tempo_restante_turno, 10.0) < delta:
-		print("⏱️ Tempo restante: %.1fs" % tempo_restante_turno)
-
-
 func _ao_timer_turno_expirado() -> void:
-	print("⚠️ Tempo do turno expirado! Forçando avanço automático...")
-	_ao_botao_passar_turno_pressionado()
-
+	if jogador_ativo_id == ID_JOGADOR_HUMANO:
+		print("⚠️ [MesaUI] Tempo do turno expirado! Forçando avanço de turno...")
+		TurnManager.fase_final()
 
 func _ao_botao_passar_turno_pressionado() -> void:
-	"""Chamado quando o jogador clica em 'Passar Turno'. Vai direto pra
-	fase final — pular pra ATAQUE é uma escolha do jogador via botão de
-	atacar (menu contextual), não deste botão."""
+	print("🚨 [MesaUI] BOTÃO PASSAR TURNO PRESSIONADO! (Jogador Ativo: %d)" % jogador_ativo_id)
+	
 	if jogador_ativo_id != ID_JOGADOR_HUMANO:
-		print("⚠️ Não é o seu turno!")
+		print("⚠️ [MesaUI] Bloqueado: Não é o seu turno!")
 		return
 
+	print("➡️ [MesaUI] Solicitando TurnManager.fase_final()...")
 	TurnManager.fase_final()
-	turno_em_progresso = false
 
 # ==============================================================================
-# TODO(core): SINAIS QUE AINDA NÃO EXISTEM
-#
-# Os pontos abaixo dependiam, na arquitetura antiga, de sinais emitidos
-# pelo GameState (animal_nocauteado, condicao_aplicada,
-# alimentacao_distribuida, vitoria, empate). Hoje ConditionSystem,
-# KnockoutSystem e FoodSystem são "calculadoras" puras — não emitem
-# nada, só calculam quando chamadas.
-#
-# Isso significa que, por enquanto, esta cena NÃO reage automaticamente
-# a nocautes/condições/comida/vitória. Os métodos públicos abaixo
-# (atualizar_visual_condicao, atualizar_visual_comida,
-# animar_animal_nocauteado, _exibir_tela_vitoria, _exibir_tela_empate)
-# continuam existindo e funcionam se chamados — falta só quem os chame
-# no momento certo. O candidato natural é o BattleManager (ainda
-# esqueleto) coordenando CombatSystem -> DamageSystem -> KnockoutSystem
-# e emitindo sinais próprios ao final de cada resolução, e um sistema
-# de vitória ainda não escrito validando RuleValidator.validate_*_victory().
+# MÉTODOS VISUAIS DE SUPORTE
 # ==============================================================================
 
 func atualizar_visual_condicao(jogador_id: int) -> void:
-	"""Chamar depois de qualquer ação que possa ter mudado a condição
-	especial do Animal Ativo de um jogador."""
-	var jogador := _obter_player_state(jogador_id)
-	if jogador.ativo == null:
+	var ativo := GameState.obter_ativo(jogador_id)
+	if ativo == null:
 		return
 
-	var tipo: ConditionSystem.Tipo = ConditionSystem.obter_condicao(jogador.ativo)
+	var tipo: ConditionSystem.Tipo = ConditionSystem.obter_condicao(ativo)
 	_renderizar_condicao(jogador_id, tipo)
 
-
 func atualizar_visual_comida(jogador_id: int) -> void:
-	"""Chamar depois de qualquer ação que possa ter mudado a comida
-	disponível de um jogador (ex: fase de comida, alimentar manual)."""
 	var jogador := _obter_player_state(jogador_id)
 	_atualizar_visual_contador_comida(jogador_id, jogador.comida_disponivel)
 
-
 func animar_animal_nocauteado(jogador_id: int, instancia: AnimalInstance) -> void:
-	print("💥 Animal Nocauteado: %s (Jogador %d)" % [instancia.card.name, jogador_id])
+	print("💥 [MesaUI] Animando Animal Nocauteado: %s (Jogador %d)" % [instancia.card.name, jogador_id])
 
 	var campo_origem: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
 	var zona_descarte: Panel = jogador_zona_descarte if jogador_id == 0 else oponente_zona_descarte
 
-	# O filho direto do campo_ativo agora é o envelope (ver
-	# _adicionar_carta_na_zona), não mais a carta visual crua — mas
-	# como o envelope também é um Control comum, animar seu
-	# global_position tem exatamente o mesmo efeito visual de animar a
-	# carta diretamente, então nenhuma outra mudança é necessária aqui.
-	var envelope := _get_first_child_of_type(campo_origem, Control)
-	if envelope != null:
-		_animar_carta_para_zona(envelope, zona_descarte)
-
+	var grupo_ativo := campo_origem.get_node_or_null("GrupoAtivo")
+	if grupo_ativo != null:
+		_animar_carta_para_zona(grupo_ativo, zona_descarte)
 
 func _ao_vitoria(jogador_id: int) -> void:
-	print("🏆 VITÓRIA! Jogador %d venceu!" % jogador_id)
+	print("🏆 [MesaUI] VITÓRIA REGISTRADA! Jogador %d venceu!" % jogador_id)
 	_exibir_tela_vitoria(jogador_id)
 	turno_em_progresso = false
 
-
 func _ao_empate() -> void:
-	print("🤝 EMPATE!")
+	print("🤝 [MesaUI] EMPATE REGISTRADO!")
 	_exibir_tela_empate()
 	turno_em_progresso = false
 
@@ -525,29 +489,27 @@ func _ao_empate() -> void:
 # ==============================================================================
 
 func comprar_carta_animada(jogador_id: int, carta: CardBaseResource) -> void:
+	print("🃏 [MesaUI] Animando compra de carta: %s para Jogador %d" % [carta.name, jogador_id])
 	var zona_deck: Panel = jogador_zona_deck if jogador_id == 0 else oponente_zona_deck
 	var mao_container: HBoxContainer = jogador_mao if jogador_id == 0 else oponente_mao
 
 	var eh_oponente: bool = jogador_id != ID_JOGADOR_HUMANO
 	var carta_visual: Control = _criar_carta_ui(carta, eh_oponente)
-	carta_visual.global_position = zona_deck.global_position
+	
 	add_child(carta_visual)
+	carta_visual.global_position = zona_deck.global_position
 
-	_animar_carta_para_zona(carta_visual, mao_container)
+	var tween := create_tween()
+	tween.tween_property(carta_visual, "global_position", mao_container.global_position, 0.4)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
 
-	print("🃏 Carta comprada animada: %s (Jogador %d)" % [carta.name, jogador_id])
-
+	tween.tween_callback(func():
+		carta_visual.queue_free()
+		organizar_cartas_nas_zonas(jogador_id)
+	)
 
 func atualizar_visual_deck(jogador_id: int, cartas_restantes: int) -> void:
-	"""Desenha a pilha do deck como cartas de verso empilhadas (padrão
-	físico de TCG), com o total de cartas restantes embaixo.
-
-	TODO(core): não existe hoje um sinal de "carta comprada" — nem
-	DrawSystem (puro/estático) nem TurnManager emitem nada quando
-	compram. Por enquanto isso só é chamado uma vez, em
-	_ao_setup_concluido(). Precisa ser chamado de novo a cada compra
-	assim que esse sinal existir, senão a pilha visual fica
-	desatualizada durante a partida."""
 	const MAX_CARTAS_VISIVEIS := 6
 	const OFFSET_PILHA := Vector2(1.5, -1.5)
 
@@ -557,7 +519,7 @@ func atualizar_visual_deck(jogador_id: int, cartas_restantes: int) -> void:
 		child.queue_free()
 
 	if cartas_restantes <= 0:
-		print("📚 Deck vazio (Jogador %d)" % jogador_id)
+		print("📚 [MesaUI] Deck do Jogador %d está totalmente vazio." % jogador_id)
 		return
 
 	var quantidade_visual: int = mini(cartas_restantes, MAX_CARTAS_VISIVEIS)
@@ -579,33 +541,34 @@ func atualizar_visual_deck(jogador_id: int, cartas_restantes: int) -> void:
 	label_contador.self_modulate = Color.RED if cartas_restantes <= 5 else Color.WHITE
 	zona_deck.add_child(label_contador)
 
-	print("📚 Deck atualizado: %d cartas restantes (Jogador %d)" % [cartas_restantes, jogador_id])
+	print("📚 [MesaUI] Deck atualizado: %d cartas restantes (Jogador %d)" % [cartas_restantes, jogador_id])
 
 # ==============================================================================
-# GERENCIAMENTO DE ZONAS E DRAG & DROP
+# GERENCIAMENTO DE ZONAS E INTERAÇÕES
 # ==============================================================================
 
 func organizar_cartas_nas_zonas(jogador_id: int) -> void:
-	"""Reorganiza todas as cartas do jogador em suas respectivas zonas,
-	lendo direto do PlayerState (GameState.jogador_1 / jogador_2)."""
 	var jogador := _obter_player_state(jogador_id)
+	var ativo := GameState.obter_ativo(jogador_id)
+	var banco := GameState.obter_banco(jogador_id)
 
 	_limpar_zona(jogador_id, "mao")
 	_limpar_zona(jogador_id, "banco")
 	_limpar_zona(jogador_id, "ativo")
 	_limpar_zona(jogador_id, "descarte")
 
-	for carta_base in jogador.mao:
-		_adicionar_carta_na_zona(jogador_id, "mao", carta_base)
+	for i in jogador.mao.size():
+		var carta_base = jogador.mao[i]
+		_adicionar_carta_na_zona(jogador_id, "mao", carta_base, null, i)
 
-	for instancia in jogador.banco:
-		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card, instancia)
+	if ativo != null:
+		_adicionar_carta_na_zona(jogador_id, "ativo", ativo.card, ativo)
 
-	if jogador.ativo != null:
-		_adicionar_carta_na_zona(jogador_id, "ativo", jogador.ativo.card, jogador.ativo)
+	for i in banco.size():
+		var instancia = banco[i]
+		_adicionar_carta_na_zona(jogador_id, "banco", instancia.card, instancia, i)
 
-
-func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource, instancia: AnimalInstance = null) -> void:
+func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBaseResource, instancia: AnimalInstance = null, indice_ou_slot: int = -1) -> void:
 	var eh_mao_do_oponente: bool = (zona_nome == "mao" and jogador_id != ID_JOGADOR_HUMANO)
 	var eh_ativo_inicial_escondido: bool = (zona_nome == "ativo" and _setup_em_andamento)
 	var face_para_baixo: bool = eh_mao_do_oponente or eh_ativo_inicial_escondido
@@ -621,8 +584,7 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 
 			if jogador_id == ID_JOGADOR_HUMANO:
 				_configurar_inputs_carta(card_visual, carta, jogador_id, "mao", null)
-				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
-				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
+				_conectar_zoom_hover(card_visual, carta)
 
 		"ativo":
 			var campo_ativo: Panel = jogador_campo_ativo if jogador_id == 0 else oponente_campo_ativo
@@ -634,14 +596,11 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 
 			var deslocamento_x : float = 0.0
 			var deslocamento_y : float = 0.0
-			var passo_x : float = 10.0
-			var passo_y : float = 12.0
 
-			# 1. Instancia as energias PRIMEIRO (Ficam atrás na árvore de nós)
 			if instancia is AnimalInstance:
 				for energia_carta in instancia.attached_energies:
-					deslocamento_x += passo_x
-					deslocamento_y += passo_y
+					deslocamento_x += 10.0
+					deslocamento_y += 12.0
 					
 					var res_energia := HelperUI.instanciar_carta_escalada(energia_carta, TAMANHO_SLOT_ATIVO, false)
 					if not res_energia.is_empty():
@@ -651,16 +610,13 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 						grupo_cartas.add_child(env_energia)
 						_centralizar_envelope_no_painel(env_energia)
 						
-						# Aplica a cascata diagonal apenas nas energias
 						env_energia.offset_left += deslocamento_x
 						env_energia.offset_right += deslocamento_x
 						env_energia.offset_top += deslocamento_y
 						env_energia.offset_bottom += deslocamento_y
 						
-						vis_energia.mouse_entered.connect(func(): _abrir_zoom_leitura(vis_energia, energia_carta))
-						vis_energia.mouse_exited.connect(func(): _fechar_zoom_leitura())
+						_conectar_zoom_hover(vis_energia, energia_carta)
 
-			# 2. Instancia o Animal POR ÚLTIMO (Fica na frente de todas as energias)
 			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_ATIVO, face_para_baixo)
 			if resultado.is_empty():
 				return
@@ -669,85 +625,85 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			
 			grupo_cartas.add_child(envelope)
 			_centralizar_envelope_no_painel(envelope)
-			
-			# Animal NÃO recebe deslocamento (Fica na origem exata do slot)
+
+			# 🟢 INSERÇÃO 1: Adiciona indicador de vida/dano no Ativo
+			if instancia is AnimalInstance and not face_para_baixo:
+				HelperUI.adicionar_indicador_vida_e_dano(envelope, instancia)
 
 			if jogador_id == ID_JOGADOR_HUMANO:
 				_configurar_inputs_carta(card_visual, carta, jogador_id, "ativo", instancia)
 			
 			if not face_para_baixo:
-				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
-				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
+				_conectar_zoom_hover(card_visual, carta)
 
 		"banco":
 			var slots_banco: HBoxContainer = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
+			var slots := slots_banco.get_children()
 			
-			var slot_disponivel: Control = null
-			for slot in slots_banco.get_children():
-				if slot.get_child_count() == 0:
-					slot_disponivel = slot
-					break
-			
-			if slot_disponivel != null:
-				var grupo_cartas := Control.new()
-				grupo_cartas.name = "GrupoBanco"
-				grupo_cartas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-				slot_disponivel.add_child(grupo_cartas)
+			if indice_ou_slot < 0 or indice_ou_slot >= slots.size():
+				push_error("❌ [MesaUI] Índice do banco fora do alcance: %d" % indice_ou_slot)
+				return
+				
+			var slot_destino: Control = slots[indice_ou_slot]
 
-				var deslocamento_x : float = 0.0
-				var deslocamento_y : float = 0.0
-				var passo_x : float = 10.0
-				var passo_y : float = 12.0
+			var grupo_cartas := Control.new()
+			grupo_cartas.name = "GrupoBanco"
+			grupo_cartas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			slot_destino.add_child(grupo_cartas)
 
-				# 1. Instancia as energias PRIMEIRO
-				if instancia is AnimalInstance:
-					for energia_carta in instancia.attached_energies:
-						deslocamento_x += passo_x
-						deslocamento_y += passo_y
+			var deslocamento_x : float = 0.0
+			var deslocamento_y : float = 0.0
+
+			if instancia is AnimalInstance:
+				for energia_carta in instancia.attached_energies:
+					deslocamento_x += 10.0
+					deslocamento_y += 12.0
+					
+					var res_energia := HelperUI.instanciar_carta_escalada(energia_carta, TAMANHO_SLOT_BANCO, false)
+					if not res_energia.is_empty():
+						var env_energia: Control = res_energia["envelope"]
+						var vis_energia = res_energia["visual"]
 						
-						var res_energia := HelperUI.instanciar_carta_escalada(energia_carta, TAMANHO_SLOT_BANCO, false)
-						if not res_energia.is_empty():
-							var env_energia: Control = res_energia["envelope"]
-							var vis_energia = res_energia["visual"]
-							
-							grupo_cartas.add_child(env_energia)
-							_centralizar_envelope_no_painel(env_energia)
-							
-							env_energia.offset_left += deslocamento_x
-							env_energia.offset_right += deslocamento_x
-							env_energia.offset_top += deslocamento_y
-							env_energia.offset_bottom += deslocamento_y
-							
-							vis_energia.mouse_entered.connect(func(): _abrir_zoom_leitura(vis_energia, energia_carta))
-							vis_energia.mouse_exited.connect(func(): _fechar_zoom_leitura())
+						grupo_cartas.add_child(env_energia)
+						_centralizar_envelope_no_painel(env_energia)
+						
+						env_energia.offset_left += deslocamento_x
+						env_energia.offset_right += deslocamento_x
+						env_energia.offset_top += deslocamento_y
+						env_energia.offset_bottom += deslocamento_y
+						
+						_conectar_zoom_hover(vis_energia, energia_carta)
 
-				# 2. Instancia o Animal POR ÚLTIMO
-				var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
-				if resultado.is_empty():
-					return
-				var card_visual = resultado["visual"]
-				var envelope: Control = resultado["envelope"]
-				
-				grupo_cartas.add_child(envelope)
-				_centralizar_envelope_no_painel(envelope)
-				
-				# Animal NÃO recebe deslocamento
+			var resultado := HelperUI.instanciar_carta_escalada(carta, TAMANHO_SLOT_BANCO, face_para_baixo)
+			if resultado.is_empty():
+				return
+			var card_visual = resultado["visual"]
+			var envelope: Control = resultado["envelope"]
+			
+			grupo_cartas.add_child(envelope)
+			_centralizar_envelope_no_painel(envelope)
 
-				if jogador_id == ID_JOGADOR_HUMANO:
-					_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
-				
-				card_visual.mouse_entered.connect(func(): _abrir_zoom_leitura(card_visual, carta))
-				card_visual.mouse_exited.connect(func(): _fechar_zoom_leitura())
+			# 🟢 INSERÇÃO 2: Adiciona indicador de vida/dano no Banco
+			if instancia is AnimalInstance and not face_para_baixo:
+				HelperUI.adicionar_indicador_vida_e_dano(envelope, instancia)
+
+			if jogador_id == ID_JOGADOR_HUMANO:
+				_configurar_inputs_carta(card_visual, carta, jogador_id, "banco", instancia)
+			
+			_conectar_zoom_hover(card_visual, carta)
 
 		"descarte":
 			pass
 
-## Centraliza um envelope (já com custom_minimum_size correto) dentro
-## do Panel pai via anchors — substitui o antigo
-## _aplicar_escala_e_centralizar_ativo. Não precisa de call_deferred:
-## HelperUI.instanciar_carta_escalada calcula o tamanho final na hora,
-## então a centralização roda no mesmo frame, sem esperar layout
-## nenhum.
+func _conectar_zoom_hover(nodo_visual: Control, carta: CardBaseResource) -> void:
+	if not nodo_visual.mouse_entered.is_connected(_on_card_mouse_entered):
+		nodo_visual.mouse_entered.connect(_on_card_mouse_entered.bind(nodo_visual, carta))
+	if not nodo_visual.mouse_exited.is_connected(_fechar_zoom_leitura):
+		nodo_visual.mouse_exited.connect(_fechar_zoom_leitura)
+
+func _on_card_mouse_entered(nodo_visual: Control, carta: CardBaseResource) -> void:
+	_abrir_zoom_leitura(nodo_visual, carta)
+
 func _centralizar_envelope_no_painel(envelope: Control) -> void:
 	var tamanho: Vector2 = envelope.custom_minimum_size
 	envelope.anchor_left = 0.5
@@ -759,187 +715,83 @@ func _centralizar_envelope_no_painel(envelope: Control) -> void:
 	envelope.offset_right = tamanho.x / 2.0
 	envelope.offset_bottom = tamanho.y / 2.0
 
-
 func _configurar_inputs_carta(carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int, contexto: String, instancia: AnimalInstance) -> void:
-	if not carta_visual.is_connected("gui_input", Callable(self, "_ao_input_carta")):
-		carta_visual.gui_input.connect(_ao_input_carta.bindv([carta_visual, carta_resource, jogador_id, contexto, instancia]))
+	if not carta_visual.gui_input.is_connected(_ao_input_carta):
+		carta_visual.gui_input.connect(_ao_input_carta.bind(carta_visual, carta_resource, jogador_id, contexto, instancia))
 
-
-## Despachante único de clique em carta. Decide entre 3 caminhos,
-## nesta ordem de prioridade:
-##   1. Escolha do Animal Ativo inicial (setup) — comportamento especial.
-##   2. Modo de seleção de alvo já ativo (Crescer/Fortalecer/Retroceder/
-##      Alimentar esperando um animal) — clique tenta completar a ação
-##      pendente, não abre menu novo.
-##   3. Clique normal — abre o menu contextual com as opções válidas
-##      pra esta carta neste contexto (mão/ativo/banco).
-##
-## `contexto` é "mao" | "ativo" | "banco". `instancia` é a
-## AnimalInstance correspondente quando o contexto é "ativo"/"banco"
-## (null pra "mao", onde o animal ainda não existe em campo) — precisa
-## ser a instância, não só a carta, porque duas cópias da mesma
-## espécie no Banco compartilham o mesmo CardResource e ficariam
-## ambíguas se identificássemos só pela carta.
 func _ao_input_carta(event: InputEvent, carta_visual: Control, carta_resource: CardBaseResource, jogador_id: int, contexto: String, instancia: AnimalInstance) -> void:
 	if not (event is InputEventMouseButton and event.pressed):
 		return
 
+	# 1. Leitura/Zoom com Botão Direito: Permitido a qualquer momento (mesmo no turno da IA)
 	if event.button_index == MOUSE_BUTTON_RIGHT:
+		print("[MesaUI] Clique com botão direito na carta %s (Zoom)." % carta_resource.name)
 		_abrir_zoom_leitura(carta_visual, carta_resource)
 		return
 
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
+	# 2. Exceção do Setup: Permite escolher o ativo inicial na fase de preparação
 	if _jogador_aguardando_escolha_ativo == jogador_id:
+		print("[MesaUI] Clique na carta: %s | Contexto: %s | Jogador: %d" % [carta_resource.name, contexto, jogador_id])
 		_tentar_confirmar_ativo_inicial(jogador_id, carta_resource)
 		return
 
+	# 3. 🛡️ TRAVA CRÍTICA DE TURNO E JOGO ATIVO
+	# Se a partida acabou ou NÃO é o turno do humano, bloqueia qualquer ação com botão esquerdo
+	if not GameState.partida_ativa or GameState.jogador_ativo != ID_JOGADOR_HUMANO:
+		print("⚠️ [MesaUI] Clique ignorado: Ação bloqueada fora do seu turno (Jogador Ativo: %d)." % GameState.jogador_ativo)
+		return
+
+	print("[MesaUI] Clique na carta: %s | Contexto: %s | Jogador: %d" % [carta_resource.name, contexto, jogador_id])
+
+	# 4. Processa seleção de alvo (agora protegido pela trava de turno acima)
 	if _selecao_alvo_ativa:
 		_tentar_completar_selecao_alvo(instancia, contexto)
 		return
 
-	# Menu de ações só existe pras próprias cartas do jogador humano —
-	# cartas do oponente continuam só com zoom (botão direito, acima).
+	# 5. Só abre menu para cartas do próprio jogador humano
 	if jogador_id != ID_JOGADOR_HUMANO:
 		return
 
 	var opcoes: Array[Dictionary] = _construir_opcoes_menu(carta_resource, contexto, instancia)
 	if opcoes.is_empty():
+		print("[MesaUI] Nenhuma opção disponível no menu contextual para a carta %s." % carta_resource.name)
 		return
 
 	_abrir_menu_generico(carta_visual.global_position, opcoes)
-
 
 func _tentar_confirmar_ativo_inicial(jogador_id: int, carta_resource: CardBaseResource) -> void:
 	var jogador := _obter_player_state(jogador_id)
 	var indice: int = jogador.mao.find(carta_resource)
 
 	if indice == -1:
+		push_warning("⚠️ [MesaUI] Tentativa de selecionar carta inicial que não está na mão!")
 		return
 
+	print("[Setup] Confirmando escolha de ativo inicial (Índice %d)." % indice)
 	if SetupManager.confirmar_animal_ativo(jogador_id, indice):
 		_jogador_aguardando_escolha_ativo = -1
 		organizar_cartas_nas_zonas(jogador_id)
 	else:
 		_exibir_texto_flutuante("Selecione um Animal Filhote", 1.5)
 
-
 # ==============================================================================
-# CONSTRUÇÃO DO MENU — regra travada com o time:
-# o TIPO/DADOS da carta decide QUAIS botões existem (Filhote não tem
-# "Crescer", animal sem habilidade não tem "Habilidade" — o botão nem
-# aparece). O ESTADO DO TURNO (já usou energia, já recuou, já jogou
-# cataclismo) decide se um botão que EXISTE fica habilitado — isso já
-# é responsabilidade do RuleValidator, checado antes de adicionar a
-# opção na lista (se não pode, a opção simplesmente não entra —
-# preferimos "não aparece" a "aparece cinza" pra manter o menu curto).
-# ==============================================================================
-
-func _construir_opcoes_menu(carta: CardBaseResource, contexto: String, instancia: AnimalInstance) -> Array[Dictionary]:
-	var opcoes: Array[Dictionary] = []
-	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
-
-	if carta is CardResource and carta.super_type == "animal":
-		match contexto:
-			"mao":
-				if carta.stage == "Filhote":
-					opcoes.append({"texto": "Reserva", "callback": _acao_reserva.bind(carta)})
-				elif _existe_alvo_de_crescimento(carta, jogador):
-					opcoes.append({"texto": "Crescer", "callback": _iniciar_selecao_crescer.bind(carta)})
-
-			"ativo":
-				if RuleValidator.validate_retreat_possivel(jogador.ativo, jogador):
-					opcoes.append({"texto": "Retroceder", "callback": _iniciar_selecao_retroceder})
-				if carta.text_ui != "":
-					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
-				if RuleValidator.validate_attack(jogador.ativo, carta):
-					opcoes.append({"texto": "Atacar", "callback": _acao_atacar.bind(carta)})
-
-			"banco":
-				if carta.text_ui != "":
-					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
-
-	elif carta is EffectResource:
-		match carta.super_type:
-			"energia":
-				if contexto == "mao" and not GameState.energia_anexada_neste_turno:
-					opcoes.append({"texto": "Fortalecer", "callback": _iniciar_selecao_fortalecer.bind(carta)})
-			"vestigio", "territorio":
-				if contexto == "mao":
-					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
-			"cataclismo":
-				if contexto == "mao" and not GameState.cataclismo_jogado_neste_turno:
-					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
-					
-
-	return opcoes
-
-
-## Existe algum animal em campo (Ativo ou Banco) que essa carta possa
-## evoluir? Usado só pra decidir se o botão "Crescer" aparece — a
-## validação de verdade (turno, etc.) roda de novo na hora de
-## executar, via RuleValidator.validate_evolution dentro do
-## BattleManager.
-func _existe_alvo_de_crescimento(carta_evolucao: CardResource, jogador: PlayerState) -> bool:
-	for instancia in jogador.animais_em_campo():
-		if RuleValidator.validate_evolution_line(instancia, carta_evolucao):
-			return true
-	return false
-
-# ==============================================================================
-# SISTEMA DE ZOOM E MENU CONTEXTUAL
+# SISTEMA DE ZOOM (PREVIEW DE CARTA)
 # ==============================================================================
 
 func _abrir_zoom_leitura(_carta_visual: Control, carta_resource: CardBaseResource) -> void:
 	if painel_zoom:
-		# Passamos o recurso direto. O painel se adapta se for CardResource ou EffectResource
 		painel_zoom.exibir_preview(carta_resource, false)
 
 func _fechar_zoom_leitura() -> void:
 	if painel_zoom:
 		painel_zoom.esconder_preview()
 
-func _abrir_menu_generico(posicao_global: Vector2, opcoes: Array[Dictionary]) -> void:
-	_fechar_menu_contextual()
-
-	var menu: Panel = Panel.new()
-	menu.add_theme_stylebox_override("panel", StyleBoxFlat.new())
-	menu.custom_minimum_size = Vector2(150, 36 * opcoes.size() + 20)
-	menu.global_position = posicao_global + Vector2(100, 0)
-
-	var vbox: VBoxContainer = VBoxContainer.new()
-	menu.add_child(vbox)
-
-	for opcao in opcoes:
-		var botao: Button = Button.new()
-		botao.text = opcao["texto"]
-		botao.pressed.connect(func():
-			_fechar_menu_contextual()
-			opcao["callback"].call()
-		)
-		vbox.add_child(botao)
-
-	add_child(menu)
-	menu_contextual_ativo = menu
-
-	await get_tree().create_timer(30.0).timeout
-	if is_instance_valid(menu_contextual_ativo) and menu_contextual_ativo == menu:
-		_fechar_menu_contextual()
-
-
-func _fechar_menu_contextual() -> void:
-	if is_instance_valid(menu_contextual_ativo):
-		menu_contextual_ativo.queue_free()
-	menu_contextual_ativo = null
-
 
 # ==============================================================================
-# MODO DE SELEÇÃO DE ALVO — Crescer, Fortalecer, Retroceder, Alimentar
-# Todas essas ações precisam de um segundo clique (no animal-alvo) pra
-# completar. Entram em modo de seleção via _iniciar_selecao_*, e são
-# resolvidas em _tentar_completar_selecao_alvo quando o jogador clica
-# num animal válido em campo (ver _ao_input_carta).
+# MODO DE SELEÇÃO DE ALVO
 # ==============================================================================
 
 func _iniciar_selecao_crescer(carta_evolucao: CardResource) -> void:
@@ -948,11 +800,11 @@ func _iniciar_selecao_crescer(carta_evolucao: CardResource) -> void:
 	if indice_mao == -1:
 		return
 
+	print("[Seleção] Modo seleção ativado: CRESCER (%s)" % carta_evolucao.name)
 	_selecao_alvo_ativa = true
 	_selecao_alvo_tipo = "crescer"
 	_selecao_alvo_dados = {"indice_mao": indice_mao, "carta_evolucao": carta_evolucao}
 	_exibir_texto_flutuante("Selecione o animal que vai crescer", 2.0)
-
 
 func _iniciar_selecao_fortalecer(carta_energia: EffectResource) -> void:
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
@@ -960,43 +812,41 @@ func _iniciar_selecao_fortalecer(carta_energia: EffectResource) -> void:
 	if indice_mao == -1:
 		return
 
+	print("[Seleção] Modo seleção ativado: FORTALECER com %s" % carta_energia.name)
 	_selecao_alvo_ativa = true
 	_selecao_alvo_tipo = "fortalecer"
 	_selecao_alvo_dados = {"indice_mao": indice_mao, "carta": carta_energia}
 	_exibir_texto_flutuante("Selecione o animal que vai receber a energia", 2.0)
 
-
 func _iniciar_selecao_retroceder() -> void:
+	print("[Seleção] Modo seleção ativado: RETROCEDER")
 	_selecao_alvo_ativa = true
 	_selecao_alvo_tipo = "retroceder"
 	_selecao_alvo_dados = {}
 	_exibir_texto_flutuante("Selecione o animal do Banco que vai substituir", 2.0)
 
-
 func _iniciar_selecao_alimentar() -> void:
+	print("[Seleção] Modo seleção ativado: ALIMENTAR")
 	_selecao_alvo_ativa = true
 	_selecao_alvo_tipo = "alimentar"
 	_selecao_alvo_dados = {}
 	_exibir_texto_flutuante("Selecione o animal que vai se alimentar", 2.0)
 
-
 func _cancelar_selecao_alvo() -> void:
 	if not _selecao_alvo_ativa:
 		return
 
+	print("[Seleção] Modo de seleção de alvo cancelado.")
 	_selecao_alvo_ativa = false
 	_selecao_alvo_tipo = ""
 	_selecao_alvo_dados = {}
 
-
-## Chamado quando o jogador clica num animal (Ativo ou Banco) enquanto
-## há uma seleção de alvo pendente. `instancia` é a AnimalInstance
-## clicada (null se o clique não foi num animal em campo — nesse
-## caso ignoramos, o jogador precisa clicar num animal de verdade ou
-## apertar ESC pra cancelar).
 func _tentar_completar_selecao_alvo(instancia: AnimalInstance, contexto: String) -> void:
 	if instancia == null or (contexto != "ativo" and contexto != "banco"):
+		print("[Seleção] Clique fora de um alvo válido em campo. Ignorando.")
 		return
+
+	print("[Seleção] Tentando aplicar '%s' no alvo %s (Contexto: %s)" % [_selecao_alvo_tipo, instancia.card.name, contexto])
 
 	match _selecao_alvo_tipo:
 		"crescer":
@@ -1007,21 +857,19 @@ func _tentar_completar_selecao_alvo(instancia: AnimalInstance, contexto: String)
 
 		"retroceder":
 			if contexto != "banco":
+				print("[Seleção] Alvo inválido para recuo. É necessário escolher um do Banco.")
 				_exibir_texto_flutuante("Escolha um animal do Banco", 1.5)
 				return
 			_acao_retroceder(instancia)
 
 		"alimentar":
 			_abrir_popup_quantidade_alimento(instancia)
-			# Não fecha o modo de seleção aqui — o popup de quantidade
-			# é quem decide (confirmar ou cancelar), ver função abaixo.
 			return
 
 	_cancelar_selecao_alvo()
 
-
-## Popup simples de "quanto alimentar"
 func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
+	print("[MesaUI] Exibindo pop-up para definir quantidade de alimento para: %s" % animal.card.name)
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
 	var maximo: int = jogador.comida_disponivel
 
@@ -1033,8 +881,6 @@ func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	var overlay: Control = refs["overlay"]
 	var vbox: VBoxContainer = refs["vbox"]
 
-	# Criamos um dicionário para garantir que o escopo da variável 
-	# seja compartilhado corretamente entre as lambdas (passagem por referência)
 	var estado_popup := {
 		"quantidade": 1
 	}
@@ -1071,6 +917,7 @@ func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	botao_confirmar.text = "Confirmar"
 	botao_confirmar.pressed.connect(func():
 		var quant_final: int = estado_popup["quantidade"]
+		print("[MesaUI] Quantidade de comida confirmada: %d para %s" % [quant_final, animal.card.name])
 		overlay.queue_free()
 		_cancelar_selecao_alvo()
 		_acao_alimentar(animal, quant_final)
@@ -1080,17 +927,14 @@ func _abrir_popup_quantidade_alimento(animal: AnimalInstance) -> void:
 	var botao_cancelar := Button.new()
 	botao_cancelar.text = "Cancelar"
 	botao_cancelar.pressed.connect(func():
+		print("[MesaUI] Pop-up de alimentação cancelado.")
 		overlay.queue_free()
 		_cancelar_selecao_alvo()
 	)
 	vbox.add_child(botao_cancelar)
 
-
 # ==============================================================================
-# AÇÕES — cada uma chama BattleManager.processar_acao diretamente
-# (é um autoload, acessível daqui), emite acao_jogador_solicitada pra
-# quem mais quiser escutar (log, futuro replay), e reage ao resultado:
-# sucesso -> refresca o tabuleiro; falha -> mostra o motivo.
+# AÇÕES E PROCESSAMENTO DE BARRAS/REGRAS
 # ==============================================================================
 
 func _acao_reserva(carta: CardBaseResource) -> void:
@@ -1101,14 +945,12 @@ func _acao_reserva(carta: CardBaseResource) -> void:
 
 	_resolver_acao("jogar_para_banco", {"indice_mao": indice_mao, "carta": carta})
 
-
 func _acao_crescer(indice_mao: int, carta_evolucao: CardResource, instancia: AnimalInstance) -> void:
 	_resolver_acao("crescer", {
 		"indice_mao": indice_mao,
 		"carta_evolucao": carta_evolucao,
 		"instancia": instancia,
 	})
-
 
 func _acao_fortalecer(indice_mao: int, carta: EffectResource, animal: AnimalInstance) -> void:
 	_resolver_acao("anexar_energia", {
@@ -1117,36 +959,23 @@ func _acao_fortalecer(indice_mao: int, carta: EffectResource, animal: AnimalInst
 		"animal": animal,
 	})
 
-
 func _acao_retroceder(substituto: AnimalInstance) -> void:
-	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
-	var custo: int = jogador.ativo.card.cost_retreat if jogador.ativo != null else 0
-
+	var ativo := GameState.obter_ativo(ID_JOGADOR_HUMANO)
+	var custo: int = ativo.card.cost_retreat if ativo != null else 0
 	if custo <= 0:
 		_resolver_acao("recuar", {"substituto": substituto, "energias_para_descarte": []})
 		return
-
-	# Custo > 0: precisa que o jogador escolha QUAIS energias
-	# descartar. Reaproveita a mesma ideia do menu genérico, mas com
-	# uma lista construída a partir de attached_energies.
 	_abrir_selecao_energias_para_recuo(substituto, custo)
 
-
-func _ao_alternar_selecao_energia(pressionado: bool, energia: EffectResource, selecionadas: Array) -> void:
-	if pressionado and not selecionadas.has(energia):
-		selecionadas.append(energia)
-	elif not pressionado and selecionadas.has(energia):
-		selecionadas.erase(energia)
-
-
 func _abrir_selecao_energias_para_recuo(substituto: AnimalInstance, custo: int) -> void:
-	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
-	var ativo: AnimalInstance = jogador.ativo
+	var ativo := GameState.obter_ativo(ID_JOGADOR_HUMANO)
 
 	if ativo.attached_energies.size() < custo:
+		print("⚠️ [Ação] Energias insuficientes para o recuo de %s." % ativo.card.name)
 		_exibir_texto_flutuante("Energia insuficiente pra recuar", 1.5)
 		return
 
+	print("[MesaUI] Solicitando descarte de %d energias para recuar." % custo)
 	var refs := HelperUI.criar_popup_base(
 		self,
 		"Pagar custo de recuo",
@@ -1155,43 +984,56 @@ func _abrir_selecao_energias_para_recuo(substituto: AnimalInstance, custo: int) 
 	var overlay: Control = refs["overlay"]
 	var vbox: VBoxContainer = refs["vbox"]
 
-	var selecionadas: Array = []
+	var botoes_energia: Array[Dictionary] = []
 
 	for energia in ativo.attached_energies:
 		var botao := Button.new()
 		botao.text = str(energia.name)
 		botao.toggle_mode = true
-		botao.toggled.connect(_ao_alternar_selecao_energia.bindv([energia, selecionadas]))
 		vbox.add_child(botao)
+		botoes_energia.append({"botao": botao, "energia": energia})
 
 	var botao_confirmar := Button.new()
 	botao_confirmar.text = "Confirmar"
 	botao_confirmar.pressed.connect(func():
+		var selecionadas: Array = []
+		for item in botoes_energia:
+			if item["botao"].button_pressed:
+				selecionadas.append(item["energia"])
+
 		if selecionadas.size() != custo:
 			_exibir_texto_flutuante("Selecione exatamente %d energia(s)" % custo, 1.5)
 			return
+
+		print("[Ação] Energias selecionadas para descarte no recuo: %d" % selecionadas.size())
 		overlay.queue_free()
 		_resolver_acao("recuar", {"substituto": substituto, "energias_para_descarte": selecionadas})
 	)
 	vbox.add_child(botao_confirmar)
 
-
 func _acao_alimentar(animal: AnimalInstance, quantidade: int) -> void:
 	_resolver_acao("distribuir_comida", {"animal": animal, "quantidade": quantidade})
 
-
 func _acao_atacar(carta: CardResource) -> void:
-	var resultado := _resolver_acao("atacar", {"ataque": carta}, false)
+	var ataque_final: CardResource = carta
+	# Fallback: Se não passou o recurso do ataque diretamente, busca no Ativo Humano
+	if ataque_final == null:
+		var ativo := GameState.obter_ativo(ID_JOGADOR_HUMANO)
+		if ativo != null and ativo.card != null and "attacks" in ativo.card and ativo.card.attacks.size() > 0:
+			ataque_final = ativo.card.attacks[0]
+
+	if ataque_final == null:
+		print("❌ [MesaUI] Impossível atacar: Nenhum recurso de ataque encontrado!")
+		_exibir_texto_flutuante("Ataque indisponível", 1.5)
+		return
+
+	var resultado := _resolver_acao("atacar", {"ataque": ataque_final})
 	if resultado.get("sucesso", false):
-		_animar_ataque(carta)
+		_animar_ataque(ataque_final)
 
-
-func _acao_usar_habilidade(carta: CardBaseResource) -> void:
-	# Ainda não existe intérprete de AbilityResource/text_ui no
-	# projeto — fora do escopo do Turno 1. O botão aparece (porque a
-	# carta tem texto de habilidade), mas por enquanto só avisa.
+func _acao_usar_habilidade(_carta: CardBaseResource) -> void:
+	print("[Ação] Habilidade solicitada (Recurso pendente de implementação).")
 	_exibir_texto_flutuante("Habilidades: em breve", 1.5)
-
 
 func _acao_ativar_efeito(carta: EffectResource) -> void:
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
@@ -1206,16 +1048,14 @@ func _acao_ativar_efeito(carta: EffectResource) -> void:
 		"territorio": tipo_acao = "jogar_territorio"
 		_: return
 
-	# Território substitui o que já estiver ativo (é global, ver
-	# GameState.territorio_ativo) — confirmação antes de resolver.
 	if carta.super_type == "territorio" and GameState.territorio_ativo != null:
 		_confirmar_substituicao_territorio(indice_mao, carta, tipo_acao)
 		return
 
 	_resolver_acao(tipo_acao, {"indice_mao": indice_mao, "carta": carta})
 
-
 func _confirmar_substituicao_territorio(indice_mao: int, carta: EffectResource, tipo_acao: String) -> void:
+	print("[MesaUI] Solicitando confirmação para substituir Território Ativo.")
 	var refs := HelperUI.criar_popup_base(
 		self,
 		"Substituir Território?",
@@ -1236,31 +1076,30 @@ func _confirmar_substituicao_territorio(indice_mao: int, carta: EffectResource, 
 	botao_cancelar.pressed.connect(func(): overlay.queue_free())
 	refs["vbox"].add_child(botao_cancelar)
 
-
-## Ponto único de saída pra qualquer ação: chama o BattleManager,
-## emite o sinal público (observabilidade externa), e reage ao
-## resultado. `refrescar_automatico=false` é usado só por "atacar",
-## porque ele já dispara sua própria animação antes do refresh.
-func _resolver_acao(tipo_acao: String, dados: Dictionary, refrescar_automatico: bool = true) -> Dictionary:
+func _resolver_acao(tipo_acao: String, dados: Dictionary) -> Dictionary:
+	print("[Ação] Enviando solicitação: '%s' para BattleManager..." % tipo_acao)
 	var resultado: Dictionary = BattleManager.processar_acao(tipo_acao, dados)
 	acao_jogador_solicitada.emit(tipo_acao, dados)
 
 	if resultado.get("sucesso", false):
-		# VERIFICAÇÃO DE BLOQUEIO: Se o ataque nocauteou alguém e exige promoção
+		print("[Ação] Sucesso na execução de '%s'." % tipo_acao)
+		_refrescar_tabuleiro()
+
 		if resultado.get("status") == "aguardando_promocao":
 			var jogador_bloqueado_id: int = resultado.get("jogador_bloqueado")
-			exibir_popup_promocao_obrigatoria(jogador_bloqueado_id)
-		
-		# Fluxo normal sem mortes/bloqueios
-		elif refrescar_automatico:
-			_refrescar_tabuleiro()
+			print("⚠️ [Ação] Promoção obrigatória necessária para Jogador %d!" % jogador_bloqueado_id)
+			
+			# 🟢 SÓ ABRE POP-UP SE FOR O JOGADOR HUMANO!
+			if jogador_bloqueado_id == ID_JOGADOR_HUMANO:
+				exibir_popup_promocao_obrigatoria(jogador_bloqueado_id)
+			else:
+				print("🤖 [MesaUI] Aguardando a IA promover o novo ativo...")
 	else:
 		var motivo: String = resultado.get("motivo", "acao_invalida")
+		print("❌ [Ação] Falha em '%s'. Motivo: %s" % [tipo_acao, motivo])
 		_exibir_texto_flutuante(_traduzir_motivo_falha(motivo), 1.5)
 
 	return resultado
-
-
 
 func _traduzir_motivo_falha(motivo: String) -> String:
 	match motivo:
@@ -1275,11 +1114,6 @@ func _traduzir_motivo_falha(motivo: String) -> String:
 		"paralisado_falhou": return "Paralisado! O ataque falhou"
 		_: return "Ação inválida"
 
-
-## Re-renderiza os dois lados do tabuleiro após qualquer ação bem
-## sucedida. Simples e sempre correto; otimizar (renderizar só o que
-## mudou) fica pra depois, quando performance virar problema de
-## verdade — não é ainda.
 func _refrescar_tabuleiro() -> void:
 	organizar_cartas_nas_zonas(0)
 	organizar_cartas_nas_zonas(1)
@@ -1290,7 +1124,7 @@ func _refrescar_tabuleiro() -> void:
 # ANIMAÇÕES VISUAIS
 # ==============================================================================
 
-func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao: float = DURACAO_ANIMACAO_CARTA) -> void:
+func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao: float = DURACAO_ANIMACAO_CARTA) -> Signal:
 	if dicionario_tweens_cartas.has(carta_visual):
 		dicionario_tweens_cartas[carta_visual].kill()
 
@@ -1299,6 +1133,8 @@ func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao:
 
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_QUAD)
+
+	carta_visual.z_index = 10
 
 	tween.tween_property(
 		carta_visual,
@@ -1313,15 +1149,46 @@ func _animar_carta_para_zona(carta_visual: Control, zona_alvo: Control, duracao:
 			carta_visual.z_index = 0
 			carta_visual.modulate.a = 1.0
 	)
+	
+	return tween.finished
+	
+func _ao_partida_encerrada(vencedor_id: int, motivo: String) -> void:
+	print("🏆 [MesaUI] Fim de jogo detectado! Vencedor: %d | Motivo: %s" % [vencedor_id, motivo])
 
+	# 1. Limpa menus e seleções que estiverem abertos
+	_cancelar_selecao_alvo()
+	_fechar_menu_contextual()
+	_fechar_popup_setup()
+
+	# 2. Identifica se havia um animal ativo no perdedor e roda a animação de ir pro descarte FIRST
+	var id_perdedor: int = 1 if vencedor_id == 0 else 0
+	var campo_perdedor: Panel = jogador_campo_ativo if id_perdedor == 0 else oponente_campo_ativo
+	var zona_descarte: Panel = jogador_zona_descarte if id_perdedor == 0 else oponente_zona_descarte
+	var grupo_ativo := campo_perdedor.get_node_or_null("GrupoAtivo")
+
+	if grupo_ativo != null and is_instance_valid(grupo_ativo):
+		print("💥 [MesaUI] Animando descarte do animal nocauteado antes de finalizar...")
+		await _animar_carta_para_zona(grupo_ativo, zona_descarte)
+		await get_tree().create_timer(0.2).timeout # Pequena pausa para percepção visual
+
+	# 3. Trava totalmente os inputs e temporizadores da mesa
+	set_process_input(false)
+	turno_em_progresso = false
+	timer_turno.stop()
+	if botao_passar_turno:
+		botao_passar_turno.disabled = true
+
+	# 4. Exibe a tela correspondente
+	if vencedor_id == -1:
+		_exibir_tela_empate()
+	else:
+		_exibir_tela_vitoria(vencedor_id)
 
 func _animar_ataque(carta: CardResource) -> void:
 	var campo_ativo: Panel = jogador_campo_ativo
 	if campo_ativo.get_child_count() == 0:
 		return
 
-	# O filho direto do campo_ativo é o envelope, não a carta. Precisa
-	# furar mais um nível pra chegar na carta visual de verdade.
 	var envelope := _get_first_child_of_type(campo_ativo, Control)
 	if envelope == null or envelope.get_child_count() == 0:
 		return
@@ -1330,17 +1197,15 @@ func _animar_ataque(carta: CardResource) -> void:
 	if carta_visual == null:
 		return
 
-	# BUG CORRIGIDO: a versão anterior fazia
-	# `carta_visual.scale = Vector2(1.2, 1.2)` — um valor ABSOLUTO.
-	# Isso sobrescrevia a escala correta calculada por
-	# HelperUI.instanciar_carta_escalada (ex.: 0.55 pro slot ativo),
-	# fazendo a carta "explodir" pro tamanho de uma carta não escalada
-	# durante o pulso de ataque. O pulso agora é relativo à escala de
-	# repouso da própria carta.
+	if dicionario_tweens_cartas.has(carta_visual):
+		dicionario_tweens_cartas[carta_visual].kill()
+
 	var escala_base: Vector2 = carta_visual.scale
 	var escala_pulso: Vector2 = escala_base * 1.15
 
 	var tween: Tween = create_tween()
+	dicionario_tweens_cartas[carta_visual] = tween
+
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.set_trans(Tween.TRANS_QUAD)
 
@@ -1349,22 +1214,32 @@ func _animar_ataque(carta: CardResource) -> void:
 	tween.tween_property(carta_visual, "scale", escala_pulso, 0.1)
 	tween.tween_property(carta_visual, "scale", escala_base, 0.1)
 
+	tween.tween_callback(func():
+		dicionario_tweens_cartas.erase(carta_visual)
+		if is_instance_valid(carta_visual):
+			carta_visual.scale = escala_base
+	)
 
 func _exibir_texto_flutuante(texto: String, duracao: float) -> void:
-	"""Substitui o antigo _animar_lancamento_moeda — generalizado pra
-	qualquer mensagem central de curta duração (resultado de sorteio,
-	etc.), evitando duplicar a mesma animação de Label pra cada caso."""
 	var label: Label = Label.new()
 	label.text = texto
 	label.add_theme_font_size_override("font_size", 48)
-	label.global_position = get_viewport().get_visible_rect().get_center()
+	
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
 	add_child(label)
 
 	var tween: Tween = create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
 
-	tween.tween_property(label, "modulate", Color.TRANSPARENT, duracao)
+	var posicao_inicial := label.position
+	tween.parallel().tween_property(label, "modulate", Color.TRANSPARENT, duracao)
+	tween.parallel().tween_property(label, "position", posicao_inicial + Vector2(0, -30), duracao)
+	
 	tween.tween_callback(func(): label.queue_free())
 
 # ==============================================================================
@@ -1380,11 +1255,14 @@ func _renderizar_condicao(jogador_id: int, tipo: ConditionSystem.Tipo) -> void:
 	if tipo == ConditionSystem.Tipo.NENHUMA:
 		return
 
-	var nome_condicao: String = ConditionSystem.Tipo.keys()[tipo]
+	var nome_condicao: String = ConditionSystem.Tipo.keys()[tipo].capitalize()
 
 	var condicao_visual: Label = Label.new()
 	condicao_visual.text = nome_condicao
 	condicao_visual.add_theme_font_size_override("font_size", 24)
+	condicao_visual.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	condicao_visual.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	condicao_visual.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	match tipo:
 		ConditionSystem.Tipo.ADORMECIDO:
@@ -1399,34 +1277,29 @@ func _renderizar_condicao(jogador_id: int, tipo: ConditionSystem.Tipo) -> void:
 			condicao_visual.self_modulate = Color.PURPLE
 
 	zona_condicao.add_child(condicao_visual)
-	print("🔧 Visual de condição atualizado: %s" % nome_condicao)
-
 
 func _atualizar_visual_contador_comida(jogador_id: int, pontos: int) -> void:
 	var contador_panel: Panel = jogador_contador_comida if jogador_id == 0 else oponente_contador_comida
 
-	for child in contador_panel.get_children():
-		child.queue_free()
+	var label_comida: Label = contador_panel.get_node_or_null("LabelComida") as Label
+	if label_comida == null:
+		label_comida = Label.new()
+		label_comida.name = "LabelComida"
+		label_comida.add_theme_font_size_override("font_size", 32)
+		label_comida.modulate = Color.ORANGE
+		label_comida.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label_comida.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label_comida.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		contador_panel.add_child(label_comida)
 
-	var label_comida: Label = Label.new()
-	label_comida.text = str(pontos)
-	label_comida.add_theme_font_size_override("font_size", 32)
-	label_comida.modulate = Color.ORANGE
-
-	contador_panel.add_child(label_comida)
-
-	if not contador_panel.is_connected("mouse_entered", Callable(self, "_ao_mouse_entrou_comida")):
-		contador_panel.mouse_entered.connect(_ao_mouse_entrou_comida.bind(jogador_id))
+		contador_panel.set_meta("jogador_id", jogador_id)
+		contador_panel.mouse_entered.connect(func(): _ao_mouse_entrou_comida(contador_panel.get_meta("jogador_id")))
 		contador_panel.mouse_exited.connect(_ao_mouse_saiu_comida)
 
-	# Só o pool do jogador humano é clicável — o pool do oponente é
-	# só informativo (mesma lógica de por que cartas do oponente não
-	# têm menu de ações).
-	if jogador_id == ID_JOGADOR_HUMANO and not contador_panel.is_connected("gui_input", Callable(self, "_ao_input_zona_comida")):
-		contador_panel.gui_input.connect(_ao_input_zona_comida)
+		if jogador_id == ID_JOGADOR_HUMANO:
+			contador_panel.gui_input.connect(_ao_input_zona_comida)
 
-	print("🍖 Contador de comida atualizado: %d pontos (Jogador %d)" % [pontos, jogador_id])
-
+	label_comida.text = str(pontos)
 
 func _ao_input_zona_comida(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
@@ -1437,6 +1310,7 @@ func _ao_input_zona_comida(event: InputEvent) -> void:
 
 	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
 	if jogador.comida_disponivel <= 0:
+		print("⚠️ [MesaUI] Pool de comida vazio! Não é possível abrir o menu de alimentação.")
 		_exibir_texto_flutuante("Sem pontos de comida no pool", 1.5)
 		return
 
@@ -1445,11 +1319,9 @@ func _ao_input_zona_comida(event: InputEvent) -> void:
 		[{"texto": "Alimentar", "callback": _iniciar_selecao_alimentar}]
 	)
 
-
 func _ao_mouse_entrou_comida(jogador_id: int) -> void:
 	var jogador := _obter_player_state(jogador_id)
-	print("ℹ️ Hover em contador de comida: %d pontos" % jogador.comida_disponivel)
-
+	print("ℹ️ Hover em contador de comida: %d pontos (Jogador %d)" % [jogador.comida_disponivel, jogador_id])
 
 func _ao_mouse_saiu_comida() -> void:
 	pass
@@ -1459,33 +1331,29 @@ func _ao_mouse_saiu_comida() -> void:
 # ==============================================================================
 
 func _exibir_tela_vitoria(ganhador_id: int) -> void:
-	_exibir_tela_final("🏆 JOGADOR %d VENCEU! 🏆" % ganhador_id, Color.BLACK)
+	_exibir_tela_final("🏆 JOGADOR %d VENCEU! 🏆" % ganhador_id, Color(0, 0, 0, 0.85))
 	print("🏆 Tela de vitória exibida para Jogador: %d" % ganhador_id)
 
-
 func _exibir_tela_empate() -> void:
-	_exibir_tela_final("🤝 EMPATE! 🤝", Color.GRAY)
+	_exibir_tela_final("🤝 EMPATE! 🤝", Color(0.2, 0.2, 0.2, 0.85))
 	print("🤝 Tela de empate exibida")
 
-
 func _exibir_tela_final(texto: String, cor_fundo: Color) -> void:
-	var tela: Panel = Panel.new()
-	tela.anchor_left = 0
-	tela.anchor_top = 0
-	tela.anchor_right = 1
-	tela.anchor_bottom = 1
+	var tela := Panel.new()
+	tela.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var stylebox: StyleBoxFlat = StyleBoxFlat.new()
+	var stylebox := StyleBoxFlat.new()
 	stylebox.bg_color = cor_fundo
 	tela.add_theme_stylebox_override("panel", stylebox)
 
-	var label: Label = Label.new()
+	var label := Label.new()
 	label.text = texto
-	label.add_theme_font_size_override("font_size", 64)
-	label.anchor_left = 0.5
-	label.anchor_top = 0.5
-	label.offset_left = -250
-	label.offset_top = -50
+	label.add_theme_font_size_override("font_size", 56)
+	label.add_theme_color_override("font_color", Color.GOLD if "VENCEU" in texto else Color.WHITE)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	tela.add_child(label)
 	add_child(tela)
@@ -1496,10 +1364,6 @@ func _exibir_tela_final(texto: String, cor_fundo: Color) -> void:
 
 func _obter_player_state(jogador_id: int) -> PlayerState:
 	return GameState.jogador_1 if jogador_id == 0 else GameState.jogador_2
-
-
-func _criar_carta_ui(carta: CardBaseResource, face_para_baixo: bool = false) -> Control:
-	return HelperUI.instanciar_carta(carta, face_para_baixo)
 
 func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 	var container: Control = null
@@ -1513,8 +1377,6 @@ func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 					child.queue_free()
 		
 		"banco":
-			# Remove os filhos imediatamente da árvore para que o slot
-			# seja detectado como vazio no mesmo frame, depois libera a memória.
 			var slots_container = jogador_slots_banco if jogador_id == 0 else oponente_slots_banco
 			if slots_container:
 				for slot in slots_container.get_children():
@@ -1537,77 +1399,191 @@ func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 					child.queue_free()
 
 func _get_first_child_of_type(parent: Node, tipo: Object) -> Control:
+	if not parent:
+		return null
 	for child in parent.get_children():
 		if is_instance_of(child, tipo):
 			return child as Control
 	return null
 
+func _criar_carta_ui(carta: CardBaseResource, face_para_baixo: bool = false) -> Control:
+	return HelperUI.instanciar_carta(carta, face_para_baixo)
+
 # =============================================================================
 # FLUXO DE PROMOÇÃO OBRIGATÓRIA (NOCAUTES)
 # =============================================================================
 
-## Abre o pop-up temporário exigindo que o jogador escolha um substituto do banco.
 func exibir_popup_promocao_obrigatoria(jogador_id: int) -> void:
-	# 1. Recupera o jogador que precisa promover do GameState
-	var jogador_alvo = GameState.jogador_1 if jogador_id == 0 else GameState.jogador_2
+	print("[MesaUI] Pop-up de Promoção Obrigatória solicitado para o Jogador %d." % jogador_id)
+	var banco = GameState.obter_banco(jogador_id)
 	
-	# Desativa o botão de passar turno para impedir que o jogo prossiga travado
 	botao_passar_turno.disabled = true
 	
-	# 2. Como você não tem as artes prontas, criamos um Pop-up simples via código
-	var popup = ConfirmationDialog.new()
-	popup.title = "PROMOÇÃO OBRIGATÓRIA"
-	popup.dialog_text = "Seu animal ativo foi nocauteado! Escolha um substituto do seu Banco:"
-	
-	# Remove os botões padrão de OK/Cancel para não deixar fechar sem escolher
-	popup.get_cancel_button().visible = false
-	popup.get_ok_button().visible = false
-	
-	# Container para listar os animais disponíveis no banco
-	var container_botoes = VBoxContainer.new()
-	popup.add_child(container_botoes)
-	
-	# 3. Cria um botão para cada animal que está no banco do jogador
-	for animal in jogador_alvo.banco:
-		var botao_animal = Button.new()
-		# Exibe o nome do animal e sua vida restante
+	if banco.is_empty():
+		print("⚠️ [MesaUI] Jogador %d não possui nenhum animal disponível no banco para promover!" % jogador_id)
+		return
+
+	var refs := HelperUI.criar_popup_base(
+		self,
+		"PROMOÇÃO OBRIGATÓRIA",
+		"Seu animal ativo foi nocauteado! Escolha um substituto do seu Banco:"
+	)
+	var overlay: Control = refs["overlay"]
+	var vbox: VBoxContainer = refs["vbox"]
+
+	for animal in banco:
+		var botao_animal := Button.new()
 		botao_animal.text = "%s (HP: %d/%d)" % [animal.card.name, animal.current_hp, animal.card.hp]
 		
-		# Quando clicado, envia a ação de promoção e fecha o popup
 		botao_animal.pressed.connect(func():
+			print("[MesaUI] Animal %s selecionado para promoção." % animal.card.name)
+			overlay.queue_free()
 			_confirmar_promocao(jogador_id, animal)
-			popup.queue_free()
 		)
-		container_botoes.add_child(botao_animal)
-		
-	# Adiciona o popup na mesa e o exibe centralizado
-	add_child(popup)
-	popup.popup_centered(Vector2i(400, 200))
+		vbox.add_child(botao_animal)
 
-## Dispara o sinal que o BattleManager está esperando para realizar a promoção física
 func _confirmar_promocao(jogador_id: int, substituto: AnimalInstance) -> void:
-	# Reabilita o botão de passar turno
-	botao_passar_turno.disabled = false
-	
-	# Envia a ação para o gerenciador de batalha
-	acao_jogador_solicitada.emit("promover_ativo", {
+	print("[MesaUI] Confirmando promoção do animal %s para a posição ativa do Jogador %d." % [substituto.card.name, jogador_id])
+	if jogador_id == ID_JOGADOR_HUMANO:
+		botao_passar_turno.disabled = false
+
+	var res = _resolver_acao("promover_ativo", {
 		"jogador_id": jogador_id,
 		"substituto": substituto
 	})
+
+	# Notifica o TurnManager que a substituição foi concluída para destravar o fluxo
+	if res.get("sucesso", false):
+		TurnManager.notificar_ativo_substituido(jogador_id)
+
+# ==============================================================================
+# MENUS CONTEXTUAIS — CONSTRUÇÃO, VALIDAÇÃO E EXIBIÇÃO
+# Área dedicada: toda a lógica de "quais opções aparecem pra essa carta" e
+# "como o menu genérico é desenhado/fechado" mora aqui. As opções em si
+# (Reserva, Crescer, Retroceder, Atacar, Habilidade, Fortalecer, Ativar) só
+# aparecem quando a checagem correspondente do RuleValidator permite — a UI
+# nunca decide sozinha se uma ação é válida, apenas monta a lista de botões.
+# ==============================================================================
+
+func _construir_opcoes_menu(carta: CardBaseResource, contexto: String, instancia: AnimalInstance) -> Array[Dictionary]:
+	var opcoes: Array[Dictionary] = []
+	var jogador := _obter_player_state(ID_JOGADOR_HUMANO)
+	var ativo := GameState.obter_ativo(ID_JOGADOR_HUMANO)
+
+	if carta is CardResource and carta.super_type == "animal":
+		match contexto:
+			"mao":
+				if carta.stage == "Filhote":
+					opcoes.append({"texto": "Reserva", "callback": _acao_reserva.bind(carta)})
+				elif _existe_alvo_de_crescimento(carta, ID_JOGADOR_HUMANO):
+					opcoes.append({"texto": "Crescer", "callback": _iniciar_selecao_crescer.bind(carta)})
+
+			"ativo":
+				# Viabilidade de recuo é decidida inteiramente pelo RuleValidator — a UI só
+				# fornece um candidato completo (todas as energias anexadas ao ativo) em vez
+				# de uma lista vazia, pra não confundir "faltou selecionar descarte" com
+				# "não há energia suficiente pra recuar". Ver _pode_exibir_opcao_retroceder().
+				if _pode_exibir_opcao_retroceder(ativo, jogador):
+					opcoes.append({"texto": "Retroceder", "callback": _iniciar_selecao_retroceder})
+				
+				if carta.text_ui != "":
+					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
+				
+				# Corrigido: usa validar_atacar com o ID do jogador
+				var check_ataque := RuleValidator.validar_atacar(ID_JOGADOR_HUMANO)
+				if check_ataque.get("sucesso", false):
+					opcoes.append({"texto": "Atacar", "callback": _acao_atacar.bind(carta)})
+
+			"banco":
+				if carta.text_ui != "":
+					opcoes.append({"texto": "Habilidade", "callback": _acao_usar_habilidade.bind(carta)})
+
+	elif carta is EffectResource:
+		match carta.super_type:
+			"energia":
+				if contexto == "mao" and not GameState.energia_anexada_neste_turno:
+					opcoes.append({"texto": "Fortalecer", "callback": _iniciar_selecao_fortalecer.bind(carta)})
+			"vestigio", "territorio":
+				if contexto == "mao":
+					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
+			"cataclismo":
+				if contexto == "mao" and not GameState.cataclismo_jogado_neste_turno:
+					opcoes.append({"texto": "Ativar", "callback": _acao_ativar_efeito.bind(carta)})
+
+	return opcoes
+
+func _pode_exibir_opcao_retroceder(ativo: AnimalInstance, jogador: PlayerState) -> bool:
+	if ativo == null:
+		return false
+
+	# Usa o conjunto completo de energias anexadas como candidato de descarte —
+	# isso deixa o RuleValidator responder "dá pra recuar AGORA?" (banco não
+	# vazio, energia suficiente, sem bloqueio de status) sem exigir que o jogador
+	# já tenha escolhido quais energias descartar. A escolha real acontece depois,
+	# em _abrir_selecao_energias_para_recuo(), quando a ação é de fato executada.
+	var check_recuo := RuleValidator.validar_recuo(jogador, ativo.attached_energies)
+	return check_recuo.get("sucesso", false)
+
+func _existe_alvo_de_crescimento(carta_evolucao: CardResource, jogador_id: int) -> bool:
+	var animais_campo = GameState.obter_animais_em_campo(jogador_id)
+	for inst in animais_campo:
+		# Corrigido: usa a API atualizada validar_evolucao
+		var check_evo := RuleValidator.validar_evolucao(inst, carta_evolucao)
+		if check_evo.get("sucesso", false):
+			return true
+	return false
+	
+
+func _abrir_menu_generico(posicao_global: Vector2, opcoes: Array[Dictionary]) -> void:
+	_fechar_menu_contextual()
+
+	print("[MesaUI] Abrindo menu contextual com %d opções." % opcoes.size())
+	var menu: Panel = Panel.new()
+	menu.add_theme_stylebox_override("panel", StyleBoxFlat.new())
+	menu.custom_minimum_size = Vector2(150, 36 * opcoes.size() + 20)
+	menu.global_position = posicao_global + Vector2(100, 0)
+
+	var vbox: VBoxContainer = VBoxContainer.new()
+	menu.add_child(vbox)
+
+	for opcao in opcoes:
+		var botao: Button = Button.new()
+		botao.text = opcao["texto"]
+		botao.pressed.connect(func():
+			print("[MesaUI] Opção do menu selecionada: %s" % opcao["texto"])
+			_fechar_menu_contextual()
+			opcao["callback"].call()
+		)
+		vbox.add_child(botao)
+
+	add_child(menu)
+	menu_contextual_ativo = menu
+
+	await get_tree().create_timer(30.0).timeout
+	if is_instance_valid(menu_contextual_ativo) and menu_contextual_ativo == menu:
+		print("[MesaUI] Timeout do menu contextual atingido. Fechando.")
+		_fechar_menu_contextual()
+
+func _fechar_menu_contextual() -> void:
+	if is_instance_valid(menu_contextual_ativo):
+		menu_contextual_ativo.queue_free()
+	menu_contextual_ativo = null
 
 # ==============================================================================
 # CLEANUP
 # ==============================================================================
 
 func _exit_tree() -> void:
+	print("[MesaUI] Executando cleanup em _exit_tree().")
 	for tween in dicionario_tweens_cartas.values():
-		if tween:
+		if is_instance_valid(tween):
 			tween.kill()
+	dicionario_tweens_cartas.clear()
 
-	if TurnManager and TurnManager.turno_iniciado.is_connected(_ao_turno_iniciado):
-		TurnManager.turno_iniciado.disconnect(_ao_turno_iniciado)
-	if TurnManager and TurnManager.turno_encerrado.is_connected(_ao_turno_encerrado):
-		TurnManager.turno_encerrado.disconnect(_ao_turno_encerrado)
-# ==============================================================================
-# FIM DO SCRIPT
-# ==============================================================================
+	if TurnManager:
+		if TurnManager.turno_iniciado.is_connected(_ao_turno_iniciado):
+			TurnManager.turno_iniciado.disconnect(_ao_turno_iniciado)
+		if TurnManager.turno_encerrado.is_connected(_ao_turno_encerrado):
+			TurnManager.turno_encerrado.disconnect(_ao_turno_encerrado)
+		if TurnManager.has_signal("partida_encerrada") and TurnManager.partida_encerrada.is_connected(_ao_partida_encerrada):
+			TurnManager.partida_encerrada.disconnect(_ao_partida_encerrada)

@@ -21,7 +21,7 @@ script = ExtResource("1_trmg8")
 anchors_preset = 0
 offset_right = 450.0
 offset_bottom = 700.0
-mouse_filter = 2
+mouse_filter = 1
 
 [node name="TextureRect" type="TextureRect" parent="ContainerDaArte"]
 layout_mode = 0

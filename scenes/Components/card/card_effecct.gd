@@ -69,7 +69,7 @@ func _carregar_referencias() -> void:
 		
 		if node:
 			labels[label_name] = node
-			print("✓ Label '%s' carregado com sucesso" % label_name)
+			
 		else:
 			push_warning("Label não encontrado: %s" % label_name)
 

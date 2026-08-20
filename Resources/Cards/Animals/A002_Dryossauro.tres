@@ -1,10 +1,9 @@
-[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://ctonre6tm0d1"]
+[gd_resource type="Resource" script_class="CardResource" load_steps=2 format=3 uid="uid://dpehqvaicfcvk"]
 
 [ext_resource type="Script" uid="uid://b4fw8xaa86q8u" path="res://Scripts/Data/CardResource.gd" id="1_4wi2o"]
 
 [resource]
 script = ExtResource("1_4wi2o")
-card_id = "A002"
 sub_type = "Herbivoro"
 color = "amarelo"
 stage = "Adulto"
@@ -18,9 +17,9 @@ ability_name = "Proteção"
 attack_name = "Hyper vocalização"
 attack_cost = "⚪⚪"
 damage_base = 50
-damage_type = "fixo"
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""

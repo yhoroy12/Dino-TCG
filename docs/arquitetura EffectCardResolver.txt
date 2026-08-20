@@ -1,0 +1,70 @@
+er_cataclismo, _resolver_vestigio ou _resolver_territorio).
+
+Retorna true se o efeito foi processado com sucesso ou false se falhou (ex: alvo inválido, pré-requisito não atendido).
+
+3. Funções para Cataclismo (_resolver_cataclismo)
+Processa cartas de impacto imediato (tipo cataclismo).
+
+Função Principal: _resolver_cataclismo(carta, jogador_id, contexto)
+
+Subfunções / Ações Especializadas:
+
+_cataclismo_comprar_cartas(): Trata compra simples ou descarte/embaralhar da mão antes de comprar (ex: Chuva de Meteoros, Mãos Frágeis).
+
+_cataclismo_modificar_dano(): Injeta bônus ou reduções temporárias em lote via EffectSystem.aplicar_efeito para um grupo de dinossauros (ex: Presas Afiadas, Pele Rígida, Pele Escamosa).
+
+_cataclismo_manipular_recursos(): Gerencia transferências instantâneas de comida/energia entre animais, reserva, deck ou descarte (ex: Super Alimentação, Roubar Comida, Ataque Revezado, Força Marrom).
+
+_cataclismo_puxar_ou_resgatar(): Move cartas entre zonas específicas (ex: Proteger o Ninho, Resgate Fóssil).
+
+_cataclismo_troca_forçada(): Executa movimentação forçada do ativo do adversário ou recuo tático do próprio jogador (ex: Emboscada, Recuo Tático).
+
+4. Funções para Vestígio (_resolver_vestigio)
+Processa cartas anexadas a dinossauros ou mantidas em campo fornecendo efeito contínuo/passivo.
+
+Função Principal: _resolver_vestigio(carta, jogador_id, contexto)
+
+Subfunções:
+
+_vestigio_anexar_animal(): Conecta o vestígio ao AnimalInstance alvo.
+
+_vestigio_aplicar_modificador_passivo(): Registra modificadores permanentes ou de gatilho no EffectSystem usando o carta.id como origem_id.
+
+5. Funções para Território (_resolver_territorio)
+Processa a substituição e aplicação da arena global.
+
+Função Principal: _resolver_territorio(carta, jogador_id, contexto)
+
+Subfunções:
+
+_territorio_substituir_global(): Remove o território antigo de GameState.territorio_ativo, expurga todos os efeitos ativos gerados pela origem do território antigo via EffectSystem.remover_efeitos_por_origem() e define o novo.
+
+_territorio_aplicar_regras_globais(): Aplica os buffs/debuffs para os dinossauros em campo afetados pela arena.
+
+6. Funções Reaproveitáveis (Helpers & Utility)
+Utilitários privados usados por todos os resolvidores acima para evitar duplicação de código.
+
+_resolver_alvos(mec_target_player, mec_target_zone, jogador_id, contexto) -> Array[AnimalInstance]: Retorna uma lista com os animais afetados (Ativo rival, todo o campo do dono, escolha individual, etc.).
+
+_rodar_moeda_loop(tipo_loop) -> int: Executa lançamentos de moeda para cartas condicionais (ex: Esgotamento - rodar até dar coroa).
+
+_filtrar_animais_por_cor_ou_estagio(animais: Array, cor: String, estagio: String) -> Array[AnimalInstance]: Aplica os filtros mec_filter_color e mec_filter_stage.
+
+_parse_custom_json(json_str: String) -> Dictionary: Lê configurações extras de forma segura sem quebrar a execução.
+
+Fluxo de execução
+[Mesa UI] -> clica em jogar Cataclismo
+	│
+	▼
+[BattleManager.processar_acao("jogar_cataclismo", dados)]
+	│
+	├─► 1. RuleValidator.validate_cataclysm(...) [Valida se pode jogar]
+	│
+	├─► 2. EffectCardResolver.executar_carta_efeito(carta, jogador_id, dados)
+	│        │
+	│        ├─► Roteia para _resolver_cataclismo()
+	│        ├─► Aplica efeitos via EffectSystem / DeckManager / GameState
+	│        └─► Imprime logs detalhados do resultado
+	│
+	├─► 3. Remove carta da mão -> Manda para o Descarte
+	└─► 4. Marca flag: GameState.cataclismo_jogado_neste_turno = true

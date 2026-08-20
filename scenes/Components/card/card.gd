@@ -132,7 +132,6 @@ func _renderizar_frente() -> void:
 		
 		# Habilidade do Dinossauro (se houver)
 		if recurso_carta.ability_name != "":
-			print("Buscando habilidade: ", recurso_carta.ability_name)
 			_set_label_text("habilidade", recurso_carta.ability_name)
 			var descricao = CardDatabase.obter_descricao_habilidade(recurso_carta.ability_name)
 			

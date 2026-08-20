@@ -1,98 +1,22 @@
 # ==================================================
 # Nome: RuleValidator
 # Categoria: Core
-# Responsável por validar TODAS as regras oficiais
-# do Dino TCG.
+# Responsável por validar TODAS as regras oficiais do Dino TCG.
 #
 # Não altera estado da partida.
-# Não compra cartas.
-# Não aplica dano.
-# Não move cartas.
-# Não executa efeitos.
-#
-# Apenas verifica se uma ação é válida
-# de acordo com o Rulebook.
+# Não compra cartas, não aplica dano, não move cartas.
+# Apenas verifica se uma ação é válida segundo o Rulebook.
 # ==================================================
 class_name RuleValidator
-
-
-# ==================================================
-# SETUP DA PARTIDA
-# ==================================================
-
-static func validate_coin_flip(_game_state) -> bool:
-	return false
-
-
-static func validate_starting_hand(_player) -> bool:
-	return false
-
-
-static func validate_mulligan(_player) -> bool:
-	return false
-
-
-static func validate_active_animal(_card) -> bool:
-	return false
-
-
-static func validate_initial_bench(_player) -> bool:
-	return false
-
-
-static func validate_match_start(_game_state) -> bool:
-	return false
-
 
 # ==================================================
 # REGRAS DE BARALHO
 # ==================================================
 
-static func validate_deck(deck: DeckData) -> bool:
+static func validate_deck(deck: DeckData) -> Dictionary:
 	if deck == null:
-		return false
-
-	return DeckRulesSystem.validar_deck(deck)["valido"]
-
-
-static func validate_deck_size(deck: DeckData) -> bool:
-	if deck == null:
-		return false
-
-	return deck.cartas.size() == DeckRulesSystem.TAMANHO_DECK_VALIDO
-
-
-static func validate_card_copies(deck: DeckData) -> bool:
-	if deck == null:
-		return false
-
-	for carta in deck.cartas:
-		var limite: int = DeckRulesSystem.obter_limite_copias(carta)
-		var copias: int = DeckRulesSystem.contar_copias(deck.cartas, carta.id)
-
-		if copias > limite:
-			return false
-
-	return true
-
-
-static func validate_baby_requirement(deck: DeckData) -> bool:
-	if deck == null:
-		return false
-
-	return DeckRulesSystem.validar_deck(deck)["possui_filhote"]
-
-
-# ==================================================
-# COMPRA DE CARTAS
-# ==================================================
-
-static func validate_card_draw(_player, _game_state) -> bool:
-	return false
-
-
-static func validate_deck_out(_player) -> bool:
-	return false
+		return {"valido": false, "motivo": "Baralho nulo."}
+	return DeckRulesSystem.validar_deck(deck)
 
 
 # ==================================================
@@ -101,497 +25,418 @@ static func validate_deck_out(_player) -> bool:
 
 const TAMANHO_MAXIMO_BANCO: int = 4
 
+static func validar_banco(card: CardResource, player: PlayerState) -> Dictionary:
+	if player == null or card == null:
+		return {"sucesso": false, "motivo": "Parâmetros inválidos."}
 
-static func validate_bench_placement(card, player: PlayerState) -> bool:
-	if card == null or player == null:
-		return false
+	if card.super_type.to_lower() != "animal":
+		return {"sucesso": false, "motivo": "Apenas cartas de Animal podem ir para o banco."}
 
-	if not (card is CardResource):
-		return false
+	if card.stage.to_lower() != "filhote":
+		return {"sucesso": false, "motivo": "Apenas animais Filhotes podem ser baixados diretamente."}
 
-	if card.super_type != "animal":
-		return false
+	if GameState.obter_banco(player.id).size() >= TAMANHO_MAXIMO_BANCO:
+		return {"sucesso": false, "motivo": "Banco reserva está cheio (máximo 4)."}
 
-	if card.stage != "Filhote":
-		return false
-
-	return validate_bench_size(player)
-
-
-static func validate_bench_size(player: PlayerState) -> bool:
-	if player == null:
-		return false
-
-	return GameState.obter_banco(player.id).size() < TAMANHO_MAXIMO_BANCO
+	return {"sucesso": true, "motivo": "Posicionamento no banco autorizado."}
 
 
 # ==================================================
 # EVOLUÇÃO
 # ==================================================
 
-static func validate_evolution(instancia: AnimalInstance, nova_carta: CardResource, _game_state = null) -> bool:
-	return EvolutionSystem.pode_crescer(instancia, nova_carta)
-
-
-static func validate_evolution_line(instancia: AnimalInstance, nova_carta: CardResource) -> bool:
+static func validar_evolucao(instancia: AnimalInstance, nova_carta: CardResource) -> Dictionary:
 	if instancia == null or nova_carta == null:
-		return false
+		return {"sucesso": false, "motivo": "Instância de animal ou carta inválida."}
 
-	return nova_carta.grow_from == instancia.card.id
+	if not EvolutionSystem.pode_crescer(instancia, nova_carta):
+		return {"sucesso": false, "motivo": "Evolução incompatível ou requisitos não atendidos."}
 
-
-static func validate_evolution_food(_instancia) -> bool:
-	return false
-
-
-static func validate_evolution_turn_requirement(_instancia) -> bool:
-	return false
-
-
-# ==================================================
-# SISTEMA DE COMIDA
-# ==================================================
-
-static func validate_food_distribution(player: PlayerState, animal: AnimalInstance, quantidade: int) -> bool:
-	if player == null or animal == null:
-		return false
-
-	if quantidade <= 0:
-		return false
-
-	if quantidade > player.comida_disponivel:
-		return false
-
-	var ativo := GameState.obter_ativo(player.id)
-	var banco := GameState.obter_banco(player.id)
-
-	if animal != ativo and not banco.has(animal):
-		return false
-
-	return true
-
-
-static func validate_food_limit(_animal) -> bool:
-	return false
-
-
-static func validate_food_type(_animal, _food_type) -> bool:
-	return false
-
-
-static func validate_food_consumption(_animal) -> bool:
-	return false
-
-
-static func validate_starvation(animal: AnimalInstance) -> bool:
-	if animal == null:
-		return false
-
-	return animal.current_food <= 0
+	return {"sucesso": true, "motivo": "Evolução autorizada."}
 
 
 # ==================================================
 # ENERGIAS
 # ==================================================
 
-static func validate_energy_attachment(player: PlayerState, animal: AnimalInstance, energy) -> bool:
+static func validar_anexar_energia(player: PlayerState, animal: AnimalInstance, energy: EffectResource) -> Dictionary:
 	if player == null or animal == null or energy == null:
-		return false
+		return {"sucesso": false, "motivo": "Parâmetros inválidos."}
 
-	if not (energy is EffectResource):
-		return false
+	if energy.super_type.to_lower() != "energia":
+		return {"sucesso": false, "motivo": "A carta selecionada não é uma Energia."}
 
-	if energy.super_type != "energia":
-		return false
+	if GameState.energia_anexada_neste_turno:
+		return {"sucesso": false, "motivo": "Você já anexou uma energia neste turno."}
 
 	var ativo := GameState.obter_ativo(player.id)
 	var banco := GameState.obter_banco(player.id)
 
 	if animal != ativo and not banco.has(animal):
-		return false
+		return {"sucesso": false, "motivo": "O animal alvo não pertence ao seu campo."}
 
-	return validate_energy_attachment_limit(player)
-
-
-static func validate_energy_attachment_limit(player) -> bool:
-	if player == null:
-		return false
-
-	return not GameState.energia_anexada_neste_turno
-
-
-static func validate_energy_cost(_animal, _cost) -> bool:
-	return false
-
-
-static func validate_attached_energies(_animal) -> bool:
-	return false
+	return {"sucesso": true, "motivo": "Energia anexada com sucesso."}
 
 
 # ==================================================
-# HABILIDADES
+# COMIDA
 # ==================================================
 
-static func validate_ability_use(_ability, _source, _game_state) -> bool:
-	return false
+static func validar_distribuicao_comida(player: PlayerState, animal: AnimalInstance, quantidade: int) -> Dictionary:
+	if player == null or animal == null:
+		return {"sucesso": false, "motivo": "Parâmetros inválidos."}
 
+	if quantidade <= 0:
+		return {"sucesso": false, "motivo": "Quantidade de comida deve ser maior que zero."}
 
-static func validate_trigger(_trigger, _game_state) -> bool:
-	return false
+	if quantidade > player.comida_disponivel:
+		return {"sucesso": false, "motivo": "Comida insuficiente na reserva do jogador."}
 
+	var ativo := GameState.obter_ativo(player.id)
+	var banco := GameState.obter_banco(player.id)
 
-static func validate_condition(_condition, _source) -> bool:
-	return false
+	if animal != ativo and not banco.has(animal):
+		return {"sucesso": false, "motivo": "O animal alvo não pertence ao seu campo."}
 
-
-static func validate_target(_target, _source, _game_state) -> bool:
-	return false
-
-
-static func validate_ability_cost(_ability, _source) -> bool:
-	return false
-
-
-# ==================================================
-# VESTÍGIOS
-# ==================================================
-
-static func validate_fossil_card(_card, _player, _game_state) -> bool:
-	return false
+	return {"sucesso": true, "motivo": "Alimentação autorizada."}
 
 
 # ==================================================
 # CATACLISMOS
 # ==================================================
 
-static func validate_cataclysm(_card, _player, _game_state) -> bool:
-	return false
+static func validate_cataclysm(player: PlayerState, card: EffectResource) -> Dictionary:
+	print("\n🔍 [RuleValidator] Validando jogada de Cataclismo '%s'..." % [card.name if card else "Nula"])
 
+	if player == null or card == null:
+		return {"sucesso": false, "motivo": "Parâmetros inválidos para jogar Cataclismo."}
 
-static func validate_cataclysm_limit(_player) -> bool:
-	return false
+	if card.super_type.to_lower() != "cataclismo":
+		return {"sucesso": false, "motivo": "A carta informada não é do tipo Cataclismo."}
 
+	if not GameState.partida_ativa:
+		return {"sucesso": false, "motivo": "A partida não está ativa."}
 
-# ==================================================
-# TERRITÓRIOS
-# ==================================================
+	if GameState.jogador_ativo != player.id:
+		return {"sucesso": false, "motivo": "Não é o seu turno."}
 
-static func validate_territory(_card, _game_state) -> bool:
-	return false
+	if GameState.fase_atual != GameState.Fase.PRINCIPAL:
+		return {"sucesso": false, "motivo": "Cataclismos só podem ser jogados na Fase Principal."}
 
+	if not player.mao.has(card):
+		return {"sucesso": false, "motivo": "A carta não está na mão do jogador."}
 
-static func validate_territory_replacement(_card, _game_state) -> bool:
-	return false
+	if GameState.cataclismo_jogado_neste_turno:
+		return {"sucesso": false, "motivo": "Você já jogou um Cataclismo neste turno."}
 
-
-# ==================================================
-# CONDIÇÕES ESPECIAIS
-# ==================================================
-
-static func validate_status_application(_target, _status) -> bool:
-	return false
-
-
-static func validate_status_removal(_target, _status) -> bool:
-	return false
+	print("✅ [RuleValidator] Cataclismo AUTORIZADO!")
+	return {"sucesso": true, "motivo": "Cataclismo autorizado."}
 
 
 # ==================================================
-# SONO / PARALISIA / VENENO / SANGRAMENTO
+# CONDIÇÕES ESPECIAIS E STATUS
 # ==================================================
 
-static func validate_sleep(_animal) -> bool:
-	return false
+static func validate_status_application(target: AnimalInstance, _status: ConditionSystem.Tipo) -> bool:
+	if target == null or target.current_hp <= 0:
+		return false
+
+	if ConditionSystem.possui_condicao(target, ConditionSystem.Tipo.PROTEGIDO):
+		print("🛡️ [RuleValidator] Status negado: '%s' está Protegido." % target.card.name)
+		return false
+
+	return true
 
 
-static func validate_paralysis(_animal) -> bool:
-	return false
+static func validate_status_removal(target: AnimalInstance) -> bool:
+	if target == null:
+		return false
+	return ConditionSystem.obter_condicao(target) != ConditionSystem.Tipo.NENHUMA
 
 
-static func validate_poison(_animal) -> bool:
-	return false
+static func validate_sleep(animal: AnimalInstance) -> bool:
+	return ConditionSystem.possui_condicao(animal, ConditionSystem.Tipo.ADORMECIDO)
 
 
-static func validate_bleeding(_animal) -> bool:
-	return false
+static func validate_paralysis(animal: AnimalInstance) -> bool:
+	return ConditionSystem.possui_condicao(animal, ConditionSystem.Tipo.PARALISADO)
+
+
+static func validate_poison(animal: AnimalInstance) -> bool:
+	return ConditionSystem.possui_condicao(animal, ConditionSystem.Tipo.ENVENENADO)
+
+
+static func validate_bleeding(animal: AnimalInstance) -> bool:
+	return ConditionSystem.possui_condicao(animal, ConditionSystem.Tipo.SANGRANDO)
 
 
 # ==================================================
 # RECUO
 # ==================================================
 
-static func validate_retreat_possivel(animal: AnimalInstance, player: PlayerState) -> bool:
-	if animal == null or player == null:
-		return false
+static func validar_recuo(player: PlayerState, energias_descarte: Array) -> Dictionary:
+	if player == null:
+		return {"sucesso": false, "motivo": "Jogador inválido."}
 
-	var ativo := GameState.obter_ativo(player.id)
-
-	if animal != ativo:
-		return false
+	var ativo: AnimalInstance = GameState.obter_ativo(player.id)
+	if ativo == null:
+		return {"sucesso": false, "motivo": "Você não possui um animal ativo."}
 
 	if GameState.recuo_realizado_neste_turno:
-		return false
+		return {"sucesso": false, "motivo": "Você já recuou um animal neste turno."}
 
-	if not ConditionSystem.pode_tentar_acao(animal, "recuar"):
-		return false
+	if GameState.obter_banco(player.id).is_empty():
+		return {"sucesso": false, "motivo": "Você precisa de pelo menos 1 animal no banco para recuar."}
 
-	if animal.attached_energies.size() < animal.card.cost_retreat:
-		return false
+	if not ConditionSystem.pode_tentar_acao(ativo, "recuar"):
+		return {"sucesso": false, "motivo": "O animal não pode recuar devido ao seu status atual."}
 
-	return validate_replacement_active(player)
+	var custo: int = ativo.card.cost_retreat
+	if energias_descarte.size() < custo:
+		return {"sucesso": false, "motivo": "Energias suficientes não foram selecionadas para pagar o custo de recuo (%d)." % custo}
 
+	for energia in energias_descarte:
+		if not ativo.attached_energies.has(energia):
+			return {"sucesso": false, "motivo": "Uma das energias selecionadas não está anexada ao animal."}
 
-static func validate_retreat(animal: AnimalInstance, player: PlayerState, energias_selecionadas: Array = [], _game_state = null) -> bool:
-	if not validate_retreat_possivel(animal, player):
-		return false
-
-	return validate_retreat_cost(animal, energias_selecionadas)
-
-
-static func validate_retreat_cost(animal: AnimalInstance, energias_selecionadas: Array = []) -> bool:
-	if animal == null or animal.card == null:
-		return false
-
-	var custo: int = animal.card.cost_retreat
-
-	if custo <= 0:
-		return true
-
-	if energias_selecionadas.size() != custo:
-		return false
-
-	for energia in energias_selecionadas:
-		if not animal.attached_energies.has(energia):
-			return false
-
-	return true
-
-
-static func validate_retreat_target(player: PlayerState, replacement: AnimalInstance) -> bool:
-	if player == null or replacement == null:
-		return false
-
-	var banco := GameState.obter_banco(player.id)
-
-	if not banco.has(replacement):
-		return false
-
-	return replacement.current_hp > 0
+	return {"sucesso": true, "motivo": "Recuo autorizado."}
 
 
 # ==================================================
 # ATAQUE & COMBATE
 # ==================================================
 
-## Valida se o jogador ativo pode realizar um ataque neste momento.
-## Retorna um Dictionary: {"sucesso": bool, "motivo": String}
 static func validar_atacar(jogador_id: int) -> Dictionary:
-	print("\n🔍 [RuleValidator] Iniciando validação de ataque para o Jogador %d..." % jogador_id)
+	print("\n🔍 [RuleValidator] Validando ataque para Jogador %d..." % jogador_id)
 
-	# --------------------------------------------------
-	# BLOCO 1: Estado do Jogo e Turno
-	# --------------------------------------------------
 	if not GameState.partida_ativa:
-		var msg := "A partida não está ativa."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "A partida não está ativa."}
 
 	if GameState.jogador_ativo != jogador_id:
-		var msg := "Não é o seu turno de jogar."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "Não é o seu turno de jogar."}
 
 	if GameState.fase_atual != GameState.Fase.PRINCIPAL:
-		var msg := "Ataques só podem ser realizados durante a Fase Principal."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "Ataques só podem ser realizados durante a Fase Principal."}
 
-	# Regra oficial TCG: O primeiro jogador não pode atacar no primeiro turno do jogo
 	if GameState.turno_atual <= 1:
-		var msg := "Não é permitido atacar no Turno 1 do jogo."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "Não é permitido atacar no Turno 1 do jogo."}
 
-
-	# --------------------------------------------------
-	# BLOCO 2: Validação do Atacante (Seu Animal Ativo)
-	# --------------------------------------------------
 	var atacante: AnimalInstance = GameState.obter_ativo(jogador_id)
 	if atacante == null:
-		var msg := "Você não possui um animal ativo na mesa para atacar."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "Você não possui um animal ativo."}
 
 	if atacante.current_hp <= 0:
-		var msg := "%s está nocauteado e não pode atacar." % atacante.card.name
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "%s está nocauteado." % atacante.card.name}
 
 	if atacante.ja_atacou_este_turno:
-		var msg := "%s já realizou um ataque neste turno." % atacante.card.name
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "%s já realizou um ataque neste turno." % atacante.card.name}
 
-
-	# --------------------------------------------------
-	# BLOCO 3: Condições Especiais e Status
-	# --------------------------------------------------
 	if not ConditionSystem.pode_tentar_acao(atacante, "atacar"):
 		var status_nome: String = ConditionSystem.Tipo.keys()[ConditionSystem.obter_condicao(atacante)]
-		var msg := "%s está impedido de atacar devido ao status: %s." % [atacante.card.name, status_nome]
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "%s está impedido de atacar devido ao status: %s." % [atacante.card.name, status_nome]}
 
-
-	# --------------------------------------------------
-	# BLOCO 4: Energias Suficientes (Usa o Passo 1)
-	# --------------------------------------------------
 	if not atacante.pode_usar_ataque(atacante.card):
-		var msg := "%s não possui as energias necessárias anexadas para este ataque." % atacante.card.name
-		print("❌ [RuleValidator] Recusado: %s (Custo: %s | Anexadas: %d)" % [
-			msg, 
-			atacante.card.attack_cost, 
-			atacante.attached_energies.size()
-		])
-		return {"sucesso": false, "motivo": msg}
+		return {"sucesso": false, "motivo": "%s não possui as energias necessárias para este ataque." % atacante.card.name}
 
-
-	# --------------------------------------------------
-	# BLOCO 5: Validação do Defensor (Oponente)
-	# --------------------------------------------------
 	var id_oponente: int = 1 if jogador_id == 0 else 0
 	var defensor: AnimalInstance = GameState.obter_ativo(id_oponente)
 
-	if defensor == null:
-		var msg := "O oponente não possui um animal ativo no campo para ser atacado."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
+	if defensor == null or defensor.current_hp <= 0:
+		return {"sucesso": false, "motivo": "O oponente não possui um animal ativo válido para ser atacado."}
 
-	if defensor.current_hp <= 0:
-		var msg := "O animal ativo do oponente já está nocauteado."
-		print("❌ [RuleValidator] Recusado: %s" % msg)
-		return {"sucesso": false, "motivo": msg}
-
-
-	# --------------------------------------------------
-	# SUCESSO: Todas as regras foram atendidas
-	# --------------------------------------------------
 	print("✅ [RuleValidator] Ataque AUTORIZADO! %s -> %s" % [atacante.card.name, defensor.card.name])
 	return {"sucesso": true, "motivo": "Ataque autorizado."}
 
 
-## Wrapper booleano mantido para compatibilidade com chamadas simples de outros sistemas
-static func validate_attack(atacante: AnimalInstance, ataque: CardResource) -> bool:
+## Wrapper booleano mantido para compatibilidade
+static func validate_attack(atacante: AnimalInstance, _ataque: CardResource) -> bool:
 	if atacante == null:
 		return false
-	# Descobre quem é o dono do atacante no GameState
 	var jogador_id: int = 0 if GameState.obter_ativo(0) == atacante else 1
-	var resultado := validar_atacar(jogador_id)
-	return resultado["sucesso"]
+	return validar_atacar(jogador_id)["sucesso"]
 
 # ==================================================
-# DANO / FRAQUEZA / RESISTÊNCIA / NOCAUTE
+# REGRAS DE EFEITOS DATA-DRIVEN & SELEÇÃO
 # ==================================================
 
-static func validate_damage(
-	source: AnimalInstance,
-	target: AnimalInstance,
-	amount: int
-) -> bool:
+## ----------------------------------------------------
+## BUSCA NO DECK (MÃO OU CAMPO)
+## Valida se o baralho possui pelo menos uma carta que
+## atenda aos critérios passados pela mecânica.
+## ----------------------------------------------------
+static func validar_busca_deck(
+	player: PlayerState,
+	filtro_tipo: String = "QUALQUER",
+	filtro_cor: String = "QUALQUER",
+	filtro_estagio: String = "QUALQUER",
+	filtro_nome: String = ""
+) -> Dictionary:
+	if player == null:
+		return {"sucesso": false, "motivo": "Jogador inválido."}
 
-	if source == null or target == null:
-		return false
+	if player.deck.is_empty():
+		return {"sucesso": false, "motivo": "O baralho do jogador está vazio."}
 
-	if amount < 0:
-		return false
+	# Varre o deck verificando se existe ao menos 1 carta elegível
+	for carta in player.deck:
+		if carta == null:
+			continue
 
-	if target.current_hp <= 0:
-		return false
+		# Filtro de Super Tipo / Tipo (ex: "ENERGIA", "ANIMAL")
+		if filtro_tipo != "QUALQUER" and carta.super_type.to_upper() != filtro_tipo.to_upper():
+			continue
 
-	return true
+		# Filtro de Cor / Elemento (ex: "VERMELHO", "AZUL")
+		if filtro_cor != "QUALQUER":
+			var cor_carta: String = carta.color.to_upper() if "color" in carta else ""
+			if cor_carta != filtro_cor.to_upper():
+				continue
+
+		# Filtro de Estágio de Evolução (ex: "FILHOTE", "ADULTO")
+		if filtro_estagio != "QUALQUER":
+			var estagio_carta: String = carta.stage.to_upper() if "stage" in carta else ""
+			if estagio_carta != filtro_estagio.to_upper():
+				continue
+
+		# Filtro por Nome Específico da Espécie (ex: "Velociraptor", "Nodossauro")
+		if not filtro_nome.is_empty():
+			if not filtro_nome.to_upper() in carta.name.to_upper():
+				continue
+
+		# Se encontrou ao menos uma carta compatível, a busca é autorizada
+		return {"sucesso": true, "motivo": "Carta elegível encontrada no deck."}
+
+	return {"sucesso": false, "motivo": "Nenhuma carta compatível com os filtros foi encontrada no deck."}
 
 
-static func validate_weakness(
-	atacante: AnimalInstance,
-	defensor: AnimalInstance
-) -> bool:
+## ----------------------------------------------------
+## ENERGIZAÇÃO EXTRA VIA EFEITO
+## Valida a anexação de energia vinda de efeitos de ataque
+## ou cataclismos (ignora a trava de 1 energia por turno da mão).
+## ----------------------------------------------------
+static func validar_energizar_efeito(
+	player: PlayerState,
+	animal_alvo: AnimalInstance,
+	energia_carta: EffectResource
+) -> Dictionary:
+	if player == null or animal_alvo == null or energia_carta == null:
+		return {"sucesso": false, "motivo": "Parâmetros inválidos para energização por efeito."}
 
+	if energia_carta.super_type.to_upper() != "ENERGIA":
+		return {"sucesso": false, "motivo": "A carta informada não é uma Energia."}
+
+	var ativo := GameState.obter_ativo(player.id)
+	var banco := GameState.obter_banco(player.id)
+
+	if animal_alvo != ativo and not banco.has(animal_alvo):
+		return {"sucesso": false, "motivo": "O animal alvo não pertence ao seu campo."}
+
+	return {"sucesso": true, "motivo": "Energização via efeito autorizada."}
+
+
+## ----------------------------------------------------
+## TROCA FORÇADA / PUXAR BANCO DO OPONENTE
+## Valida se o oponente possui alvos elegíveis no banco
+## para serem puxados para o campo ativo.
+## ----------------------------------------------------
+static func validar_trocar_ativo_oponente(id_oponente: int) -> Dictionary:
+	var banco_oponente: Array = GameState.obter_banco(id_oponente)
+
+	if banco_oponente.is_empty():
+		return {"sucesso": false, "motivo": "O banco do oponente está vazio."}
+
+	# Verifica se há pelo menos um animal no banco que não esteja totalmente protegido contra efeitos
+	for animal in banco_oponente:
+		if animal != null and not validate_status_application(animal, ConditionSystem.Tipo.PROTEGIDO):
+			return {"sucesso": true, "motivo": "Troca forçada autorizada."}
+
+	return {"sucesso": true, "motivo": "Troca forçada autorizada."}
+
+
+## ----------------------------------------------------
+## DESCARTE DE RECURSOS DE UM ANIMAL
+## Valida se um animal possui a quantidade e o tipo de
+## energia necessários para serem descartados por um efeito.
+## ----------------------------------------------------
+static func validar_descarte_recurso_animal(
+	animal: AnimalInstance,
+	quantidade: int,
+	filtro_cor: String = "QUALQUER"
+) -> Dictionary:
+	if animal == null:
+		return {"sucesso": false, "motivo": "Animal alvo é nulo."}
+
+	if animal.attached_energies.is_empty():
+		return {"sucesso": false, "motivo": "O animal não possui energias anexadas."}
+
+	if filtro_cor == "QUALQUER":
+		if animal.attached_energies.size() < quantidade:
+			return {"sucesso": false, "motivo": "O animal possui menos energias do que a quantidade exigida para descarte."}
+		return {"sucesso": true, "motivo": "Descarte de energia autorizado."}
+
+	# Validação de energia com cor/elemento específico
+	var qtd_encontrada: int = 0
+	for energia in animal.attached_energies:
+		if energia != null and "color" in energia:
+			if energia.color.to_upper() == filtro_cor.to_upper():
+				qtd_encontrada += 1
+
+	if qtd_encontrada < quantidade:
+		return {"sucesso": false, "motivo": "O animal não possui energias suficientes da cor '%s' para descartar." % filtro_cor}
+
+	return {"sucesso": true, "motivo": "Descarte de energia específica autorizado."}
+
+
+## ----------------------------------------------------
+## CONTAGEM DE PRESENÇA EM CAMPO
+## Função utilitária de consulta rápida para bônus de
+## dano baseados em espécies ou estágios específicos em jogo.
+## ----------------------------------------------------
+static func contar_presenca_campo(
+	id_jogador: int,
+	filtro_nome: String = "",
+	filtro_estagio: String = "QUALQUER",
+	apenas_banco: bool = false
+) -> int:
+	var total: int = 0
+	var animais_para_checar: Array = []
+
+	if apenas_banco:
+		animais_para_checar = GameState.obter_banco(id_jogador).duplicate()
+	else:
+		animais_para_checar = GameState.obter_animais_em_campo(id_jogador)
+
+	for inst in animais_para_checar:
+		if inst == null or inst.card == null:
+			continue
+
+		if not filtro_nome.is_empty() and not filtro_nome.to_upper() in inst.card.name.to_upper():
+			continue
+
+		if filtro_estagio != "QUALQUER" and inst.card.stage.to_upper() != filtro_estagio.to_upper():
+			continue
+
+		total += 1
+
+	return total
+
+# ==================================================
+# REGRAS DE COMBATE & DANO
+# ==================================================
+
+static func validate_weakness(atacante: AnimalInstance, defensor: AnimalInstance) -> bool:
 	if atacante == null or defensor == null:
 		return false
-
 	return defensor.card.weakness != "" and defensor.card.weakness == atacante.card.color
 
 
-static func validate_resistance(
-	atacante: AnimalInstance,
-	defensor: AnimalInstance
-) -> bool:
-
+static func validate_resistance(atacante: AnimalInstance, defensor: AnimalInstance) -> bool:
 	if atacante == null or defensor == null:
 		return false
-
 	return defensor.card.resistance != "" and defensor.card.resistance == atacante.card.color
 
 
 static func validate_knockout(animal: AnimalInstance) -> bool:
 	if animal == null:
 		return false
-
 	return animal.current_hp <= 0
-
-
-static func validate_fossil_zone_transfer(animal: AnimalInstance) -> bool:
-	return animal != null
-
-
-static func validate_replacement_active(player: PlayerState) -> bool:
-	if player == null:
-		return false
-
-	return not GameState.obter_banco(player.id).is_empty()
-
-
-# ==================================================
-# CONDIÇÕES DE VITÓRIA & TURNO
-# ==================================================
-
-static func validate_knockout_victory(_game_state) -> bool:
-	return false
-
-
-static func validate_empty_field_victory(_game_state) -> bool:
-	return false
-
-
-static func validate_deck_out_victory(_game_state) -> bool:
-	return false
-
-
-static func validate_draw_condition(_game_state) -> bool:
-	return false
-
-
-static func validate_turn_start(_game_state) -> bool:
-	return false
-
-
-static func validate_turn_end(_game_state) -> bool:
-	return false
-
-
-static func validate_action(_action, _source, _game_state) -> bool:
-	return false
-
-
-static func validate_cost(_cost, _source) -> bool:
-	return false
-
-
-static func validate_target_selection(_target, _source) -> bool:
-	return false
-
-
-static func validate_effect_resolution(_effect, _source) -> bool:
-	return false
-## Valida se o jogador ativo pode realizar um ataque neste momento.
-## Retorna um Dictionary com {"sucesso": bool, "motivo": String}

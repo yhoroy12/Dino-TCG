@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_8vyfr")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "BUSCAR"
+mec_resource = "CARTA"
+mec_target_player = "DONO"
+mec_target_zone = "MAO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "FILHOTE"
+mec_origin_zone = "DECK"
+mec_duration = 0
+mec_custom_json = "{\"embaralhar_apos\": true}"
 id = "A136"
 name = "Chocar Ovos"
 super_type = "vestigio"
-text_ui = "Escolha um dinossauro bebe em seu baralho e coloque em sua mão, enseguida embaralhe seu deck."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "carta"
-mec_target_player = "dono"
-mec_target_zone = "mao"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = "deck"
-mec_duration = 0
-mec_custom_json = "{\"olhar_topo\": 3}"
+text_ui = "Procure por 1 dinossauro Bebê no seu baralho e coloque-o na sua mão. Em seguida embaralhe o seu baralho."

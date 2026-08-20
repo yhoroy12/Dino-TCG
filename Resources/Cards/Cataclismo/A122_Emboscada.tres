@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_vcema")
+mec_trigger = "AO_JOGAR"
+mec_condition = "NO_BANCO"
+mec_action = "PUXAR"
+mec_resource = "CARTA"
+mec_target_player = "ADVERSARIO"
+mec_target_zone = "ATIVO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "BANCO"
+mec_duration = 0
+mec_custom_json = ""
 id = "A122"
 name = "Emboscada"
 super_type = "cataclismo"
-text_ui = "Escolha um dinossauro do seu opontente que já tenha contadores de dano nele e coloque no campo ativo"
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "bloquear_acao"
-mec_resource = "carta"
-mec_target_player = "adversario"
-mec_target_zone = "ativo"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = ""
-mec_origin_zone = ""
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Escolha 1 dos dinossauros no Banco do seu oponente que tenha contadores de dano nele e troque-o pelo Dinossauro Ativo dele."

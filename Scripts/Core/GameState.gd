@@ -72,6 +72,9 @@ var vencedor: PlayerState = null
 func get_jogador_atual() -> PlayerState:
 	return jogador_1 if jogador_ativo == 0 else jogador_2
 
+func get_jogador_por_id(jogador_id: int) -> PlayerState:
+	return jogador_1 if jogador_id == 0 else jogador_2
+	
 ## Retorna o PlayerState do jogador adversário.
 func get_jogador_adversario() -> PlayerState:
 	return jogador_2 if jogador_ativo == 0 else jogador_1

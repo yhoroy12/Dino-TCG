@@ -4,13 +4,10 @@
 
 [resource]
 script = ExtResource("1_kotdp")
-id = "A049"
-name = "Braquiossauro"
-super_type = "animal"
 sub_type = "Herbivoro"
 color = "marrom"
 stage = "Adulto"
-grow_from = "A049"
+grow_from = "A048"
 hp = 180
 food_points = 18
 weakness = "amarelo"
@@ -20,10 +17,9 @@ ability_name = "Fome Desenfreada"
 attack_name = "Esmagar"
 attack_cost = "🟤🟤🟤"
 damage_base = 100
-damage_type = "fixo"
-text_ui = ""
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A049"
+name = "Braquiossauro"
+super_type = "animal"
+text_ui = ""

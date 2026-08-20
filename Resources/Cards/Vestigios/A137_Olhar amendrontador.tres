@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_le8r1")
+mec_trigger = "AO_JOGAR"
+mec_condition = "MOEDA"
+mec_action = "EXPULSAR"
+mec_resource = "CARTA"
+mec_target_player = "ADVERSARIO"
+mec_target_zone = "BANCO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "QUALQUER"
+mec_origin_zone = "ATIVO"
+mec_duration = 0
+mec_custom_json = ""
 id = "A137"
 name = "Olhar amendrontador"
 super_type = "vestigio"
-text_ui = "Jogue uma moeda se sair cara, seu oponente recua o dinossauro dele"
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "forcar_recuo"
-mec_resource = "status"
-mec_target_player = "adversario"
-mec_target_zone = "ativo"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = "filhote"
-mec_origin_zone = "deck"
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Jogue 1 moeda. Se sair cara o seu oponente troca o Dinossauro Ativo dele por 1 dos dinossauros no Banco dele."

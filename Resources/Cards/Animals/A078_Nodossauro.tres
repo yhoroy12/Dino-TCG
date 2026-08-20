@@ -4,9 +4,6 @@
 
 [resource]
 script = ExtResource("1_sllft")
-id = "A078"
-name = "Nodossauro"
-super_type = "animal"
 sub_type = "Herbivoro"
 color = "verde"
 stage = "Jovem"
@@ -20,10 +17,9 @@ ability_name = ""
 attack_name = "Cabeçada"
 attack_cost = "🟢⚪"
 damage_base = 30
-damage_type = "fixo"
-text_ui = ""
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A078"
+name = "Nodossauro"
+super_type = "animal"
+text_ui = ""

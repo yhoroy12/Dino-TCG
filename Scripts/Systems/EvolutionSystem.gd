@@ -17,7 +17,7 @@ static func pode_crescer(
 	if instancia.entrou_este_turno or instancia.evoluiu_este_turno:
 		return false
 
-	if carta_evolucao.grow_from != instancia.card.card_id:
+	if carta_evolucao.grow_from != instancia.card.id:
 		return false
 
 	if GameState.turno_atual <= 1 and not permite_no_turno_inicial:
@@ -40,12 +40,18 @@ static func crescer(
 
 	var carta_antiga: CardResource = instancia.card
 
+	# 1. Desconta APENAS o custo de crescimento da comida acumulada (preserva o resto)
 	FoodSystem.consumir_para_crescimento(instancia)
 
+	# 2. Empilha a carta antiga no histórico de evolução
 	instancia.pilha_evolucao.append(carta_antiga)
 	instancia.card = carta_evolucao
-	instancia.current_hp = min(instancia.current_hp, carta_evolucao.hp)
 
+	# 3. HP: Preserva o dano sofrido em pontos absolutos
+	var dano_acumulado: int = carta_antiga.hp - instancia.current_hp
+	instancia.current_hp = max(1, carta_evolucao.hp - dano_acumulado)
+
+	# 4. Limpa condições de status temporárias
 	ConditionSystem.limpar_todas_as_condicoes(instancia)
 
 	instancia.evoluiu_este_turno = true

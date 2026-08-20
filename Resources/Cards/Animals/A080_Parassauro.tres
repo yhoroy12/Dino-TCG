@@ -4,13 +4,10 @@
 
 [resource]
 script = ExtResource("1_dcrpg")
-id = "A080"
-name = "Parassauro"
-super_type = "animal"
 sub_type = "Herbivoro"
 color = "verde"
 stage = "Adulto"
-grow_from = "A080"
+grow_from = "A082"
 hp = 110
 food_points = 11
 weakness = "vermelho"
@@ -20,10 +17,9 @@ ability_name = "Canção Revigorante"
 attack_name = "Cabeçada"
 attack_cost = "🟢🟢"
 damage_base = 60
-damage_type = "fixo"
-text_ui = ""
+damage_type = "FIXO"
 mec_trigger = ""
-mec_condition = "sempre"
+mec_condition = ""
 mec_action = ""
 mec_resource = ""
 mec_target_player = ""
@@ -35,3 +31,7 @@ mec_filter_stage = ""
 mec_origin_zone = ""
 mec_duration = 0
 mec_custom_json = ""
+id = "A080"
+name = "Parassauro"
+super_type = "animal"
+text_ui = ""

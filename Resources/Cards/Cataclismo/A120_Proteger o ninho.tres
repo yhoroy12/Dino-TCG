@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1_y7l80")
+mec_trigger = "AO_JOGAR"
+mec_condition = "SEMPRE"
+mec_action = "DEVOLVER"
+mec_resource = "CARTA"
+mec_target_player = "DONO"
+mec_target_zone = "MAO"
+mec_quantity = 1
+mec_status_name = "NENHUM"
+mec_filter_color = "QUALQUER"
+mec_filter_stage = "FILHOTE"
+mec_origin_zone = "DESCARTE"
+mec_duration = 0
+mec_custom_json = ""
 id = "A120"
 name = "Proteger o ninho"
 super_type = "cataclismo"
-text_ui = "Pegue um dinossauro bebe do cemiterio e coloque na sua mão."
-mec_trigger = "ao_jogar"
-mec_condition = "sempre"
-mec_action = "puxar"
-mec_resource = "carta"
-mec_target_player = "dono"
-mec_target_zone = "mao"
-mec_quantity = 1
-mec_status_name = ""
-mec_filter_color = ""
-mec_filter_stage = "filhote"
-mec_origin_zone = "zona_fossil"
-mec_duration = 0
-mec_custom_json = ""
+text_ui = "Coloque 1 dinossauro Bebê da sua Pilha de Descarte na sua mão."

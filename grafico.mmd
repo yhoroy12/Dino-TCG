@@ -1,70 +1,86 @@
 graph LR
-    mesa_jogador.gd --> EffectResource
-    mesa_jogador.gd --> ConditionSystem
-    mesa_jogador.gd --> CardPreviewPanel
-    mesa_jogador.gd --> CardResource
-    mesa_jogador.gd --> PlayerState
-    mesa_jogador.gd --> AnimalInstance
     mesa_jogador.gd --> CardBaseResource
+    mesa_jogador.gd --> ConditionSystem
+    mesa_jogador.gd --> AnimalInstance
+    mesa_jogador.gd --> PlayerState
+    mesa_jogador.gd --> CardResource
+    mesa_jogador.gd --> EffectResource
+    mesa_jogador.gd --> CardPreviewPanel
+    mesa_jogador_backup.gd --> CardBaseResource
+    mesa_jogador_backup.gd --> ConditionSystem
+    mesa_jogador_backup.gd --> AnimalInstance
+    mesa_jogador_backup.gd --> PlayerState
+    mesa_jogador_backup.gd --> CardResource
+    mesa_jogador_backup.gd --> EffectResource
+    mesa_jogador_backup.gd --> CardPreviewPanel
     deck_builder.gd --> CardBaseResource
-    card.gd --> CardResource
     card.gd --> Modo
+    card.gd --> CardResource
     CardForcaPrimordial.gd --> EffectResource
     CardTerritorio.gd --> EffectResource
-    card_effecct.gd --> EffectResource
     card_effecct.gd --> Modo
-    BattleManager.gd --> EffectResource
-    BattleManager.gd --> CardResource
-    BattleManager.gd --> PlayerState
-    BattleManager.gd --> AnimalInstance
+    card_effecct.gd --> EffectResource
+    AIController --> AnimalInstance
+    AIController --> PlayerState
+    AIController --> EffectResource
+    AIController --> CardResource
     BattleManager.gd --> CardBaseResource
+    BattleManager.gd --> AnimalInstance
+    BattleManager.gd --> PlayerState
+    BattleManager.gd --> CardResource
+    BattleManager.gd --> WinConditionSystem
+    BattleManager.gd --> EffectResource
+    GameState.gd --> CardBaseResource
+    GameState.gd --> AnimalInstance
     GameState.gd --> PlayerState
     GameState.gd --> Fase
     GameState.gd --> EffectResource
+    PlayerState --> CardResource
     PlayerState --> CardBaseResource
-    PlayerState --> AnimalInstance
-    RuleValidator --> EffectResource
-    RuleValidator --> CardResource
-    RuleValidator --> PlayerState
     RuleValidator --> AnimalInstance
+    RuleValidator --> PlayerState
+    RuleValidator --> CardResource
     RuleValidator --> DeckData
-    SetupManager.gd --> CardResource
+    RuleValidator --> EffectResource
     SetupManager.gd --> PlayerState
     SetupManager.gd --> DeckData
+    SetupManager.gd --> CardResource
     SetupManager.gd --> CardBaseResource
     TurnManager.gd --> PlayerState
+    TurnManager.gd --> WinConditionSystem
     AnimalInstance --> CardResource
-    CardDatabase.gd --> AbilityResource
-    CardDatabase.gd --> CardResource
     CardDatabase.gd --> EffectResource
+    CardDatabase.gd --> CardResource
+    CardDatabase.gd --> AbilityResource
     CardDatabase.gd --> CardBaseResource
     CardResource --> CardBaseResource
     DeckData --> CardBaseResource
     DeckManager.gd --> DeckData
     EffectResource --> CardBaseResource
-    CombatSystem --> CardResource
     CombatSystem --> AnimalInstance
-    ConditionSystem --> Tipo
+    CombatSystem --> CardResource
     ConditionSystem --> AnimalInstance
+    ConditionSystem --> Tipo
     DamageSystem --> AnimalInstance
     DeckRulesSystem --> DeckData
     DeckRulesSystem --> CardBaseResource
     DrawSystem --> PlayerState
     DrawSystem --> CardBaseResource
-    EffectSystem --> Escopo
     EffectSystem --> AnimalInstance
-    EvolutionSystem --> CardResource
+    EffectSystem --> Escopo
     EvolutionSystem --> AnimalInstance
-    FoodSystem --> PlayerState
+    EvolutionSystem --> CardResource
     FoodSystem --> AnimalInstance
-    KnockoutSystem --> PlayerState
+    FoodSystem --> PlayerState
     KnockoutSystem --> AnimalInstance
-    EnergySystem --> EffectResource
+    KnockoutSystem --> PlayerState
     EnergySystem --> AnimalInstance
+    EnergySystem --> EffectResource
+    WinConditionSystem --> Resultado
     CardPreviewPanel --> CardBaseResource
     HelperUI --> CardBaseResource
-    test_hand_layout.gd --> GutTest
     test_hand_layout.gd --> GCardHandLayout
+    test_hand_layout.gd --> GutTest
     test_hand_layout_service.gd --> GCardLayoutInfo
     test_hand_layout_service.gd --> GutTest
     test_hand_layout_service.gd --> GCardHandLayoutService
