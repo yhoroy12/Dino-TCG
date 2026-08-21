@@ -117,7 +117,7 @@ func exibir(
 		hbox.add_child(envelope)
 
 	btn_confirmar.pressed.connect(func():
-		cartas_selecionadas.emit(_cartas_escolhidas)
+		cartas_selecionadas.emit(_cartas_escolhidas.duplicate())
 		fechar()
 	)
 	vbox.add_child(btn_confirmar)

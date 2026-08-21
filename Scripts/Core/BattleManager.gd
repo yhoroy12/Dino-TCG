@@ -236,7 +236,6 @@ func solicitar_busca_cartas_zona(jogador_id: int, zona_origem: String, filtro_co
 
 	return {"sucesso": true, "motivo": "", "cartas_selecionadas": escolhidas}
 
-
 ## "OLHAR": exibe as N cartas do topo sem alterar nada, só aguarda a
 ## confirmação de "visualizado".
 func solicitar_olhar_topo_deck(jogador_id: int, quantidade: int) -> Dictionary:
@@ -248,7 +247,6 @@ func solicitar_olhar_topo_deck(jogador_id: int, quantidade: int) -> Dictionary:
 
 	await _solicitar_cartas(jogador_id, topo, topo.size(), "olhar_topo")
 	return {"sucesso": true, "motivo": "", "cartas_visualizadas": topo}
-
 
 ## "DEVOLVER": move N cartas escolhidas de uma zona para outra.
 func solicitar_devolver_carta(jogador_id: int, zona_origem: String, zona_destino: String, quantidade: int) -> Dictionary:
@@ -268,7 +266,6 @@ func solicitar_devolver_carta(jogador_id: int, zona_origem: String, zona_destino
 		destino.append(carta)
 
 	return {"sucesso": true, "motivo": "", "cartas_devolvidas": escolhidas}
-
 
 ## "REORGANIZAR": jogador reordena as N cartas do topo do deck. A UI
 ## devolve a nova ordem pronta em "nova_ordem".
@@ -294,7 +291,6 @@ func solicitar_reorganizar_topo(jogador_id: int, quantidade: int) -> Dictionary:
 
 	return {"sucesso": true, "motivo": "", "nova_ordem": nova_ordem}
 
-
 ## Descarte de energias anexadas a um animal específico (efeito de
 ## ataque "DESCARTAR", ou custo de recuo). Energias são CardBaseResource,
 ## por isso usam o canal de CARTAS, não o de animais.
@@ -311,7 +307,6 @@ func solicitar_descarte_energia_animal(jogador_id: int, animal: AnimalInstance, 
 
 	return {"sucesso": true, "motivo": "", "energias_descartadas": descartadas}
 
-
 ## Descarte de N cartas da própria mão.
 func solicitar_descarte_mao(jogador_id: int, quantidade: int) -> Dictionary:
 	var player: PlayerState = GameState.get_jogador_por_id(jogador_id)
@@ -327,7 +322,7 @@ func solicitar_descarte_mao(jogador_id: int, quantidade: int) -> Dictionary:
 		GameState.obter_descarte(jogador_id).append(carta)
 
 	return {"sucesso": true, "motivo": "", "cartas_descartadas": escolhidas}
-	
+
 ## Pede alvo no banco do oponente ("PUXAR" de ataque, ou cataclismos de
 ## emboscada) e já efetiva a troca via _puxar_banco_oponente.
 func solicitar_selecao_banco_oponente(jogador_atacante_id: int, id_oponente: int, contexto: String = "puxar_banco", quantidade: int = 1) -> Dictionary:
@@ -341,7 +336,7 @@ func solicitar_selecao_banco_oponente(jogador_atacante_id: int, id_oponente: int
 		return {"sucesso": false, "motivo": "banco_oponente_vazio_ou_cancelado"}
 
 	return _puxar_banco_oponente({"id_oponente": id_oponente, "alvo_banco": alvo})
-	
+
 ## Efeito de ataque "EXPULSAR"/"RECUAR" de OUTRA carta: força jogador_id
 ## a trocar o ativo atual por um do banco escolhido por ele. Diferente
 ## de _recuar() (sem custo de energia, sem limite de 1x/turno) e de
@@ -362,7 +357,6 @@ func solicitar_troca_forcada(jogador_id: int) -> Dictionary:
 		substituto = escolhidos[0]
 
 	return _trocar_ativo_forcado(jogador_id, substituto)
-
 
 func _trocar_ativo_forcado(jogador_id: int, substituto: AnimalInstance) -> Dictionary:
 	var atual: AnimalInstance = GameState.obter_ativo(jogador_id)
@@ -397,7 +391,7 @@ func _carta_corresponde_filtros(carta: CardBaseResource, filtro_tipo: String, fi
 			return false
 
 	return true
-	
+
 ## Pede ao jogador para escolher UM animal entre os candidatos — usada por
 ## efeitos cujo alvo é ambíguo (mec_target_zone = BANCO ou ATIVO_BANCO).
 ## Se houver só 1 candidato, resolve direto sem abrir popup nenhum.
@@ -409,7 +403,7 @@ func solicitar_selecao_alvo_efeito(jogador_id: int, candidatos: Array, contexto:
 
 	var escolhidos: Array = await _solicitar_animais(jogador_id, candidatos, 1, contexto)
 	return escolhidos[0] if not escolhidos.is_empty() else null
-	
+
 # ==================================================
 # BANCO RESERVA — colocar animal bebê da mão
 # ==================================================
@@ -449,7 +443,6 @@ func _jogar_para_banco(dados: Dictionary) -> Dictionary:
 # ==================================================
 
 ## dados: {"indice_mao": int, "carta_evolucao": CardResource, "instancia": AnimalInstance}
-##
 ## A carta do estágio anterior não é descartada aqui — EvolutionSystem.crescer()
 ## já cuida de empilhá-la em instancia.pilha_evolucao (padrão Pokémon/
 ## Digimon TCG, confirmado com o time). Ela só vai pro descarte de
@@ -486,7 +479,6 @@ func _crescer(dados: Dictionary) -> Dictionary:
 	print("✨ [BattleManager] Evolução concluída! '%s' agora é '%s'." % [nome_alvo, nome_evo])
 	return {"sucesso": true, "motivo": ""}
 
-
 # ==================================================
 # ENERGIA — anexar força primordial (1x por turno)
 # ==================================================
@@ -521,7 +513,6 @@ func _anexar_energia(dados: Dictionary) -> Dictionary:
 	print("🔋 [BattleManager] Energia '%s' anexada com sucesso em '%s'." % [nome_energia, nome_alvo])
 	return {"sucesso": true, "motivo": ""}
 
-
 # ==================================================
 # COMIDA — distribuir pontos do pool pra um animal
 # ==================================================
@@ -543,7 +534,6 @@ func _distribuir_comida(dados: Dictionary) -> Dictionary:
 
 	print("🍖 [BattleManager] %d de comida fornecido(s) para '%s'." % [quantidade, nome_alvo])
 	return {"sucesso": true, "motivo": ""}
-
 
 # ==================================================
 # RECUO — trocar o Ativo por um animal do Banco (1x por turno,
@@ -596,7 +586,6 @@ func _recuar(dados: Dictionary) -> Dictionary:
 
 	print("🔄 [BattleManager] Recuo efetuado! Novo Ativo: '%s'. Antigo Ativo '%s' movido para o banco." % [nome_substituto, nome_atual])
 	return {"sucesso": true, "motivo": ""}
-
 
 # ==================================================
 # PROMOÇÃO FORÇADA — Ativo nocauteado precisa de substituto
@@ -737,7 +726,7 @@ func _atacar(dados: Dictionary) -> Dictionary:
 	TurnManager.fase_final()
 
 	return {"sucesso": true, "motivo": "", "dano_causado": dano}
-	
+
 # ==================================================
 # CATACLISMO — Executar efeito de carta de feitiço/evento
 # ==================================================
@@ -802,7 +791,6 @@ func _energizar_por_efeito(dados: Dictionary) -> Dictionary:
 
 	return {"sucesso": true, "motivo": ""}
 
-
 ## dados: {"id_oponente": int, "alvo_banco": AnimalInstance}
 func _puxar_banco_oponente(dados: Dictionary) -> Dictionary:
 	var id_oponente: int = dados.get("id_oponente")
@@ -844,6 +832,7 @@ func _obter_agente(jogador_id: int) -> PlayerAgent:
 		push_error("❌ [BattleManager] Nenhum agente registrado para Jogador %d!" % jogador_id)
 		return null
 	return _agentes[jogador_id]
+
 ## Chamado pelo TurnManager quando jogador_id fica sem Ativo. Substitui
 ## o antigo sinal 'substituicao_ativo_solicitada' — chamada direta e
 ## única ao agente responsável, sem broadcast.

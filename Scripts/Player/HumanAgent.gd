@@ -30,11 +30,11 @@ func decidir_promocao_ativo(banco_disponivel: Array) -> AnimalInstance:
 
 	return estado["resultado"]
 
-
 func decidir_selecao_cartas(elegiveis: Array, quantidade: int, contexto: String) -> Array:
+	print("🔬 [DEBUG] decidir_selecao_cartas chamado | elegiveis.size() = %d | contexto = %s" % [elegiveis.size(), contexto])
 	var cartas_tipadas: Array[CardBaseResource] = []
 	cartas_tipadas.assign(elegiveis)
-
+	print("🔬 [DEBUG] cartas_tipadas.size() após assign() = %d" % cartas_tipadas.size())
 	var estado := {"concluido": false, "resultado": []}
 
 	if contexto == "descarte_energia_animal":
@@ -55,12 +55,13 @@ func decidir_selecao_cartas(elegiveis: Array, quantidade: int, contexto: String)
 			cartas_tipadas,
 			quantidade,
 			func(cartas_escolhidas: Array[CardBaseResource]):
+				print("🔬 [DEBUG] callback recebido dentro do HumanAgent! %d cartas" % cartas_escolhidas.size())
 				estado["resultado"] = cartas_escolhidas
 				estado["concluido"] = true
 		)
 
 	while not estado["concluido"]:
 		await mesa.get_tree().process_frame
-
+	print("🔬 [DEBUG] decidir_selecao_cartas retornando com %d carta(s)" % estado["resultado"].size())
 	return estado["resultado"]
 	

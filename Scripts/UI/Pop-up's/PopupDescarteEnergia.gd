@@ -107,7 +107,7 @@ func exibir(
 		hbox.add_child(envelope)
 
 	btn_confirmar.pressed.connect(func():
-		energias_selecionadas.emit(_selecionadas)
+		energias_selecionadas.emit(_selecionadas.duplicate())
 		fechar()
 	)
 	vbox.add_child(btn_confirmar)

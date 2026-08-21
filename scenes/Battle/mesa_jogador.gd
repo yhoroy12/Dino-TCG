@@ -161,7 +161,7 @@ func _fechar_popups_abertos() -> void:
 # ==============================================================================
 # VALIDAÇÃO E CONEXÃO DE SINAIS
 # ==============================================================================
-
+#Valida as referencias.
 func _validar_referencias() -> void:
 	var nos_para_validar: Dictionary = {
 		"botao_passar_turno": botao_passar_turno,
@@ -178,7 +178,7 @@ func _validar_referencias() -> void:
 	card_zoom_manager = get_tree().root.find_child("CardZoomManager", true, false)
 	if card_zoom_manager == null:
 		push_warning("⚠️ CardZoomManager não foi encontrado na árvore de nós.")
-
+# Conecta aos sinais que sao emitidos pelo SetupManager
 func _conectar_sinais_setup_manager() -> void:
 	if not SetupManager:
 		push_error("❌ SetupManager (Autoload) não está disponível!")
@@ -191,7 +191,7 @@ func _conectar_sinais_setup_manager() -> void:
 	_conectar_sinal_seguro(SetupManager.mulligan_realizado, _ao_mulligan_realizado)
 	_conectar_sinal_seguro(SetupManager.solicitar_escolha_ativo, _ao_solicitar_escolha_ativo)
 	_conectar_sinal_seguro(SetupManager.setup_concluido, _ao_setup_concluido)
-
+# Conecta aos sinais que sao emitidos pelo TurnManager
 func _conectar_sinais_turn_manager() -> void:
 	if not TurnManager:
 		push_error("❌ TurnManager (Autoload) não está disponível!")
@@ -208,7 +208,7 @@ func _conectar_sinais_turn_manager() -> void:
 
 	if timer_turno:
 		_conectar_sinal_seguro(timer_turno.timeout, _ao_timer_turno_expirado)
-
+# Conecta aos sinais que sao emitidos pelo BattleManager
 func _conectar_sinais_battle_manager() -> void:
 	if not BattleManager:
 		push_error("❌ BattleManager (Autoload) não está disponível!")
@@ -217,7 +217,10 @@ func _conectar_sinais_battle_manager() -> void:
 	_conectar_sinal_seguro(BattleManager.acao_resolvida, _ao_acao_resolvida)
 	
 	_conectar_sinal_seguro(BattleManager.solicitacao_selecao_animal, _ao_solicitacao_selecao_animal)
-
+# Conecta aos sinais que sao emitidos pelo Gamestate
+func _conectar_sinais_gamestate() -> void:
+	pass
+#Configurações iniciais da Interface
 func _configurar_interface_inicial() -> void:
 	if botao_passar_turno:
 		botao_passar_turno.disabled = true
@@ -226,11 +229,11 @@ func _configurar_interface_inicial() -> void:
 		
 	turno_em_progresso = false
 	tempo_restante_turno = 0.0
-
+#Segurança para a configuração dos sinais
 func _conectar_sinal_seguro(sinal: Signal, metodo: Callable) -> void:
 	if not sinal.is_connected(metodo):
 		sinal.connect(metodo)
-		
+
 # ==============================================================================
 # CALLBACKS — SETUP DA PARTIDA (SetupManager)
 # ==============================================================================
@@ -344,7 +347,6 @@ func _ao_turno_encerrado(jogador_id: int) -> void:
 
 	print("🔴 Turno encerrado! Jogador: %d" % jogador_id)
 
-
 func _atualizar_contador_turno(delta: float) -> void:
 	if not turno_em_progresso:
 		return
@@ -366,8 +368,7 @@ func _ao_botao_passar_turno_pressionado() -> void:
 
 	print("➡️ [MesaUI] Solicitando TurnManager.fase_final()...")
 	TurnManager.fase_final()
-	
-	
+
 # ==============================================================================
 # CALLBACKS — BATALHA (BattleManager)
 # ==============================================================================
@@ -377,7 +378,6 @@ func _ao_acao_resolvida(tipo_acao: String, sucesso: bool, motivo: String, dados:
 	if not sucesso:
 		_exibir_texto_flutuante(_traduzir_motivo_falha(motivo), 1.5)
 
-	
 func _ao_solicitacao_selecao_animal(id_solicitacao: int, jogador_id: int, animais_elegiveis: Array, quantidade: int, contexto: String) -> void:
 	if jogador_id != ID_JOGADOR_HUMANO:
 		return # IA decide sozinha depois
@@ -394,6 +394,11 @@ func _ao_solicitacao_selecao_animal(id_solicitacao: int, jogador_id: int, animai
 		BattleManager.confirmar_selecao_ui(id_solicitacao, {"animais_selecionados": []})
 	)
 	popup.exibir(self, "Seleção", "Escolha %d animal(is):" % quantidade, animais_tipados, quantidade)
+
+# ==============================================================================
+# CALLBACKS — Atualização das zonas (GameState)
+# ==============================================================================
+
 
 # ==============================================================================
 # MÉTODOS VISUAIS DE SUPORTE
@@ -431,6 +436,20 @@ func _ao_empate() -> void:
 	_exibir_tela_empate()
 	turno_em_progresso = false
 
+func atualizar_zona_descarte(jogador_id: int, pilha_descarte: Array[CardBaseResource]) -> void:
+	var painel_descarte: Panel = jogador_zona_descarte if jogador_id == ID_JOGADOR_HUMANO else oponente_zona_descarte
+	if not painel_descarte:
+		return
+
+	# Limpa tudo no container
+	for child in painel_descarte.get_children():
+		child.queue_free()
+
+	# Se a pilha não estiver vazia, renderiza a última carta (topo do descarte)
+	if not pilha_descarte.is_empty():
+		var carta_topo: CardBaseResource = pilha_descarte.back()
+		_adicionar_carta_na_zona(jogador_id, "descarte", carta_topo)
+
 # ==============================================================================
 # DECK E COMPRA DE CARTAS
 # ==============================================================================
@@ -454,6 +473,7 @@ func comprar_carta_animada(jogador_id: int, carta: CardBaseResource) -> void:
 	tween.tween_callback(func():
 		carta_visual.queue_free()
 		organizar_cartas_nas_zonas(jogador_id)
+		atualizar_zona_descarte(jogador_id, GameState.obter_descarte(jogador_id))
 	)
 
 func atualizar_visual_deck(jogador_id: int, cartas_restantes: int) -> void:
@@ -640,7 +660,37 @@ func _adicionar_carta_na_zona(jogador_id: int, zona_nome: String, carta: CardBas
 			_conectar_zoom_hover(card_visual, carta)
 
 		"descarte":
-			pass
+			var painel_descarte: Panel = jogador_zona_descarte if jogador_id == ID_JOGADOR_HUMANO else oponente_zona_descarte
+			if not painel_descarte:
+				push_error("❌ [MesaUI] Painel de descarte não configurado para o jogador: %d" % jogador_id)
+				return
+
+			# Limpa visualizações anteriores no painel para mostrar apenas a carta do topo
+			for child in painel_descarte.get_children():
+				child.queue_free()
+
+			# Define o tamanho com base no tamanho atual do painel de descarte
+			var tamanho_slot_descarte: Vector2 = painel_descarte.size
+			if tamanho_slot_descarte == Vector2.ZERO:
+				tamanho_slot_descarte = Vector2(100, 140) # Tamanho fallback caso a UI não tenha recalculado o layout ainda
+
+			# Descarte costuma ser sempre com a face para cima
+			var resultado := HelperUI.instanciar_carta_escalada(carta, tamanho_slot_descarte, false)
+			if resultado.is_empty():
+				return
+
+			var envelope: Control = resultado["envelope"]
+			var card_visual = resultado["visual"]
+
+			painel_descarte.add_child(envelope)
+			_centralizar_envelope_no_painel(envelope)
+
+			# Conecta zoom/hover para inspeção se necessário (humano ou oponente)
+			_conectar_zoom_hover(card_visual, carta)
+
+			# Permite interações (ex: clicar no descarte para abrir histórico) se for do humano
+			if jogador_id == ID_JOGADOR_HUMANO:
+				_configurar_inputs_carta(card_visual, carta, jogador_id, "descarte", instancia)
 
 func _conectar_zoom_hover(nodo_visual: Control, carta: CardBaseResource) -> void:
 	if not nodo_visual.mouse_entered.is_connected(_on_card_mouse_entered):
@@ -735,7 +785,6 @@ func _abrir_zoom_leitura(_carta_visual: Control, carta_resource: CardBaseResourc
 func _fechar_zoom_leitura() -> void:
 	if painel_zoom:
 		painel_zoom.esconder_preview()
-
 
 # ==============================================================================
 # MODO DE SELEÇÃO DE ALVO
@@ -862,6 +911,7 @@ func _acao_fortalecer(indice_mao: int, carta: EffectResource, animal: AnimalInst
 
 func _acao_retroceder(substituto: AnimalInstance) -> void:
 	_solicitar_recuo(substituto)
+	
 func _solicitar_recuo(substituto: AnimalInstance) -> void:
 	var ativo := GameState.obter_ativo(ID_JOGADOR_HUMANO)
 	if ativo == null:
@@ -1010,30 +1060,38 @@ func solicitar_selecao_cartas_zona(
 	callback_confirmacao: Callable,
 	permitir_menos: bool = false
 ) -> void:
+	print("🔬 [DEBUG] solicitar_selecao_cartas_zona chamada | cartas_disponiveis.size() = %d" % cartas_disponiveis.size())
+
 	if cartas_disponiveis.is_empty():
+		print("🔬 [DEBUG] ⚠️ Retornou cedo — array vazio!")
 		_exibir_texto_flutuante("Nenhuma carta elegível encontrada", 1.5)
 		return
 
 	var popup := PopupSelecaoCartas.new()
 	add_child(popup)
+	print("🔬 [DEBUG] Popup criado e adicionado à árvore: %s" % popup)
 	
 	popup.cartas_selecionadas.connect(func(cartas_escolhidas: Array[CardBaseResource]):
+		print("🔬 [DEBUG] Sinal cartas_selecionadas disparado! Escolhidas: %d" % cartas_escolhidas.size())
 		callback_confirmacao.call(cartas_escolhidas)
 	)
 	popup.cancelado.connect(func():
-		callback_confirmacao.call([])   # devolve escolha vazia — quem chamou (o handler) já sabe tratar como cancelamento
+		print("🔬 [DEBUG] Sinal cancelado disparado!")
+		callback_confirmacao.call([])
 	)
 	
 	popup.exibir(self, titulo, instrucao, cartas_disponiveis, quantidade, permitir_menos)
-## Trata o descarte de energias quando exigido por efeitos/ataques
+	print("🔬 [DEBUG] popup.exibir() chamado, aguardando interação do jogador...")
 
+## Trata o descarte de energias quando exigido por efeitos/ataques
 	
 func _refrescar_tabuleiro() -> void:
 	organizar_cartas_nas_zonas(0)
 	organizar_cartas_nas_zonas(1)
 	atualizar_visual_comida(0)
 	atualizar_visual_comida(1)
-	
+	atualizar_zona_descarte(0, GameState.obter_descarte(0))
+	atualizar_zona_descarte(1, GameState.obter_descarte(1))
 # ==============================================================================
 # ANIMAÇÕES VISUAIS
 # ==============================================================================
@@ -1299,6 +1357,7 @@ func _limpar_zona(jogador_id: int, zona_nome: String) -> void:
 				for child in container.get_children():
 					container.remove_child(child)
 					child.queue_free()
+
 func _obter_primeiro_filho_control(parent: Node) -> Control:
 	if not parent:
 		return null
@@ -1306,13 +1365,16 @@ func _obter_primeiro_filho_control(parent: Node) -> Control:
 		if child is Control:
 			return child
 	return null
+
 func _criar_carta_ui(carta: CardBaseResource, face_para_baixo: bool = false) -> Control:
 	return HelperUI.instanciar_carta(carta, face_para_baixo)	
+
 func _fechar_popup_setup() -> void:
 	# 🟢 CORRIGIDO: Método declarado para evitar erro de referência
 	var popup_setup = get_node_or_null("PopupSetup")
 	if is_instance_valid(popup_setup):
 		popup_setup.queue_free()
+
 func _abrir_menu_generico(posicao_global: Vector2, opcoes: Array[Dictionary]) -> void:
 	_fechar_menu_contextual()
 
@@ -1372,7 +1434,6 @@ func exibir_popup_promocao_obrigatoria(jogador_id: int) -> AnimalInstance:
 		botao_passar_turno.disabled = false
 
 	return resultado
-	
 
 # ==============================================================================
 # MENUS CONTEXTUAIS — CONSTRUÇÃO, VALIDAÇÃO E EXIBIÇÃO
@@ -1439,7 +1500,7 @@ func _fechar_menu_contextual() -> void:
 	if is_instance_valid(menu_contextual_ativo):
 		menu_contextual_ativo.queue_free()
 	menu_contextual_ativo = null
-	
+
 # ==============================================================================
 # CLEANUP
 # ==============================================================================
